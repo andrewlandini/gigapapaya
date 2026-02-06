@@ -32,6 +32,7 @@ export async function POST(request: NextRequest) {
   if (action === 'first-step') {
     const result = await generateObject({
       model: getTextModel('anthropic/claude-sonnet-4.5'),
+      temperature: 1,
       schema: nextStepSchema,
       prompt: `You are a wildly creative video concept brainstormer. You help people come up with out-there, imaginative, cinematic video ideas — the weirder and more visually interesting, the better.
 
@@ -67,6 +68,7 @@ For each option, also write a short reaction (2-5 words) that would show if the 
 
     const result = await generateObject({
       model: getTextModel('anthropic/claude-sonnet-4.5'),
+      temperature: 1,
       schema: nextStepSchema,
       prompt: `You are a wildly creative video concept brainstormer building on a conversation. Here's what they've picked so far:
 
@@ -105,6 +107,7 @@ For each option, also write a short reaction (2-5 words) that would show if the 
 
   const result = await generateObject({
     model: getTextModel('anthropic/claude-sonnet-4.5'),
+    temperature: 1,
     schema: ideasSchema,
     prompt: `You are a creative video prompt writer. The user just built a story through a series of creative choices. Your job is to turn THEIR story into 10 filmable video prompts.
 
