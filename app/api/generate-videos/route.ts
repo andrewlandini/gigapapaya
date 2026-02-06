@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server';
-import { executeVideoAgent, executeVeo3PrompterAgent } from '@/lib/ai/agents';
+import { executeVideoAgent } from '@/lib/ai/agents';
 import { getSession } from '@/lib/auth/session';
 import {
   initDb,
@@ -53,39 +53,20 @@ export async function POST(request: NextRequest) {
         try {
           const videos = [];
 
-          // Veo 3 Prompter Agent — optimize all scene prompts before video generation
-          sendEvent({ type: 'agent-start', agent: 'veo3-prompter', status: 'Optimizing prompts for Veo 3.1...' });
-          sendEvent({ type: 'agent-log', agent: 'veo3-prompter', status: `Analyzing ${scenes.length} scenes — selecting camera, lens, lighting, adding dialogue...` });
-
+          // Shot agent already writes Veo3-ready prompts — go straight to video generation
           const perShotDurations = scenes.map((s: any) => s.duration || (typeof options?.duration === 'number' ? options.duration : 8));
 
-          const optimizedPrompts = await executeVeo3PrompterAgent(
-            scenes.map((s: any) => s.prompt),
-            style,
-            mood,
-            '',
-            options?.duration || 8,
-            options?.noMusic || false,
-            perShotDurations
-          );
-
-          optimizedPrompts.forEach((p: string, i: number) => {
-            sendEvent({ type: 'agent-log', agent: 'veo3-prompter', status: `Shot ${i + 1} optimized (${perShotDurations[i]}s): ${p.substring(0, 100)}...` });
-          });
-          sendEvent({ type: 'agent-complete', agent: 'veo3-prompter', result: { optimizedPrompts } });
-
-          // Video generation
-          sendEvent({ type: 'agent-log', agent: 'videos', status: `Starting video generation for ${scenes.length} optimized shots` });
+          sendEvent({ type: 'agent-log', agent: 'videos', status: `Starting video generation for ${scenes.length} shots` });
           sendEvent({ type: 'agent-log', agent: 'videos', status: `Config: ${options.aspectRatio} / ${options.duration === 'auto' ? 'auto' : options.duration + 's'} / model: veo-3.1-generate-001` });
 
           for (let i = 0; i < scenes.length; i++) {
-            const finalPrompt = optimizedPrompts[i] || scenes[i].prompt;
+            const finalPrompt = scenes[i].prompt;
             const shotDuration = perShotDurations[i];
 
             // Override options.duration with per-shot duration for auto mode
             const shotOptions = { ...options, duration: shotDuration };
 
-            sendEvent({ type: 'agent-log', agent: 'videos', status: `Sending optimized shot ${i + 1} to Veo 3.1 (${shotDuration}s)` });
+            sendEvent({ type: 'agent-log', agent: 'videos', status: `Sending shot ${i + 1} to Veo 3.1 (${shotDuration}s)` });
             sendEvent({
               type: 'video-start', sceneIndex: i, prompt: finalPrompt,
               status: `Generating video ${i + 1}/${scenes.length}...`,
@@ -103,11 +84,11 @@ export async function POST(request: NextRequest) {
               });
 
               videos.push(video);
-              sendEvent({ type: 'agent-log', agent: 'videos', status: `Scene ${i + 1} complete — ${(video.size / (1024 * 1024)).toFixed(1)} MB uploaded` });
+              sendEvent({ type: 'agent-log', agent: 'videos', status: `Shot ${i + 1} complete — ${(video.size / (1024 * 1024)).toFixed(1)} MB uploaded` });
               sendEvent({ type: 'video-complete', sceneIndex: i, videoId: video.id, video });
             } catch (error) {
               console.error(`❌ Failed to generate video ${i + 1}:`, error);
-              sendEvent({ type: 'agent-log', agent: 'videos', status: `Scene ${i + 1} failed: ${error instanceof Error ? error.message : 'Unknown error'}` });
+              sendEvent({ type: 'agent-log', agent: 'videos', status: `Shot ${i + 1} failed: ${error instanceof Error ? error.message : 'Unknown error'}` });
               sendEvent({
                 type: 'error',
                 message: `Failed to generate video ${i + 1}: ${error instanceof Error ? error.message : 'Unknown error'}`,

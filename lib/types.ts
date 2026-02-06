@@ -45,7 +45,7 @@ export type ProgressEventType =
 export interface ProgressEvent {
   type: ProgressEventType;
   timestamp: Date;
-  agent?: 'idea' | 'scenes' | 'veo3-prompter' | 'videos';
+  agent?: 'idea' | 'scenes' | 'videos';
   status?: string;
   result?: any;
   sceneIndex?: number;

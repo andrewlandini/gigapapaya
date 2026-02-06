@@ -1,6 +1,6 @@
 'use client';
 
-import { Download, Play, ExternalLink } from 'lucide-react';
+import { Download, Play, ExternalLink, RotateCw, Loader2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import type { Video } from '@/lib/types';
 import Link from 'next/link';
@@ -8,9 +8,11 @@ import Link from 'next/link';
 interface VideoGalleryProps {
   videos: Video[];
   sessionId?: string;
+  onRerunShot?: (index: number) => void;
+  rerunningShots?: Set<number>;
 }
 
-export function VideoGallery({ videos, sessionId }: VideoGalleryProps) {
+export function VideoGallery({ videos, sessionId, onRerunShot, rerunningShots }: VideoGalleryProps) {
   if (videos.length === 0) return null;
 
   return (
@@ -32,51 +34,78 @@ export function VideoGallery({ videos, sessionId }: VideoGalleryProps) {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {videos.map((video, i) => (
-          <div
-            key={video.id}
-            className="border border-[#222] rounded-xl overflow-hidden hover:border-[#333] transition-colors group animate-fade-in"
-            style={{ animationDelay: `${i * 100}ms` }}
-          >
-            <div className="aspect-video bg-[#0a0a0a] relative">
-              <video
-                src={video.url}
-                controls
-                className="w-full h-full object-contain"
-                preload="metadata"
-              >
-                Your browser does not support the video tag.
-              </video>
-              <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity">
-                <div className="w-12 h-12 rounded-full bg-white/10 backdrop-blur-sm flex items-center justify-center">
-                  <Play className="h-5 w-5 text-white ml-0.5" />
+        {videos.map((video, i) => {
+          const isRerunning = rerunningShots?.has(i);
+          return (
+            <div
+              key={video.id}
+              className={`border rounded-xl overflow-hidden transition-colors group animate-fade-in ${isRerunning ? 'border-[#0070f3]/40' : 'border-[#222] hover:border-[#333]'}`}
+              style={{ animationDelay: `${i * 100}ms` }}
+            >
+              <div className="aspect-video bg-[#0a0a0a] relative">
+                {isRerunning && (
+                  <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+                    <div className="flex items-center gap-2">
+                      <Loader2 className="h-4 w-4 text-[#0070f3] animate-spin" />
+                      <span className="text-xs font-mono text-[#888]">re-generating...</span>
+                    </div>
+                  </div>
+                )}
+                <video
+                  src={video.url}
+                  controls
+                  className="w-full h-full object-contain"
+                  preload="metadata"
+                >
+                  Your browser does not support the video tag.
+                </video>
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity">
+                  <div className="w-12 h-12 rounded-full bg-white/10 backdrop-blur-sm flex items-center justify-center">
+                    <Play className="h-5 w-5 text-white ml-0.5" />
+                  </div>
+                </div>
+              </div>
+              <div className="p-4 space-y-3">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-mono text-[#444]">Shot {i + 1}</span>
+                  <span className="text-[#333]">/</span>
+                  <span className="text-xs font-mono text-[#444]">{video.aspectRatio}</span>
+                  <span className="text-[#333]">/</span>
+                  <span className="text-xs font-mono text-[#444]">{video.duration}s</span>
+                  <span className="text-[#333]">/</span>
+                  <span className="text-xs font-mono text-[#444]">{(video.size / (1024 * 1024)).toFixed(1)}MB</span>
+                </div>
+                <p className="text-xs text-[#666] leading-relaxed">
+                  {video.prompt}
+                </p>
+                <div className="flex gap-2">
+                  <a
+                    href={`/api/download/${video.id}`}
+                    download={video.filename}
+                    className="inline-flex items-center justify-center flex-1 h-8 px-3 text-xs font-medium rounded-lg border border-[#333] bg-transparent text-[#ededed] hover:bg-[#111] hover:border-[#555] transition-all"
+                  >
+                    <Download className="h-3.5 w-3.5 mr-2" />
+                    Download
+                  </a>
+                  {onRerunShot && (
+                    <button
+                      onClick={() => onRerunShot(i)}
+                      disabled={isRerunning}
+                      className="inline-flex items-center justify-center h-8 px-3 text-xs font-medium rounded-lg border border-[#333] bg-transparent text-[#888] hover:text-[#ededed] hover:bg-[#111] hover:border-[#555] transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                      title="Re-run this shot"
+                    >
+                      {isRerunning ? (
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      ) : (
+                        <RotateCw className="h-3.5 w-3.5" />
+                      )}
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
-            <div className="p-4 space-y-3">
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-mono text-[#444]">Shot {i + 1}</span>
-                <span className="text-[#333]">/</span>
-                <span className="text-xs font-mono text-[#444]">{video.aspectRatio}</span>
-                <span className="text-[#333]">/</span>
-                <span className="text-xs font-mono text-[#444]">{video.duration}s</span>
-                <span className="text-[#333]">/</span>
-                <span className="text-xs font-mono text-[#444]">{(video.size / (1024 * 1024)).toFixed(1)}MB</span>
-              </div>
-              <p className="text-xs text-[#666] leading-relaxed">
-                {video.prompt}
-              </p>
-              <a
-                href={`/api/download/${video.id}`}
-                download={video.filename}
-                className="inline-flex items-center justify-center w-full h-8 px-3 text-xs font-medium rounded-lg border border-[#333] bg-transparent text-[#ededed] hover:bg-[#111] hover:border-[#555] transition-all"
-              >
-                <Download className="h-3.5 w-3.5 mr-2" />
-                Download
-              </a>
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

@@ -37,6 +37,9 @@ interface StoryboardContextValue {
   handleReset: () => void;
   clearGeneration: () => void;
   isGenerating: boolean;
+  // Re-run individual shots
+  rerunShot: (sceneIndex: number) => void;
+  rerunningShots: Set<number>;
   // Per-mode custom prompts
   customPrompts: CustomPrompts;
   updateModeCustomization: (modeId: string, field: keyof ModeCustomization, value: string) => void;
@@ -70,13 +73,13 @@ export function StoryboardProvider({ children }: { children: ReactNode }) {
 
   const [options, setOptionsState] = useState<GenerationOptions>({
     aspectRatio: '16:9',
-    duration: 8,
-    numScenes: 3,
+    duration: 'auto',
     mode: 'agents',
   });
 
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [customPrompts, setCustomPrompts] = useState<CustomPrompts>({});
+  const [rerunningShots, setRerunningShots] = useState<Set<number>>(new Set());
   const sessionIdRef = useRef<string>('');
   const abortRef = useRef<AbortController | null>(null);
 
@@ -377,6 +380,58 @@ export function StoryboardProvider({ children }: { children: ReactNode }) {
     });
   }, [options]);
 
+  const rerunShot = useCallback((sceneIndex: number) => {
+    const scene = state.editableScenes?.[sceneIndex];
+    if (!scene) return;
+
+    const style = state.generatedIdea?.style || '';
+    const mood = state.generatedIdea?.mood || '';
+    const sid = sessionIdRef.current;
+
+    setRerunningShots(prev => new Set(prev).add(sceneIndex));
+
+    fetch('/api/generate-videos', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        sessionId: sid,
+        scenes: [{ prompt: scene.prompt, duration: scene.duration }],
+        style,
+        mood,
+        options,
+      }),
+    })
+      .then(async (response) => {
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+        await readSSEStream(response, (data) => {
+          if (data.type === 'video-complete' && data.video) {
+            setState(prev => {
+              const newVideos = [...prev.videos];
+              // Replace the video at this scene index, or append if not found
+              const existingIdx = newVideos.findIndex((_, i) => i === sceneIndex);
+              if (existingIdx >= 0) {
+                newVideos[existingIdx] = data.video!;
+              } else {
+                newVideos.push(data.video!);
+              }
+              return { ...prev, videos: newVideos };
+            });
+          }
+        });
+      })
+      .catch((error) => {
+        console.error(`Failed to re-run shot ${sceneIndex + 1}:`, error);
+      })
+      .finally(() => {
+        setRerunningShots(prev => {
+          const next = new Set(prev);
+          next.delete(sceneIndex);
+          return next;
+        });
+      });
+  }, [state.editableScenes, state.generatedIdea, options]);
+
   const clearGeneration = useCallback(() => {
     setState(prev => ({
       ...prev,
@@ -410,6 +465,7 @@ export function StoryboardProvider({ children }: { children: ReactNode }) {
       setIdea, setOptions, updateScenePrompt, removeScene,
       startModeGeneration, handleGenerateVideos, handleReset, clearGeneration,
       isGenerating,
+      rerunShot, rerunningShots,
       customPrompts, updateModeCustomization, restoreModeDefault,
       history, deleteHistoryEntry, clearHistory, loadFromHistory,
     }}>

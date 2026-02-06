@@ -103,17 +103,17 @@ export async function POST(request: NextRequest) {
             sendEvent({ type: 'agent-complete', agent: 'idea', result: ideaResult });
 
             // Agent 2: Scenes
-            sendEvent({ type: 'agent-log', agent: 'scenes', status: `Taking concept "${ideaResult.title}" and breaking into ${options.numScenes || 3} scene variations` });
+            sendEvent({ type: 'agent-log', agent: 'scenes', status: `Taking concept "${ideaResult.title}" and breaking into ${options.numScenes || 'auto'} shots` });
             sendEvent({ type: 'agent-log', agent: 'scenes', status: `Maintaining consistency: ${ideaResult.style} style, ${ideaResult.mood} mood across all scenes` });
             sendEvent({ type: 'agent-log', agent: 'scenes', status: 'Crafting camera angles, lighting, composition for each scene...' });
             sendEvent({ type: 'agent-start', agent: 'scenes', status: 'Crafting scene variations...' });
 
-            const scenesResult = await executeScenesAgent(ideaResult, options.numScenes || 3, options.sceneAgent, options.duration || 8, options.noMusic || false, options.totalLength);
+            const scenesResult = await executeScenesAgent(ideaResult, options.numScenes, options.sceneAgent, options.duration || 8, options.noMusic || false, options.totalLength);
             await updateGenerationScenes(sessionId, scenesResult);
 
             sendEvent({ type: 'agent-log', agent: 'scenes', status: `Generated ${scenesResult.scenes.length} scenes` });
             scenesResult.scenes.forEach((scene, i) => {
-              sendEvent({ type: 'agent-log', agent: 'scenes', status: `Scene ${i + 1}: ${scene.prompt.substring(0, 80)}...` });
+              sendEvent({ type: 'agent-log', agent: 'scenes', status: `Shot ${i + 1}: ${scene.prompt.substring(0, 80)}...` });
             });
             sendEvent({ type: 'agent-log', agent: 'scenes', status: `Consistency: ${scenesResult.consistencyNotes.substring(0, 100)}...` });
             sendEvent({ type: 'agent-complete', agent: 'scenes', result: scenesResult });

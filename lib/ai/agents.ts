@@ -4,7 +4,7 @@ import {
 } from 'ai';
 import { z } from 'zod';
 import { getTextModel, getVideoModel } from './provider';
-import { IDEA_AGENT_PROMPT, SCENES_AGENT_PROMPT, VEO3_PROMPTER_PROMPT } from '../prompts';
+import { IDEA_AGENT_PROMPT, SCENES_AGENT_PROMPT } from '../prompts';
 import { saveVideo } from './video-storage';
 import type { VideoIdea, ScenesResult, Video, GenerationOptions } from '../types';
 
@@ -18,15 +18,15 @@ const videoIdeaSchema = z.object({
 });
 
 const sceneSchema = z.object({
-  index: z.number().describe('Scene number'),
-  prompt: z.string().describe('Ultra-detailed scene description for video generation'),
-  duration: z.number().describe('Duration in seconds'),
-  notes: z.string().describe('Technical notes about camera, lighting, and composition'),
+  index: z.number().describe('Shot number'),
+  prompt: z.string().describe('Veo 3.1-ready prompt: [SHOT TYPE] + [SUBJECT with full description] + [ACTION] + [DIALOGUE in quotes] + [STYLE/CAMERA/LENS] + [CAMERA MOVEMENT] + [AUDIO]. Must be fully self-contained — Veo 3.1 has zero context between shots.'),
+  duration: z.number().describe('Duration in seconds (2, 4, 6, or 8)'),
+  notes: z.string().describe('What happens narratively in this shot and how it connects to the next'),
 });
 
 const scenesResultSchema = z.object({
-  scenes: z.array(sceneSchema).describe('Array of 3-5 scene descriptions'),
-  consistencyNotes: z.string().describe('Guidance on maintaining visual consistency'),
+  scenes: z.array(sceneSchema).describe('Array of shots with Veo 3.1-ready prompts'),
+  consistencyNotes: z.string().describe('Character descriptions and camera/style setup to maintain across all shots'),
 });
 
 /**
@@ -111,14 +111,27 @@ DIALOGUE RULES (MANDATORY):
 - Match dialogue to the mood: tense scenes = clipped, urgent. Calm scenes = wandering, trailing off. Comedy = matter-of-fact about absurd things.
 - Dialogue across scenes should feel like one continuous conversation — each scene picks up roughly where the last left off.
 - HARD WORD COUNT LIMIT: A person speaks ~2.5 words per second. For the scene duration, count the words in your dialogue and MAKE SURE they fit. An 8-second scene = MAX 15-18 words of dialogue (leave room for pauses and breathing). A 6-second scene = MAX 12 words. A 4-second scene = MAX 8 words. If your dialogue is longer than this, CUT IT DOWN. The video will literally cut off mid-sentence if you write too much. Shorter is always better — one punchy line beats a paragraph that gets cut off.
-- BANNED WORDS: NEVER use "subtitle", "subtitles", "subtitled", "caption", "captions", or "text overlay" in any prompt. Veo 3.1 will render literal subtitle text on screen if these words appear. Write dialogue directly in quotes instead.`;
+- BANNED WORDS: NEVER use "subtitle", "subtitles", "subtitled", "caption", "captions", or "text overlay" in any prompt. Veo 3.1 will render literal subtitle text on screen if these words appear. Write dialogue directly in quotes instead.
+
+DIALOGUE FORMATTING (VEO 3.1 SPEECH MODEL):
+- NEVER write dialogue in ALL CAPS — the speech model will try to yell everything. Use normal sentence case, even if the character is shouting. Convey intensity through word choice and stage direction ("shouting", "voice cracking"), not capitalization.
+- NEVER use unusual/phonetic spellings for accents ("watcha doin'", "git outta here"). Write standard English with natural contractions. The speech model needs clean text to sound natural.
+
+SELF-CONTAINED PROMPTS (CRITICAL — VEO 3.1 HAS ZERO MEMORY):
+Each prompt you write is sent to Veo 3.1 INDEPENDENTLY. The model has ZERO context between shots. Every single prompt must re-describe EVERYTHING from scratch:
+- Full character descriptions every time (age, build, hair, clothing, skin tone, distinguishing features). If you say "the same woman" without re-describing her, the model will generate a DIFFERENT person.
+- Full environment description every time (location, set dressing, weather, time of day)
+- Full style/look every time (camera body, lens, color grade, film stock reference)
+- Full lighting setup every time
+- Let physical STATE evolve naturally (more dirt, sweat, injuries as story progresses) while keeping IDENTITY consistent
+Treat each prompt as if the model has never seen any other prompt in its life.`;
 
 /**
  * Agent 2: Generate scene breakdown from video idea
  */
 export async function executeScenesAgent(
   idea: VideoIdea,
-  numScenes: number = 3,
+  numScenes?: number,
   config?: { model?: string; prompt?: string },
   duration: number | 'auto' = 8,
   noMusic: boolean = false,
@@ -126,10 +139,11 @@ export async function executeScenesAgent(
 ): Promise<ScenesResult> {
   const modelId = config?.model || 'anthropic/claude-sonnet-4.5';
   const systemPrompt = config?.prompt || SCENES_AGENT_PROMPT;
+  const autoShotCount = !numScenes;
 
   console.log('\n🎬 SCENES AGENT: Starting...');
   console.log(`📋 Idea: ${idea.title}`);
-  console.log(`🎯 Target: ${numScenes} scenes, ${duration}s each`);
+  console.log(`🎯 Target: ${autoShotCount ? 'auto' : numScenes} shots, ${duration}${typeof duration === 'number' ? 's' : ''} each`);
   console.log(`🤖 Model: ${modelId}\n`);
 
   const ideaSummary = `
@@ -145,16 +159,18 @@ Key Elements: ${idea.keyElements.join(', ')}
 
   let durationGuidance: string;
   if (isAuto) {
-    const totalLen = totalLength || 30;
+    const totalLenNote = totalLength ? `TARGET TOTAL LENGTH: ~${totalLength} seconds across all shots.` : `You decide the total length based on what the story needs. A tight concept might need 10-15 seconds. A full narrative might need 30-60 seconds. Don't pad — only as long as the story requires.`;
+    const shotCountNote = autoShotCount ? `You decide how many shots this story needs. Could be 2 for a simple before/after. Could be 6+ for an epic. Match the shot count to the story — don't force a structure.` : `Generate exactly ${numScenes} shots.`;
     durationGuidance = `
 
-SHOT DURATION — AUTO MODE:
+FULL AUTO MODE — YOU ARE THE DIRECTOR:
+${shotCountNote}
+${totalLenNote}
 You decide the duration of each shot based on what it needs. Available durations: 2, 4, 6, or 8 seconds.
 - Quick reactions, reveals, cutaways: 2-4 seconds
 - Action beats, medium dialogue: 4-6 seconds
 - Establishing shots, longer dialogue, emotional moments: 6-8 seconds
-- TARGET TOTAL LENGTH: ~${totalLen} seconds across all ${numScenes} shots. Vary the durations — not all the same.
-- Set the "duration" field on each shot to the appropriate length.
+- Vary the durations — not all the same. Set the "duration" field on each shot.
 
 DIALOGUE WORD LIMITS (based on per-shot duration):
 - 2s = MAX 4 words. 4s = MAX 8 words. 6s = MAX 12 words. 8s = MAX 18 words.
@@ -211,19 +227,38 @@ Five shots is a short film. You have room to BREATHE — use it for rhythm and p
 Vary the energy: don't make every scene intense. Use contrast — quiet/loud, wide/close, fast/slow.`,
   };
 
-  const sceneNarrative = sceneCountGuidance[numScenes] || (numScenes >= 6 ? `NARRATIVE STRUCTURE (${numScenes} SCENES):
+  let sceneNarrative: string;
+  if (autoShotCount) {
+    sceneNarrative = `NARRATIVE STRUCTURE — YOU DECIDE:
+You choose the number of shots based on what the story needs. Think like a director:
+- 2 shots: Before/after. Setup/payoff. Cause/effect.
+- 3 shots: Three-act structure. Beginning, middle, end.
+- 4 shots: Dramatic arc with a twist or complication.
+- 5+ shots: A proper short film with sequences.
+Match the structure to the concept. A simple joke needs 2-3 shots. An emotional story might need 4-5. An epic concept could need 6+.
+Every shot must ADVANCE the story — no filler, no repeated beats.`;
+  } else {
+    sceneNarrative = sceneCountGuidance[numScenes!] || (numScenes! >= 6 ? `NARRATIVE STRUCTURE (${numScenes} SCENES):
 With ${numScenes} shots you're making a proper short film. Think in SEQUENCES, not individual shots.
 - Opening sequence (scenes 1-2): Establish world, character, tone
-- Development (scenes 3-${Math.floor(numScenes * 0.6)}): Build the story, add complications, deepen characters
-- Climax (scene ${Math.floor(numScenes * 0.7)}-${Math.floor(numScenes * 0.8)}): Peak tension or comedy
-- Resolution (final ${numScenes - Math.floor(numScenes * 0.8)} scenes): Payoff, consequence, ending
+- Development (scenes 3-${Math.floor(numScenes! * 0.6)}): Build the story, add complications, deepen characters
+- Climax (scene ${Math.floor(numScenes! * 0.7)}-${Math.floor(numScenes! * 0.8)}): Peak tension or comedy
+- Resolution (final ${numScenes! - Math.floor(numScenes! * 0.8)} scenes): Payoff, consequence, ending
 Vary pacing — not every scene should be the same intensity. Use quiet moments to make loud ones hit harder. Think about rhythm like music: verse, chorus, bridge, chorus.` : sceneCountGuidance[3]);
+  }
+
+  const shotCountInstruction = autoShotCount
+    ? `Generate the optimal number of shots for this story.`
+    : `Generate exactly ${numScenes} shots.`;
+  const durationInstruction = isAuto
+    ? `Choose the best duration (2/4/6/8s) for each shot.${totalLength ? ` Target ~${totalLength}s total.` : ' You decide the total length.'}`
+    : `Each shot is ${fixedDuration} seconds long. Everything described must fit within ${fixedDuration} seconds of real time.`;
 
   const result = await generateObject({
     model: getTextModel(modelId),
     temperature: 1,
     schema: scenesResultSchema,
-    prompt: `${systemPrompt}${SCENE_AGENT_BASE}${durationGuidance}\n\n${sceneNarrative}${musicNote}\n\nVideo Idea:\n${ideaSummary}\n\nGenerate ${numScenes} shots.${isAuto ? ` Choose the best duration (2/4/6/8s) for each shot. Target ~${totalLength || 30}s total.` : ` Each shot is ${fixedDuration} seconds long. Everything described must fit within ${fixedDuration} seconds of real time.`} Do not self-censor or water down the creative concept — commit fully to the idea.`,
+    prompt: `${systemPrompt}${SCENE_AGENT_BASE}${durationGuidance}\n\n${sceneNarrative}${musicNote}\n\nVideo Idea:\n${ideaSummary}\n\n${shotCountInstruction} ${durationInstruction} Do not self-censor or water down the creative concept — commit fully to the idea.`,
   });
 
   console.log('✅ SCENES AGENT: Complete');
@@ -239,60 +274,7 @@ Vary pacing — not every scene should be the same intensity. Use quiet moments 
   return result.object as ScenesResult;
 }
 
-/**
- * Agent 2.5: Veo 3 Prompting Expert — optimize scene prompts for Veo 3.1
- */
-const veo3OptimizedSchema = z.object({
-  optimizedPrompts: z.array(z.string()).describe('Optimized prompts for Veo 3.1, one per scene in the same order'),
-});
-
-export async function executeVeo3PrompterAgent(
-  scenePrompts: string[],
-  style: string,
-  mood: string,
-  consistencyNotes: string,
-  duration: number | 'auto' = 8,
-  noMusic: boolean = false,
-  perShotDurations?: number[]
-): Promise<string[]> {
-  console.log('\n🎬 VEO3 PROMPTER: Starting...');
-  console.log(`📹 Optimizing ${scenePrompts.length} scene prompts for Veo 3.1 (${duration}s each)`);
-  console.log(`🎨 Style: ${style}, Mood: ${mood}\n`);
-
-  const scenesText = scenePrompts
-    .map((p, i) => `Scene ${i + 1}: ${p}`)
-    .join('\n\n');
-
-  const isAutoVeo = duration === 'auto';
-  const veoMusicNote = noMusic ? ' NO MUSIC in audio cues — only diegetic/ambient sounds, dialogue, and environmental audio. No soundtrack, no score, no background music.' : '';
-
-  let durationNote: string;
-  if (isAutoVeo && perShotDurations?.length) {
-    const shotNotes = perShotDurations.map((d, i) => {
-      const maxW = d <= 2 ? 4 : d <= 4 ? 8 : d <= 6 ? 12 : 18;
-      return `Shot ${i + 1}: ${d}s (max ${maxW} words dialogue)`;
-    }).join(', ');
-    durationNote = `\n\nDURATION CONSTRAINT (CRITICAL — VARIABLE PER SHOT): Each shot has its OWN duration. ${shotNotes}. Count dialogue words for EACH shot individually based on its duration. If dialogue exceeds the limit for that shot, the video WILL cut off mid-sentence. Specify movement speed explicitly.${veoMusicNote}`;
-  } else {
-    const fixedD = typeof duration === 'number' ? duration : 8;
-    const veoMaxWords = fixedD <= 4 ? 8 : fixedD <= 6 ? 12 : 18;
-    durationNote = `\n\nDURATION CONSTRAINT (CRITICAL): Each shot is ${fixedD} seconds. DIALOGUE HARD LIMIT: MAX ${veoMaxWords} words per shot. Count every word. If dialogue exceeds ${veoMaxWords} words, the video WILL cut off mid-sentence. One punchy line beats a monologue that gets truncated. Specify movement speed explicitly.${veoMusicNote}`;
-  }
-
-  const result = await generateObject({
-    model: getTextModel('anthropic/claude-sonnet-4.5'),
-    schema: veo3OptimizedSchema,
-    prompt: `${VEO3_PROMPTER_PROMPT}${durationNote}\n\nVisual Style: ${style}\nMood: ${mood}\nConsistency Notes: ${consistencyNotes}\n\nScene prompts to optimize:\n\n${scenesText}\n\nOptimize each prompt for Veo 3.1. Return exactly ${scenePrompts.length} optimized prompts in the same order. Each scene is ${duration}s — everything must fit.`,
-  });
-
-  console.log('✅ VEO3 PROMPTER: Complete');
-  result.object.optimizedPrompts.forEach((p, i) => {
-    console.log(`\n  Scene ${i + 1} (optimized): ${p.substring(0, 120)}...`);
-  });
-  console.log('');
-
-  return result.object.optimizedPrompts;
-}
+// Veo3 prompter agent removed — shot agent now writes Veo3-ready prompts directly
 
 /**
  * Agent 3: Generate video from scene prompt using AI Gateway + Veo 3.1
@@ -376,7 +358,7 @@ export async function executeFullWorkflow(
   const idea = await executeIdeaAgent(userInput);
 
   // Agent 2: Generate scenes
-  const scenesResult = await executeScenesAgent(idea, options.numScenes || 3, undefined, options.duration || 8, options.noMusic || false, options.totalLength);
+  const scenesResult = await executeScenesAgent(idea, options.numScenes, undefined, options.duration || 8, options.noMusic || false, options.totalLength);
 
   // Agent 3: Generate videos for each scene
   const videos: Video[] = [];

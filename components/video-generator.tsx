@@ -34,7 +34,6 @@ const PHASE_HEADLINES: Record<string, string[]> = {
   idea: ["Writing your concept.", "Crafting the story.", "Building the world.", "Finding the angle."],
   scenes: ["Breaking it into shots.", "Blocking the shots.", "Mapping the sequence.", "Setting up each shot."],
   reviewing: ["Your scenes are ready.", "Review and edit.", "Make it yours.", "Check the shots."],
-  'veo3-prompter': ["Optimizing for camera.", "Dialing in the details.", "Locking the look.", "Final prompt pass."],
   video: ["Generating video", "Rendering scene", "Camera is rolling", "Bringing it to life", "Processing scene", "Building the shot", "Rendering the take", "Assembling the clip"],
   complete: ["That's a wrap.", "All done.", "Picture's up.", "And... cut."],
 };
@@ -57,6 +56,7 @@ export function VideoGenerator() {
     state, options, sessionId, setIdea, setOptions,
     updateScenePrompt, removeScene, startModeGeneration, handleGenerateVideos, handleReset, clearGeneration,
     isGenerating,
+    rerunShot, rerunningShots,
     customPrompts, updateModeCustomization, restoreModeDefault,
     history, deleteHistoryEntry, loadFromHistory,
   } = useStoryboard();
@@ -92,7 +92,6 @@ export function VideoGenerator() {
       for (const event of state.progress) {
         if (event.type === 'agent-start' && event.agent === 'idea') phase = 'idea';
         if (event.type === 'agent-start' && event.agent === 'scenes') phase = 'scenes';
-        if (event.type === 'agent-start' && event.agent === 'veo3-prompter') phase = 'veo3-prompter';
         if (event.type === 'video-start') { phase = 'video'; videoNum = (event.sceneIndex ?? 0) + 1; }
       }
     }
@@ -244,7 +243,8 @@ export function VideoGenerator() {
                         setOptions(prev => ({
                           ...prev,
                           duration: val === 'auto' ? 'auto' : parseInt(val),
-                          totalLength: val === 'auto' ? (prev.totalLength || 30) : undefined,
+                          totalLength: val === 'auto' ? prev.totalLength : undefined,
+                          numScenes: val === 'auto' ? undefined : (prev.numScenes || 3),
                         }));
                       }}
                       className="h-7 px-1.5 rounded-md bg-transparent text-xs text-[#888] font-mono focus:outline-none cursor-pointer hover:text-[#ededed] transition-colors"
@@ -259,24 +259,32 @@ export function VideoGenerator() {
                     <div className="flex items-center gap-1.5">
                       <label className="text-[11px] font-mono text-[#444]">length</label>
                       <select
-                        value={options.totalLength || 30}
-                        onChange={(e) => setOptions(prev => ({ ...prev, totalLength: parseInt(e.target.value) }))}
+                        value={options.totalLength || 'auto'}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setOptions(prev => ({ ...prev, totalLength: val === 'auto' ? undefined : parseInt(val) }));
+                        }}
                         className="h-7 px-1.5 rounded-md bg-transparent text-xs text-[#888] font-mono focus:outline-none cursor-pointer hover:text-[#ededed] transition-colors"
                       >
                         <option value={15}>15s</option>
                         <option value={30}>30s</option>
                         <option value={45}>45s</option>
                         <option value={60}>60s</option>
+                        <option value="auto">auto</option>
                       </select>
                     </div>
                   )}
                   <div className="flex items-center gap-1.5">
                     <label className="text-[11px] font-mono text-[#444]">shots</label>
                     <select
-                      value={options.numScenes}
-                      onChange={(e) => setOptions(prev => ({ ...prev, numScenes: parseInt(e.target.value) }))}
+                      value={options.numScenes || 'auto'}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setOptions(prev => ({ ...prev, numScenes: val === 'auto' ? undefined : parseInt(val) }));
+                      }}
                       className="h-7 px-1.5 rounded-md bg-transparent text-xs text-[#888] font-mono focus:outline-none cursor-pointer hover:text-[#ededed] transition-colors"
                     >
+                      <option value="auto">auto</option>
                       <option value={2}>2</option>
                       <option value={3}>3</option>
                       <option value={4}>4</option>
@@ -480,6 +488,7 @@ export function VideoGenerator() {
                         {i + 1}
                       </div>
                       <span className="text-xs font-mono text-[#555]">Shot {i + 1}</span>
+                      <span className="text-xs font-mono text-[#444]">{scene.duration}s</span>
                     </div>
                     {state.editableScenes!.length > 1 && (
                       <button
@@ -505,7 +514,7 @@ export function VideoGenerator() {
 
         {/* Videos */}
         {state.videos.length > 0 && (
-          <VideoGallery videos={state.videos} sessionId={sessionId} />
+          <VideoGallery videos={state.videos} sessionId={sessionId} onRerunShot={rerunShot} rerunningShots={rerunningShots} />
         )}
 
         {/* Error */}
