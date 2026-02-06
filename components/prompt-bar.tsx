@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react';
 import Link from 'next/link';
-import { Plus, ArrowUp, ChevronRight, Monitor, Smartphone, Square, Clock, Film, Layers } from 'lucide-react';
+import { Plus, ArrowUp, ChevronRight, ChevronUp, Monitor, Smartphone, Square, Clock, Film, Layers } from 'lucide-react';
 import { useGeneration } from './generation-context';
 import { useToast } from './toast';
 
@@ -36,8 +36,8 @@ export function PromptBar({ isAuthenticated }: PromptBarProps) {
   const [selectedModel, setSelectedModel] = useState('veo-3.1');
   const [aspectRatio, setAspectRatio] = useState<string>('16:9');
   const [duration, setDuration] = useState<number>(8);
-  const modelRef = useRef<HTMLDivElement>(null);
   const settingsRef = useRef<HTMLDivElement>(null);
+  const modelRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { startGeneration } = useGeneration();
   const { showToast } = useToast();
@@ -45,17 +45,15 @@ export function PromptBar({ isAuthenticated }: PromptBarProps) {
   // Close popups on click outside
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
-      if (settingsRef.current && !settingsRef.current.contains(e.target as Node)) {
+      if (showSettings && settingsRef.current && !settingsRef.current.contains(e.target as Node)) {
         setShowSettings(false);
       }
-      if (modelRef.current && !modelRef.current.contains(e.target as Node)) {
+      if (showModelPicker && modelRef.current && !modelRef.current.contains(e.target as Node)) {
         setShowModelPicker(false);
       }
     }
-    if (showSettings || showModelPicker) {
-      document.addEventListener('mousedown', handleClickOutside);
-      return () => document.removeEventListener('mousedown', handleClickOutside);
-    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [showSettings, showModelPicker]);
 
   const autoResize = useCallback(() => {
@@ -73,6 +71,7 @@ export function PromptBar({ isAuthenticated }: PromptBarProps) {
     showToast('Video generation started', 'info');
     setPrompt('');
     setShowSettings(false);
+    setShowModelPicker(false);
     if (textareaRef.current) textareaRef.current.style.height = 'auto';
   };
 
@@ -95,23 +94,11 @@ export function PromptBar({ isAuthenticated }: PromptBarProps) {
 
   return (
     <div className="sticky bottom-0 p-4 bg-gradient-to-t from-black via-black/95 to-transparent">
-      <div className="max-w-2xl mx-auto relative" ref={settingsRef}>
-        {/* Settings popover */}
+      <div className="max-w-2xl mx-auto relative">
+        {/* Settings popover — anchored to + button */}
         {showSettings && (
-          <div className="absolute bottom-full right-0 mb-2 w-72 rounded-2xl border border-[#333] bg-[#111]/95 backdrop-blur-xl shadow-2xl overflow-hidden animate-fade-in">
+          <div ref={settingsRef} className="absolute bottom-full left-0 mb-2 w-72 rounded-2xl border border-[#333] bg-[#111]/95 backdrop-blur-xl shadow-2xl overflow-hidden animate-fade-in z-10">
             <div className="p-1">
-              {/* Model */}
-              <div className="flex items-center justify-between px-4 py-3 rounded-xl hover:bg-[#1a1a1a] transition-colors">
-                <div className="flex items-center gap-3">
-                  <Layers className="h-4 w-4 text-[#888]" />
-                  <span className="text-sm text-[#ededed]">Model</span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <span className="text-sm text-[#888]">{VIDEO_MODELS.find(m => m.id === selectedModel)?.label}</span>
-                  <ChevronRight className="h-3.5 w-3.5 text-[#555]" />
-                </div>
-              </div>
-
               {/* Orientation */}
               <div className="px-4 py-3 rounded-xl hover:bg-[#1a1a1a] transition-colors">
                 <div className="flex items-center justify-between mb-2">
@@ -172,9 +159,40 @@ export function PromptBar({ isAuthenticated }: PromptBarProps) {
                 </div>
                 <div className="flex items-center gap-1">
                   <span className="text-sm text-[#888]">1 video</span>
-                  <ChevronRight className="h-3.5 w-3.5 text-[#555]" />
                 </div>
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* Model picker — anchored to model button */}
+        {showModelPicker && (
+          <div ref={modelRef} className="absolute bottom-full right-0 mb-2 w-52 rounded-xl border border-[#333] bg-[#111]/95 backdrop-blur-xl shadow-2xl overflow-hidden animate-fade-in z-10">
+            <div className="p-1">
+              {VIDEO_MODELS.map((model) => (
+                <button
+                  key={model.id}
+                  onClick={() => {
+                    if (model.available) {
+                      setSelectedModel(model.id);
+                      setShowModelPicker(false);
+                    }
+                  }}
+                  disabled={!model.available}
+                  className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm transition-colors ${
+                    selectedModel === model.id
+                      ? 'bg-white text-black'
+                      : model.available
+                        ? 'text-[#ededed] hover:bg-[#1a1a1a]'
+                        : 'text-[#444] cursor-default'
+                  }`}
+                >
+                  <span>{model.label}</span>
+                  {!model.available && (
+                    <span className="text-[10px] font-mono text-[#444]">coming soon</span>
+                  )}
+                </button>
+              ))}
             </div>
           </div>
         )}
@@ -199,8 +217,12 @@ export function PromptBar({ isAuthenticated }: PromptBarProps) {
           <div className="flex items-center justify-between px-3 pb-3">
             <div className="flex items-center gap-2">
               <button
-                onClick={() => setShowSettings(!showSettings)}
-                className="h-9 w-9 rounded-xl bg-[#1a1a1a] border border-[#333] flex items-center justify-center text-[#888] hover:text-white hover:border-[#555] transition-colors"
+                onClick={() => { setShowSettings(!showSettings); setShowModelPicker(false); }}
+                className={`h-9 w-9 rounded-xl border flex items-center justify-center transition-colors ${
+                  showSettings
+                    ? 'bg-white text-black border-white'
+                    : 'bg-[#1a1a1a] border-[#333] text-[#888] hover:text-white hover:border-[#555]'
+                }`}
               >
                 <Plus className="h-4 w-4" />
               </button>
@@ -213,45 +235,17 @@ export function PromptBar({ isAuthenticated }: PromptBarProps) {
             </div>
 
             <div className="flex items-center gap-2">
-              <div className="relative" ref={modelRef}>
-                <button
-                  onClick={() => setShowModelPicker(!showModelPicker)}
-                  className="h-9 px-3 rounded-xl bg-[#1a1a1a] border border-[#333] flex items-center gap-2 text-sm text-[#888] hover:text-white hover:border-[#555] transition-colors"
-                >
-                  {VIDEO_MODELS.find(m => m.id === selectedModel)?.label}
-                  <ChevronRight className={`h-3 w-3 transition-transform ${showModelPicker ? 'rotate-90' : ''}`} />
-                </button>
-                {showModelPicker && (
-                  <div className="absolute bottom-full right-0 mb-2 w-52 rounded-xl border border-[#333] bg-[#111]/95 backdrop-blur-xl shadow-2xl overflow-hidden animate-fade-in">
-                    <div className="p-1">
-                      {VIDEO_MODELS.map((model) => (
-                        <button
-                          key={model.id}
-                          onClick={() => {
-                            if (model.available) {
-                              setSelectedModel(model.id);
-                              setShowModelPicker(false);
-                            }
-                          }}
-                          disabled={!model.available}
-                          className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm transition-colors ${
-                            selectedModel === model.id
-                              ? 'bg-white text-black'
-                              : model.available
-                                ? 'text-[#ededed] hover:bg-[#1a1a1a]'
-                                : 'text-[#444] cursor-default'
-                          }`}
-                        >
-                          <span>{model.label}</span>
-                          {!model.available && (
-                            <span className="text-[10px] font-mono text-[#444]">coming soon</span>
-                          )}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
+              <button
+                onClick={() => { setShowModelPicker(!showModelPicker); setShowSettings(false); }}
+                className={`h-9 px-3 rounded-xl border flex items-center gap-2 text-sm transition-colors ${
+                  showModelPicker
+                    ? 'bg-[#222] border-[#555] text-white'
+                    : 'bg-[#1a1a1a] border-[#333] text-[#888] hover:text-white hover:border-[#555]'
+                }`}
+              >
+                {VIDEO_MODELS.find(m => m.id === selectedModel)?.label}
+                <ChevronUp className={`h-3 w-3 transition-transform ${showModelPicker ? '' : 'rotate-180'}`} />
+              </button>
               <button
                 onClick={handleSubmit}
                 disabled={!prompt.trim()}
