@@ -14,62 +14,23 @@ import { GENERATION_MODES, getModeById } from '@/lib/generation-modes';
 export function VideoGenerator() {
   const {
     state, options, setIdea, setOptions,
-    updateScenePrompt, handleGenerate, handleGenerateVideos, handleReset,
+    updateScenePrompt, startModeGeneration, handleGenerateVideos, handleReset,
     isGenerating,
+    customPrompts, updateModeCustomization, restoreModeDefault,
     history, deleteHistoryEntry, clearHistory, loadFromHistory,
   } = useStoryboard();
 
   const [showAgentSettings, setShowAgentSettings] = useState(false);
-  const [selectedModeId, setSelectedModeId] = useState('amplify');
+  const [settingsTab, setSettingsTab] = useState('amplify');
 
-  const currentMode = getModeById(selectedModeId);
+  const settingsMode = getModeById(settingsTab);
 
-  const handleModeGenerate = (modeId: string) => {
-    if (!state.idea.trim() || isGenerating) return;
-    const mode = getModeById(modeId);
-    setSelectedModeId(modeId);
-
-    // Set agent prompts from mode (preserve user model selections)
-    setOptions(prev => ({
-      ...prev,
-      mode: 'agents',
-      ideaAgent: {
-        model: prev.ideaAgent?.model || 'anthropic/claude-sonnet-4.5',
-        prompt: prev.ideaAgent?.prompt && prev.ideaAgent.prompt !== getModeById(selectedModeId).ideaPrompt
-          ? prev.ideaAgent.prompt // user has customized — keep it
-          : mode.ideaPrompt,
-      },
-      sceneAgent: {
-        model: prev.sceneAgent?.model || 'anthropic/claude-sonnet-4.5',
-        prompt: prev.sceneAgent?.prompt && prev.sceneAgent.prompt !== getModeById(selectedModeId).scenePrompt
-          ? prev.sceneAgent.prompt
-          : mode.scenePrompt,
-      },
-    }));
-
-    // Trigger generate on next tick after options are set
-    setTimeout(() => handleGenerate(), 0);
-  };
-
-  const restoreIdeaPrompt = () => {
-    setOptions(prev => ({
-      ...prev,
-      ideaAgent: {
-        model: prev.ideaAgent?.model || 'anthropic/claude-sonnet-4.5',
-        prompt: currentMode.ideaPrompt,
-      },
-    }));
-  };
-
-  const restoreScenePrompt = () => {
-    setOptions(prev => ({
-      ...prev,
-      sceneAgent: {
-        model: prev.sceneAgent?.model || 'anthropic/claude-sonnet-4.5',
-        prompt: currentMode.scenePrompt,
-      },
-    }));
-  };
+  // Get effective values (custom or default) for the settings tab
+  const custom = customPrompts[settingsTab] || {};
+  const ideaModel = custom.ideaModel || 'anthropic/claude-sonnet-4.5';
+  const ideaPrompt = custom.ideaPrompt || settingsMode.ideaPrompt;
+  const sceneModel = custom.sceneModel || 'anthropic/claude-sonnet-4.5';
+  const scenePrompt = custom.scenePrompt || settingsMode.scenePrompt;
 
   return (
     <div className="min-h-screen bg-black flex flex-col">
@@ -124,7 +85,7 @@ export function VideoGenerator() {
                 {GENERATION_MODES.map((mode) => (
                   <button
                     key={mode.id}
-                    onClick={() => handleModeGenerate(mode.id)}
+                    onClick={() => startModeGeneration(mode.id)}
                     disabled={isGenerating || state.status === 'reviewing' || !state.idea.trim()}
                     className="group flex items-center gap-2 h-10 px-4 rounded-xl border border-[#333] bg-[#0a0a0a] hover:border-[#555] hover:bg-[#111] disabled:opacity-30 disabled:cursor-not-allowed transition-all"
                   >
@@ -138,7 +99,6 @@ export function VideoGenerator() {
                   </Button>
                 )}
               </div>
-
             </div>
 
             {/* Options */}
@@ -189,103 +149,108 @@ export function VideoGenerator() {
             </div>
           </div>
 
-          {/* Agent settings */}
+          {/* Agent settings — per-mode tabs */}
           <div className="border border-[#222] rounded-xl overflow-hidden">
             <button
               onClick={() => setShowAgentSettings(!showAgentSettings)}
-              disabled={isGenerating}
               className="w-full flex items-center justify-between px-4 py-3 hover:bg-[#0a0a0a] transition-colors"
             >
               <div className="flex items-center gap-2">
                 <Settings2 className="h-4 w-4 text-[#555]" />
                 <span className="text-sm text-[#888]">Agent Settings</span>
-                <span className="text-xs text-[#444] font-mono">{currentMode.icon} {currentMode.label}</span>
               </div>
               <ChevronDown className={`h-4 w-4 text-[#555] transition-transform ${showAgentSettings ? 'rotate-180' : ''}`} />
             </button>
 
             {showAgentSettings && (
-              <div className="border-t border-[#222] divide-y divide-[#222]">
-                {/* Idea Agent */}
-                <div className="p-4 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-mono text-[#888]">Idea Agent</span>
-                    <div className="flex items-center gap-2">
+              <div className="border-t border-[#222]">
+                {/* Mode tabs */}
+                <div className="flex border-b border-[#222] overflow-x-auto">
+                  {GENERATION_MODES.map((mode) => {
+                    const hasCustom = customPrompts[mode.id] && (
+                      customPrompts[mode.id].ideaPrompt || customPrompts[mode.id].scenePrompt ||
+                      customPrompts[mode.id].ideaModel || customPrompts[mode.id].sceneModel
+                    );
+                    return (
                       <button
-                        onClick={restoreIdeaPrompt}
-                        disabled={isGenerating}
-                        className="flex items-center gap-1 text-[10px] text-[#555] hover:text-[#888] transition-colors"
-                        title="Restore to default for current mode"
+                        key={mode.id}
+                        onClick={() => setSettingsTab(mode.id)}
+                        className={`flex items-center gap-1.5 px-4 py-2.5 text-xs font-medium whitespace-nowrap border-b-2 transition-colors ${
+                          settingsTab === mode.id
+                            ? 'border-white text-white'
+                            : 'border-transparent text-[#555] hover:text-[#888]'
+                        }`}
                       >
-                        <RotateCw className="h-3 w-3" />
-                        Restore default
+                        <span>{mode.icon}</span>
+                        <span>{mode.label}</span>
+                        {hasCustom && <span className="w-1.5 h-1.5 rounded-full bg-[#0070f3]" />}
                       </button>
-                      <select
-                        value={options.ideaAgent?.model || 'anthropic/claude-sonnet-4.5'}
-                        onChange={(e) => setOptions(prev => ({
-                          ...prev,
-                          ideaAgent: { prompt: prev.ideaAgent?.prompt || currentMode.ideaPrompt, model: e.target.value },
-                        }))}
-                        disabled={isGenerating}
-                        className="h-7 px-2 rounded-md border border-[#333] bg-black text-xs text-[#888] font-mono max-w-[200px]"
-                      >
-                        {TEXT_MODELS.map(m => (
-                          <option key={m.id} value={m.id}>{m.label}</option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-                  <textarea
-                    value={options.ideaAgent?.prompt || currentMode.ideaPrompt}
-                    onChange={(e) => setOptions(prev => ({
-                      ...prev,
-                      ideaAgent: { model: prev.ideaAgent?.model || 'anthropic/claude-sonnet-4.5', prompt: e.target.value },
-                    }))}
-                    disabled={isGenerating}
-                    rows={8}
-                    className="w-full bg-[#0a0a0a] border border-[#333] rounded-lg px-3 py-2 text-xs text-[#888] font-mono placeholder:text-[#444] focus:outline-none focus:border-[#555] resize-y leading-relaxed"
-                  />
+                    );
+                  })}
                 </div>
 
-                {/* Scene Agent */}
-                <div className="p-4 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-mono text-[#888]">Scene Agent</span>
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={restoreScenePrompt}
-                        disabled={isGenerating}
-                        className="flex items-center gap-1 text-[10px] text-[#555] hover:text-[#888] transition-colors"
-                        title="Restore to default for current mode"
-                      >
-                        <RotateCw className="h-3 w-3" />
-                        Restore default
-                      </button>
-                      <select
-                        value={options.sceneAgent?.model || 'anthropic/claude-sonnet-4.5'}
-                        onChange={(e) => setOptions(prev => ({
-                          ...prev,
-                          sceneAgent: { prompt: prev.sceneAgent?.prompt || currentMode.scenePrompt, model: e.target.value },
-                        }))}
-                        disabled={isGenerating}
-                        className="h-7 px-2 rounded-md border border-[#333] bg-black text-xs text-[#888] font-mono max-w-[200px]"
-                      >
-                        {TEXT_MODELS.map(m => (
-                          <option key={m.id} value={m.id}>{m.label}</option>
-                        ))}
-                      </select>
+                <div className="divide-y divide-[#222]">
+                  {/* Idea Agent */}
+                  <div className="p-4 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-mono text-[#888]">Idea Agent</span>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => restoreModeDefault(settingsTab, 'idea')}
+                          className="flex items-center gap-1 text-[10px] text-[#555] hover:text-[#888] transition-colors"
+                        >
+                          <RotateCw className="h-3 w-3" />
+                          Restore default
+                        </button>
+                        <select
+                          value={ideaModel}
+                          onChange={(e) => updateModeCustomization(settingsTab, 'ideaModel', e.target.value)}
+                          className="h-7 px-2 rounded-md border border-[#333] bg-black text-xs text-[#888] font-mono max-w-[200px]"
+                        >
+                          {TEXT_MODELS.map(m => (
+                            <option key={m.id} value={m.id}>{m.label}</option>
+                          ))}
+                        </select>
+                      </div>
                     </div>
+                    <textarea
+                      value={ideaPrompt}
+                      onChange={(e) => updateModeCustomization(settingsTab, 'ideaPrompt', e.target.value)}
+                      rows={8}
+                      className="w-full bg-[#0a0a0a] border border-[#333] rounded-lg px-3 py-2 text-xs text-[#888] font-mono placeholder:text-[#444] focus:outline-none focus:border-[#555] resize-y leading-relaxed"
+                    />
                   </div>
-                  <textarea
-                    value={options.sceneAgent?.prompt || currentMode.scenePrompt}
-                    onChange={(e) => setOptions(prev => ({
-                      ...prev,
-                      sceneAgent: { model: prev.sceneAgent?.model || 'anthropic/claude-sonnet-4.5', prompt: e.target.value },
-                    }))}
-                    disabled={isGenerating}
-                    rows={8}
-                    className="w-full bg-[#0a0a0a] border border-[#333] rounded-lg px-3 py-2 text-xs text-[#888] font-mono placeholder:text-[#444] focus:outline-none focus:border-[#555] resize-y leading-relaxed"
-                  />
+
+                  {/* Scene Agent */}
+                  <div className="p-4 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-mono text-[#888]">Scene Agent</span>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => restoreModeDefault(settingsTab, 'scene')}
+                          className="flex items-center gap-1 text-[10px] text-[#555] hover:text-[#888] transition-colors"
+                        >
+                          <RotateCw className="h-3 w-3" />
+                          Restore default
+                        </button>
+                        <select
+                          value={sceneModel}
+                          onChange={(e) => updateModeCustomization(settingsTab, 'sceneModel', e.target.value)}
+                          className="h-7 px-2 rounded-md border border-[#333] bg-black text-xs text-[#888] font-mono max-w-[200px]"
+                        >
+                          {TEXT_MODELS.map(m => (
+                            <option key={m.id} value={m.id}>{m.label}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                    <textarea
+                      value={scenePrompt}
+                      onChange={(e) => updateModeCustomization(settingsTab, 'scenePrompt', e.target.value)}
+                      rows={8}
+                      className="w-full bg-[#0a0a0a] border border-[#333] rounded-lg px-3 py-2 text-xs text-[#888] font-mono placeholder:text-[#444] focus:outline-none focus:border-[#555] resize-y leading-relaxed"
+                    />
+                  </div>
                 </div>
               </div>
             )}

@@ -1,10 +1,22 @@
 'use client';
 
 import { createContext, useContext, useState, useCallback, useRef, useEffect, type ReactNode } from 'react';
-import type { GenerationState, GenerationOptions, SSEMessage, ProgressEvent } from '@/lib/types';
+import type { GenerationState, GenerationOptions, SSEMessage, ProgressEvent, AgentConfig } from '@/lib/types';
+import { GENERATION_MODES, getModeById } from '@/lib/generation-modes';
 
 const HISTORY_KEY = 'gp_storyboard_history';
+const CUSTOM_PROMPTS_KEY = 'gp_custom_prompts';
 const MAX_HISTORY = 50;
+
+// Per-mode, per-agent customization stored in localStorage
+export interface ModeCustomization {
+  ideaModel?: string;
+  ideaPrompt?: string;
+  sceneModel?: string;
+  scenePrompt?: string;
+}
+
+export type CustomPrompts = Record<string, ModeCustomization>;
 
 export interface HistoryEntry {
   id: string;
@@ -19,10 +31,14 @@ interface StoryboardContextValue {
   setIdea: (idea: string) => void;
   setOptions: (updater: (prev: GenerationOptions) => GenerationOptions) => void;
   updateScenePrompt: (index: number, prompt: string) => void;
-  handleGenerate: () => void;
+  startModeGeneration: (modeId: string) => void;
   handleGenerateVideos: () => void;
   handleReset: () => void;
   isGenerating: boolean;
+  // Per-mode custom prompts
+  customPrompts: CustomPrompts;
+  updateModeCustomization: (modeId: string, field: keyof ModeCustomization, value: string) => void;
+  restoreModeDefault: (modeId: string, agent: 'idea' | 'scene') => void;
   // History
   history: HistoryEntry[];
   deleteHistoryEntry: (id: string) => void;
@@ -58,13 +74,18 @@ export function StoryboardProvider({ children }: { children: ReactNode }) {
   });
 
   const [history, setHistory] = useState<HistoryEntry[]>([]);
+  const [customPrompts, setCustomPrompts] = useState<CustomPrompts>({});
   const sessionIdRef = useRef<string>('');
 
-  // Load history from localStorage on mount
+  // Load history and custom prompts from localStorage on mount
   useEffect(() => {
     try {
       const stored = localStorage.getItem(HISTORY_KEY);
       if (stored) setHistory(JSON.parse(stored));
+    } catch {}
+    try {
+      const stored = localStorage.getItem(CUSTOM_PROMPTS_KEY);
+      if (stored) setCustomPrompts(JSON.parse(stored));
     } catch {}
   }, []);
 
@@ -107,6 +128,46 @@ export function StoryboardProvider({ children }: { children: ReactNode }) {
     setOptionsState(updater);
   }, []);
 
+  const updateModeCustomization = useCallback((modeId: string, field: keyof ModeCustomization, value: string) => {
+    setCustomPrompts(prev => {
+      const next = { ...prev, [modeId]: { ...prev[modeId], [field]: value } };
+      try { localStorage.setItem(CUSTOM_PROMPTS_KEY, JSON.stringify(next)); } catch {}
+      return next;
+    });
+  }, []);
+
+  const restoreModeDefault = useCallback((modeId: string, agent: 'idea' | 'scene') => {
+    setCustomPrompts(prev => {
+      const current = { ...prev[modeId] };
+      if (agent === 'idea') {
+        delete current.ideaPrompt;
+        delete current.ideaModel;
+      } else {
+        delete current.scenePrompt;
+        delete current.sceneModel;
+      }
+      const next = { ...prev, [modeId]: current };
+      try { localStorage.setItem(CUSTOM_PROMPTS_KEY, JSON.stringify(next)); } catch {}
+      return next;
+    });
+  }, []);
+
+  // Get the effective agent config for a mode (custom or default)
+  const getAgentConfigForMode = useCallback((modeId: string): { ideaAgent: AgentConfig; sceneAgent: AgentConfig } => {
+    const mode = getModeById(modeId);
+    const custom = customPrompts[modeId] || {};
+    return {
+      ideaAgent: {
+        model: custom.ideaModel || 'anthropic/claude-sonnet-4.5',
+        prompt: custom.ideaPrompt || mode.ideaPrompt,
+      },
+      sceneAgent: {
+        model: custom.sceneModel || 'anthropic/claude-sonnet-4.5',
+        prompt: custom.scenePrompt || mode.scenePrompt,
+      },
+    };
+  }, [customPrompts]);
+
   const updateScenePrompt = useCallback((index: number, prompt: string) => {
     setState(prev => ({
       ...prev,
@@ -141,7 +202,7 @@ export function StoryboardProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const handleGenerate = useCallback(() => {
+  const startModeGeneration = useCallback((modeId: string) => {
     const idea = state.idea.trim();
     if (!idea) return;
 
@@ -158,7 +219,13 @@ export function StoryboardProvider({ children }: { children: ReactNode }) {
       error: null,
     }));
 
-    const currentOptions = options;
+    const agentConfig = getAgentConfigForMode(modeId);
+    const currentOptions = {
+      ...options,
+      mode: 'agents' as const,
+      ideaAgent: agentConfig.ideaAgent,
+      sceneAgent: agentConfig.sceneAgent,
+    };
 
     fetch('/api/generate', {
       method: 'POST',
@@ -221,7 +288,7 @@ export function StoryboardProvider({ children }: { children: ReactNode }) {
           ],
         }));
       });
-  }, [state.idea, options, addToHistory]);
+  }, [state.idea, options, addToHistory, getAgentConfigForMode]);
 
   const handleGenerateVideos = useCallback(() => {
     setState(prev => {
@@ -297,8 +364,9 @@ export function StoryboardProvider({ children }: { children: ReactNode }) {
     <StoryboardContext.Provider value={{
       state, options, sessionId: sessionIdRef.current,
       setIdea, setOptions, updateScenePrompt,
-      handleGenerate, handleGenerateVideos, handleReset,
+      startModeGeneration, handleGenerateVideos, handleReset,
       isGenerating,
+      customPrompts, updateModeCustomization, restoreModeDefault,
       history, deleteHistoryEntry, clearHistory, loadFromHistory,
     }}>
       {children}
