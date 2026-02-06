@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Play, Zap, User, LogOut, FileVideo, Shield } from 'lucide-react';
+import { Play, Zap, User, FileVideo, Shield } from 'lucide-react';
 import { useGeneration } from './generation-context';
 import { cn } from '@/lib/utils';
 
@@ -89,17 +89,7 @@ export function Sidebar({ user }: SidebarProps) {
 
       {/* Bottom */}
       <div className="flex flex-col items-center gap-1">
-        {user ? (
-          <form action="/api/auth/sign-out" method="POST">
-            <button
-              type="submit"
-              title="Sign out"
-              className="w-10 h-10 rounded-lg flex items-center justify-center text-[#555] hover:text-white hover:bg-[#111] transition-colors"
-            >
-              <LogOut className="h-5 w-5" />
-            </button>
-          </form>
-        ) : (
+        {!user && (
           <Link
             href="/auth/sign-in"
             title="Sign in"

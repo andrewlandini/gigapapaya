@@ -67,7 +67,7 @@ export function UserMenu({ user }: UserMenuProps) {
 
   return (
     <>
-      <div className="fixed top-3 right-4 z-[55]" ref={ref}>
+      <div className="fixed bottom-4 left-[15px] z-[55]" ref={ref}>
         <button
           onClick={() => setOpen(!open)}
           className="w-8 h-8 rounded-full overflow-hidden border border-[#333] hover:border-[#555] transition-colors bg-[#222] flex items-center justify-center"
@@ -80,7 +80,7 @@ export function UserMenu({ user }: UserMenuProps) {
         </button>
 
         {open && (
-          <div className="absolute top-full right-0 mt-2 w-64 rounded-xl border border-[#333] bg-[#111]/95 backdrop-blur-xl shadow-2xl overflow-hidden animate-fade-in">
+          <div className="absolute bottom-full left-0 mb-2 w-64 rounded-xl border border-[#333] bg-[#111]/95 backdrop-blur-xl shadow-2xl overflow-hidden animate-fade-in">
             {/* User info */}
             <div className="px-4 py-3 border-b border-[#222]">
               <p className="text-sm text-[#ededed] font-medium">{user.name}</p>
