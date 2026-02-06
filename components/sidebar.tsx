@@ -21,8 +21,10 @@ export function Sidebar({ user }: SidebarProps) {
   return (
     <aside className="fixed left-0 top-0 h-full w-[60px] border-r border-[#222] bg-black flex flex-col items-center py-4 z-50">
       {/* Logo */}
-      <Link href="/" className="mb-8 w-9 h-9 rounded-lg bg-[#ededed] flex items-center justify-center">
-        <span className="text-black font-bold text-sm">gp</span>
+      <Link href="/" className="mb-8 w-9 h-9 rounded-lg bg-white flex items-center justify-center">
+        <svg width="16" height="16" viewBox="0 0 76 65" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M37.5274 0L75.0548 65H0L37.5274 0Z" fill="black" />
+        </svg>
       </Link>
 
       {/* Nav */}
