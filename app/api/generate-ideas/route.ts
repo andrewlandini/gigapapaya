@@ -74,7 +74,7 @@ For each option, also write a short reaction (2-5 words) that would show if the 
 
 ${qaPairs}
 
-This is question ${stepNumber} of 3. Build on what they chose — zoom into their world and add more detail, a twist, or a new dimension to the concept.
+This is question ${stepNumber} of 2. Build on what they chose — zoom into their world and add more detail, a twist, or a new dimension to the concept.
 
 Question rules:
 - Riff on their previous choices. Take the concept further, don't start over.

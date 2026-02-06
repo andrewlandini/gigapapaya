@@ -8,7 +8,7 @@ interface IdeaWizardProps {
   onActiveChange?: (active: boolean) => void;
 }
 
-const TOTAL_STEPS = 3;
+const TOTAL_STEPS = 2;
 
 const PICK_HEADLINES = [
   "Any of these good?",
