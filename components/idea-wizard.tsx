@@ -181,58 +181,66 @@ export function IdeaWizard({ onSelectIdea, onActiveChange }: IdeaWizardProps) {
     );
   }
 
+  // Progress bar component
+  const progressBar = (
+    <div className="w-full h-1 rounded-full bg-[#222] overflow-hidden">
+      <div
+        className="h-full rounded-full bg-white/40 transition-all duration-300"
+        style={{ width: `${((step + 1) / TOTAL_STEPS) * 100}%` }}
+      />
+    </div>
+  );
+
   // Loading next question
   if (loadingStep || !currentQuestion) {
     return (
-      <div className="space-y-4 animate-fade-in max-w-md mx-auto w-full">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            {step > 0 && (
-              <button onClick={handleBack} className="text-[#555] hover:text-white transition-colors">
-                <ArrowLeft className="h-3.5 w-3.5" />
-              </button>
-            )}
-            <span className="text-xs font-mono text-[#555]">{step + 1}/{TOTAL_STEPS}</span>
-            <Loader2 className="h-3.5 w-3.5 text-[#555] animate-spin" />
-          </div>
-          <button onClick={handleClose} className="text-xs text-[#555] hover:text-[#888] transition-colors">
-            Cancel
-          </button>
+      <div className="space-y-5 animate-fade-in max-w-md mx-auto w-full">
+        {progressBar}
+        <div className="flex items-center justify-center gap-3">
+          {step > 0 && (
+            <button onClick={handleBack} className="text-[#555] hover:text-white transition-colors">
+              <ArrowLeft className="h-3.5 w-3.5" />
+            </button>
+          )}
+          <Loader2 className="h-3.5 w-3.5 text-[#555] animate-spin" />
         </div>
+        <button onClick={handleClose} className="text-xs text-[#555] hover:text-[#888] transition-colors mx-auto block">
+          Cancel
+        </button>
       </div>
     );
   }
 
   // Question step
   return (
-    <div className="space-y-4 animate-fade-in max-w-md mx-auto w-full">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2.5">
-          {step > 0 && (
-            <button onClick={handleBack} className="text-[#555] hover:text-white transition-colors">
-              <ArrowLeft className="h-3.5 w-3.5" />
-            </button>
-          )}
-          <span className="text-xs font-mono text-[#555]">{step + 1}/{TOTAL_STEPS}</span>
-          <span className="text-sm text-[#ededed]">{currentQuestion}</span>
-        </div>
-        <button onClick={handleClose} className="text-xs text-[#555] hover:text-[#888] transition-colors ml-4">
-          Cancel
-        </button>
+    <div className="space-y-5 animate-fade-in max-w-md mx-auto w-full">
+      {progressBar}
+
+      <div className="flex items-center justify-center gap-2.5">
+        {step > 0 && (
+          <button onClick={handleBack} className="text-[#555] hover:text-white transition-colors">
+            <ArrowLeft className="h-3.5 w-3.5" />
+          </button>
+        )}
+        <span className="text-sm text-[#ededed]">{currentQuestion}</span>
       </div>
 
       {/* Current options */}
-      <div className="flex flex-col gap-2.5 w-full">
+      <div className="flex flex-col gap-3 w-full">
         {currentOptions.map((option) => (
           <button
             key={option}
             onClick={() => handleAnswer(option)}
-            className="w-full h-11 px-4 rounded-xl border border-[#333] bg-[#0a0a0a] hover:border-[#555] hover:bg-[#111] transition-all text-sm text-[#ededed]"
+            className="w-full h-11 px-5 rounded-xl border border-[#333] bg-[#0a0a0a] hover:border-[#555] hover:bg-[#111] transition-all text-sm text-[#ededed] text-left"
           >
             {option}
           </button>
         ))}
       </div>
+
+      <button onClick={handleClose} className="text-xs text-[#555] hover:text-[#888] transition-colors mx-auto block">
+        Cancel
+      </button>
     </div>
   );
 }

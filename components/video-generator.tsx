@@ -72,7 +72,7 @@ export function VideoGenerator() {
             <span className="text-[#333]">/</span>
             <span className="text-sm text-[#666]">storyboard</span>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-4 pr-12">
             {isGenerating && (
               <div className="flex items-center gap-2">
                 <div className="h-2 w-2 rounded-full bg-[#0070f3] animate-pulse-dot" />
