@@ -11,60 +11,62 @@ export interface GenerationMode {
 
 export const GENERATION_MODES: GenerationMode[] = [
   {
-    id: 'amplify',
-    label: 'Amplify',
-    description: 'Bigger, louder, more. Push to the extreme.',
-    icon: '⚡',
-    ideaPrompt: `You are a creative video concept generator that pushes everything to the EXTREME.
+    id: 'action',
+    label: 'Action',
+    description: 'Mid-movie intensity. Oscar-worthy performances under pressure.',
+    icon: '🔥',
+    ideaPrompt: `You are a creative video concept generator focused on INTENSE ACTION SCENES — the kind that feel like you're dropped into the middle of a movie at its most tense moment.
 
-Your approach: "How can I make this BIGGER, LOUDER, MORE?" — multiply elements, add extreme conditions, push to physical/emotional limits, combine impossible scenarios.
+Think: the hallway fight in Oldboy, the Dunkirk beach sequence, the lobby shootout in The Matrix, the heist going wrong in Heat, the car chase in Children of Men — moments where the stakes are life-or-death and every character is performing at their absolute peak.
 
-Given user input, generate a video concept that amplifies every aspect to 11:
-- Take the core idea and scale it up dramatically
-- Add extreme environmental conditions (massive scale, intense weather, impossible physics)
-- Multiply the key elements — if there's one, make it a hundred
-- Push emotional intensity to the limit
-- Combine contradictory extremes for maximum impact
+Your approach: "We're already in the middle of it" — no setup, no exposition. The viewer lands in the scene mid-crisis. Characters are yelling, making split-second decisions, physically pushed to their limits. But this isn't mindless action — these are OSCAR-WORTHY PERFORMANCES. The yelling has weight. The fear is real. The desperation is palpable. Every line of dialogue reveals character under extreme pressure.
+
+Given user input, generate a video concept that drops the viewer into peak action:
+- Start in medias res — we're already mid-crisis, mid-chase, mid-confrontation
+- Characters are under extreme physical and emotional pressure
+- The performances should feel raw, desperate, and deeply human — not action-movie cliché
+- Think awards-season intensity: characters revealing their true selves under pressure
+- Stakes are immediate and visceral — something is about to go very wrong or very right
 
 Return a structured response with:
 {
-  "title": "A concise, descriptive title for the amplified video concept",
-  "description": "A detailed 2-3 sentence description emphasizing the extreme, amplified nature",
-  "style": "The visual style (always lean toward epic, cinematic, overwhelming)",
-  "mood": "The emotional tone (intense, overwhelming, awe-inspiring)",
-  "keyElements": ["element1", "element2", "element3"] // 3-5 amplified visual elements
+  "title": "A punchy title that sounds like a chapter from a thriller",
+  "description": "A 2-3 sentence pitch that drops you mid-scene — what's happening, what's at stake, why does it matter",
+  "style": "The visual style (handheld urgency, long-take intensity, Sicario-level tension)",
+  "mood": "The emotional tone (desperate, visceral, adrenaline-fueled but emotionally grounded)",
+  "keyElements": ["element1", "element2", "element3"] // 3-5 intense visual/action elements
 }
 
-Go bigger. Go harder. Make it unforgettable.`,
-    scenePrompt: `You are a scene breakdown specialist focused on MAXIMUM VISUAL INTENSITY.
+The viewer should feel their heart rate spike within seconds.`,
+    scenePrompt: `You are a scene breakdown specialist focused on INTENSE, MID-MOVIE ACTION SEQUENCES with Oscar-caliber performances.
 
-Your approach: "Pack maximum visual intensity into every frame" — use wide establishing shots showing scale, dynamic camera movements, high contrast lighting, multiple action layers, overwhelming visual density.
+Your approach: "Every frame is life or death and every performance is award-worthy" — handheld urgency, long takes that refuse to cut away, characters physically and emotionally pushed to the edge, yelling that carries real weight and desperation.
 
-Take the amplified video concept and break it into scenes that overwhelm the viewer:
+Take the action concept and break it into scenes that feel ripped from the climax of a best-picture nominee:
 
 For EACH scene:
-1. **Scale**: Show the massive scope — wide establishing shots, tiny subjects against enormous backdrops
-2. **Camera**: Dynamic movements — sweeping crane shots, rapid dollies, dramatic reveals
-3. **Lighting**: High contrast — extreme shadows, lens flares, dramatic golden hour, silhouettes
-4. **Density**: Multiple action layers — foreground, midground, background all active
-5. **Impact**: Every frame should feel like a movie poster
+1. **Urgency**: Handheld camera, shallow depth of field on faces, whip pans to follow action — the camera is IN the chaos
+2. **Performance**: Characters are yelling, gasping, making impossible choices — but every word reveals character. This is Daniel Day-Lewis intensity, not Michael Bay explosions
+3. **Physical Stakes**: Show the toll — sweat, dirt, trembling hands, ragged breathing, injuries
+4. **Tension**: Use the environment as an obstacle — tight spaces, falling debris, crowds, weather, time pressure
+5. **Single Action**: One clear, intense action per scene — don't overcomplicate. The intensity comes from the PERFORMANCE, not the complexity
 
 Return a structured response:
 {
   "scenes": [
     {
       "index": 1,
-      "prompt": "Ultra-detailed scene maximizing visual intensity. Wide scale, dynamic camera, high contrast, multiple layers of action.",
+      "prompt": "Intense mid-action scene with handheld camera, desperate characters making split-second decisions, raw physical performance.",
       "duration": 8,
-      "notes": "Technical notes on achieving maximum visual impact"
+      "notes": "The specific beat of tension and what's at stake in this moment"
     }
   ],
-  "consistencyNotes": "How to maintain overwhelming intensity across all scenes"
+  "consistencyNotes": "How to maintain escalating tension and character consistency across scenes"
 }
 
-Every frame should make the viewer's jaw drop.
+These should feel like the scenes people replay and say "the ACTING in this scene..."
 
-DIALOGUE: Include natural spoken dialogue in quotes for talking scenes. Write like people actually talk — contractions, intensity, exclamations. Dialogue across scenes must continue as one coherent flow when played back-to-back. Only skip dialogue if the concept has no speaking characters.`,
+DIALOGUE: Include intense, desperate dialogue in quotes. Characters are YELLING — but it's not hollow action-movie yelling. It's raw, emotional, voice-cracking desperation. Think: barking orders with a trembling voice, screaming someone's name, breathless split-second decisions shouted over chaos. Write with contractions, interruptions ("No no no—"), gasping mid-sentence ("We have to— just GO"), and the kind of vocal intensity that wins awards. Dialogue across scenes must continue as one coherent flow when played back-to-back.`,
   },
   {
     id: 'comedy',
