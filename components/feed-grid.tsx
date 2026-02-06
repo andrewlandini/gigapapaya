@@ -1,5 +1,6 @@
 'use client';
 
+import { useRef, useState, useEffect, useMemo, useCallback } from 'react';
 import { VideoCard } from './video-card';
 
 interface FeedVideo {
@@ -19,7 +20,52 @@ interface FeedGridProps {
   videos: FeedVideo[];
 }
 
+// Must match the Tailwind grid-cols breakpoints
+const BREAKPOINTS = [
+  { min: 1536, cols: 6 }, // 2xl
+  { min: 1280, cols: 5 }, // xl
+  { min: 1024, cols: 4 }, // lg
+  { min: 640,  cols: 3 }, // sm
+  { min: 0,    cols: 2 }, // default
+];
+
+function isLandscape(ar: string) {
+  return ar === '16:9' || ar === '4:3';
+}
+
 export function FeedGrid({ videos }: FeedGridProps) {
+  const gridRef = useRef<HTMLDivElement>(null);
+  const [cols, setCols] = useState(2);
+
+  const updateCols = useCallback(() => {
+    const w = gridRef.current?.offsetWidth ?? window.innerWidth;
+    for (const bp of BREAKPOINTS) {
+      if (w >= bp.min) { setCols(bp.cols); return; }
+    }
+  }, []);
+
+  useEffect(() => {
+    const el = gridRef.current;
+    if (!el) return;
+    updateCols();
+    const observer = new ResizeObserver(updateCols);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [updateCols]);
+
+  // Compute tile aspect per video based on row grouping
+  const tileAspects = useMemo(() => {
+    const aspects: string[] = [];
+    for (let i = 0; i < videos.length; i++) {
+      const rowStart = Math.floor(i / cols) * cols;
+      const rowEnd = Math.min(rowStart + cols, videos.length);
+      const rowVideos = videos.slice(rowStart, rowEnd);
+      const allLandscape = rowVideos.every(v => isLandscape(v.aspect_ratio));
+      aspects.push(allLandscape ? '16/9' : '9/16');
+    }
+    return aspects;
+  }, [videos, cols]);
+
   if (videos.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-32 text-center">
@@ -30,8 +76,8 @@ export function FeedGrid({ videos }: FeedGridProps) {
   }
 
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-3">
-      {videos.map((video) => (
+    <div ref={gridRef} className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-3">
+      {videos.map((video, i) => (
         <div key={video.id}>
           <VideoCard
             id={video.id}
@@ -42,6 +88,7 @@ export function FeedGrid({ videos }: FeedGridProps) {
             aspectRatio={video.aspect_ratio}
             duration={video.duration}
             heartCount={video.heart_count ? parseInt(video.heart_count, 10) : undefined}
+            tileAspect={tileAspects[i]}
           />
         </div>
       ))}

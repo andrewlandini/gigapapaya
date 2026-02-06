@@ -16,6 +16,7 @@ interface VideoCardProps {
   heartCount?: number;
   showVisibilityToggle?: boolean;
   onToggleVisibility?: (id: string, visibility: 'public' | 'private') => void;
+  tileAspect?: string; // e.g. '9/16' or '16/9'
 }
 
 export function VideoCard({
@@ -30,6 +31,7 @@ export function VideoCard({
   heartCount,
   showVisibilityToggle,
   onToggleVisibility,
+  tileAspect = '9/16',
 }: VideoCardProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLAnchorElement>(null);
@@ -85,7 +87,7 @@ export function VideoCard({
       ref={containerRef}
       href={`/v/${id}`}
       className="block relative rounded-xl overflow-hidden border border-[#222] hover:border-[#444] transition-all group cursor-pointer bg-black"
-      style={{ aspectRatio: '9/16' }}
+      style={{ aspectRatio: tileAspect }}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
