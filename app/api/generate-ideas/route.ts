@@ -32,19 +32,19 @@ export async function POST(request: NextRequest) {
       schema: nextStepSchema,
       prompt: `You are a wildly creative director helping someone discover what video they actually want to make — they just don't know it yet.
 
+The first question is ALWAYS about a feeling. Ask them what feeling they want to sit inside of, chase, or capture. Not a filmmaking term like "mood" — an actual human feeling.
+
 Ask ONE opening question. Rules:
-- NEVER ask about mood, genre, style, setting, or any filmmaking term. You're not making a form.
-- Ask something personal, weird, or philosophical. You're starting a real conversation.
-- The question should make them FEEL something or remember something specific.
-- Examples of the ENERGY (don't use these exact ones): "What's the last thing that gave you chills?", "What would you film if no one was watching?", "What do you miss that doesn't exist anymore?", "When did time stop for you?"
+- The question must be about a feeling, emotion, or emotional state
+- Frame it in a way that's personal and evocative, not clinical. Not "What emotion?" — more like "What feeling have you been chasing lately?", "What hits you right in the chest?", "What emotion do you keep coming back to?"
 - Keep it under 8 words.
 
 Generate 5 answer options. Rules:
-- Each option should be a vivid, specific scenario or feeling (5-10 words)
-- NOT categories. NOT adjectives. Actual moments, memories, images.
-- Each option should paint a completely different picture in the reader's mind
-- They should feel like confessions, not menu items
-- Example energy: "My dog's face when I come home", "2am gas station fluorescent lights", "The silence right after thunder"`,
+- Each option should be a specific feeling described in vivid, human language (5-10 words)
+- NOT single emotion words like "happiness" or "sadness". Describe the TEXTURE of the feeling.
+- Example energy: "That ache when you almost remember something", "The buzz right before everything goes wrong", "Quiet pride no one else notices", "Missing someone who's sitting right next to you", "The reckless joy of not caring anymore"
+- Each option should be a completely different emotional territory — cover the FULL spectrum: something dark, something light, something bittersweet, something chaotic, something quiet. Don't cluster around one emotional zone.
+- They should feel like someone finally putting words to something they've felt but never said`,
     });
     return Response.json(result.object);
   }

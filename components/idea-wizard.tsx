@@ -8,7 +8,7 @@ interface IdeaWizardProps {
   onActiveChange?: (active: boolean) => void;
 }
 
-const TOTAL_STEPS = 5;
+const TOTAL_STEPS = 4;
 
 export function IdeaWizard({ onSelectIdea, onActiveChange }: IdeaWizardProps) {
   const [active, setActive] = useState(false);
@@ -184,9 +184,19 @@ export function IdeaWizard({ onSelectIdea, onActiveChange }: IdeaWizardProps) {
   // Loading next question
   if (loadingStep || !currentQuestion) {
     return (
-      <div className="flex items-center justify-center gap-3 py-2 animate-fade-in">
-        <Loader2 className="h-4 w-4 text-[#555] animate-spin" />
-        <span className="text-sm text-[#555]">Thinking of a question...</span>
+      <div className="space-y-3 animate-fade-in">
+        <div className="flex items-center justify-center gap-3">
+          {step > 0 && (
+            <button onClick={handleBack} className="text-[#555] hover:text-white transition-colors">
+              <ArrowLeft className="h-3.5 w-3.5" />
+            </button>
+          )}
+          <span className="text-xs font-mono text-[#555]">{step + 1}/{TOTAL_STEPS}</span>
+          <Loader2 className="h-3.5 w-3.5 text-[#555] animate-spin" />
+          <button onClick={handleClose} className="text-xs text-[#555] hover:text-[#888] transition-colors">
+            Cancel
+          </button>
+        </div>
       </div>
     );
   }

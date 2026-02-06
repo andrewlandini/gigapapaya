@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { RotateCcw, Play, X, Trash2, Clock, ChevronDown, Settings2, RotateCw } from 'lucide-react';
+import { RotateCcw, Play, X, Clock, ChevronDown, Settings2, RotateCw } from 'lucide-react';
 
 const HEADLINES = [
   "What should we cook, chef?",
@@ -44,11 +44,12 @@ export function VideoGenerator() {
     updateScenePrompt, startModeGeneration, handleGenerateVideos, handleReset,
     isGenerating,
     customPrompts, updateModeCustomization, restoreModeDefault,
-    history, deleteHistoryEntry, clearHistory, loadFromHistory,
+    history, deleteHistoryEntry, loadFromHistory,
   } = useStoryboard();
 
   const [showAgentSettings, setShowAgentSettings] = useState(false);
   const [wizardActive, setWizardActive] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
   const [settingsTab, setSettingsTab] = useState('amplify');
   const headline = useMemo(() => HEADLINES[Math.floor(Math.random() * HEADLINES.length)], []);
 
@@ -299,40 +300,44 @@ export function VideoGenerator() {
 
           {/* Prompt history */}
           {state.status === 'idle' && history.length > 0 && (
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Clock className="h-3.5 w-3.5 text-[#444]" />
-                  <span className="text-xs font-mono text-[#444]">History</span>
-                </div>
+            showHistory ? (
+              <div className="space-y-2 animate-fade-in">
                 <button
-                  onClick={clearHistory}
-                  className="flex items-center gap-1 text-xs text-[#444] hover:text-[#888] transition-colors"
+                  onClick={() => setShowHistory(false)}
+                  className="flex items-center gap-2 text-xs font-mono text-[#444] hover:text-[#888] transition-colors"
                 >
-                  <Trash2 className="h-3 w-3" />
-                  Clear all
+                  <Clock className="h-3.5 w-3.5" />
+                  History
                 </button>
-              </div>
-              <div className="flex flex-col gap-1">
-                {history.slice(0, 8).map((entry) => (
-                  <div
-                    key={entry.id}
-                    className="group flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-[#111] transition-colors cursor-pointer"
-                    onClick={() => loadFromHistory(entry.prompt)}
-                  >
-                    <p className="text-sm text-[#666] truncate flex-1 group-hover:text-[#ededed] transition-colors">
-                      {entry.prompt}
-                    </p>
-                    <button
-                      onClick={(e) => { e.stopPropagation(); deleteHistoryEntry(entry.id); }}
-                      className="flex-shrink-0 p-1 rounded text-[#333] hover:text-[#888] opacity-0 group-hover:opacity-100 transition-all"
+                <div className="flex flex-col gap-1">
+                  {history.slice(0, 8).map((entry) => (
+                    <div
+                      key={entry.id}
+                      className="group flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-[#111] transition-colors cursor-pointer"
+                      onClick={() => { loadFromHistory(entry.prompt); setShowHistory(false); }}
                     >
-                      <X className="h-3 w-3" />
-                    </button>
-                  </div>
-                ))}
+                      <p className="text-sm text-[#666] truncate flex-1 group-hover:text-[#ededed] transition-colors">
+                        {entry.prompt}
+                      </p>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); deleteHistoryEntry(entry.id); }}
+                        className="flex-shrink-0 p-1 rounded text-[#333] hover:text-[#888] opacity-0 group-hover:opacity-100 transition-all"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
               </div>
-            </div>
+            ) : (
+              <button
+                onClick={() => setShowHistory(true)}
+                className="flex items-center gap-2 text-xs font-mono text-[#444] hover:text-[#888] transition-colors"
+              >
+                <Clock className="h-3.5 w-3.5" />
+                History
+              </button>
+            )
           )}
         </div>
 
