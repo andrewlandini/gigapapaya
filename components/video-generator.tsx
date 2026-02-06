@@ -32,7 +32,7 @@ const HEADLINES = [
 // Headlines mapped to each phase of the generation process
 const PHASE_HEADLINES: Record<string, string[]> = {
   idea: ["Writing your concept.", "Crafting the story.", "Building the world.", "Finding the angle."],
-  scenes: ["Breaking it into scenes.", "Blocking the shots.", "Mapping the sequence.", "Setting up each scene."],
+  scenes: ["Breaking it into shots.", "Blocking the shots.", "Mapping the sequence.", "Setting up each shot."],
   reviewing: ["Your scenes are ready.", "Review and edit.", "Make it yours.", "Check the shots."],
   'veo3-prompter': ["Optimizing for camera.", "Dialing in the details.", "Locking the look.", "Final prompt pass."],
   video: ["Generating video", "Rendering scene", "Camera is rolling", "Bringing it to life", "Processing scene", "Building the shot", "Rendering the take", "Assembling the clip"],
@@ -137,7 +137,7 @@ export function VideoGenerator() {
               </div>
             )}
             {state.status === 'reviewing' && (
-              <Badge variant="blue">review scenes</Badge>
+              <Badge variant="blue">review shots</Badge>
             )}
             {state.status === 'complete' && (
               <Badge variant="success">complete</Badge>
@@ -239,16 +239,39 @@ export function VideoGenerator() {
                     <label className="text-[11px] font-mono text-[#444]">duration</label>
                     <select
                       value={options.duration}
-                      onChange={(e) => setOptions(prev => ({ ...prev, duration: parseInt(e.target.value) }))}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setOptions(prev => ({
+                          ...prev,
+                          duration: val === 'auto' ? 'auto' : parseInt(val),
+                          totalLength: val === 'auto' ? (prev.totalLength || 30) : undefined,
+                        }));
+                      }}
                       className="h-7 px-1.5 rounded-md bg-transparent text-xs text-[#888] font-mono focus:outline-none cursor-pointer hover:text-[#ededed] transition-colors"
                     >
                       <option value={4}>4s</option>
                       <option value={6}>6s</option>
                       <option value={8}>8s</option>
+                      <option value="auto">auto</option>
                     </select>
                   </div>
+                  {options.duration === 'auto' && (
+                    <div className="flex items-center gap-1.5">
+                      <label className="text-[11px] font-mono text-[#444]">length</label>
+                      <select
+                        value={options.totalLength || 30}
+                        onChange={(e) => setOptions(prev => ({ ...prev, totalLength: parseInt(e.target.value) }))}
+                        className="h-7 px-1.5 rounded-md bg-transparent text-xs text-[#888] font-mono focus:outline-none cursor-pointer hover:text-[#ededed] transition-colors"
+                      >
+                        <option value={15}>15s</option>
+                        <option value={30}>30s</option>
+                        <option value={45}>45s</option>
+                        <option value={60}>60s</option>
+                      </select>
+                    </div>
+                  )}
                   <div className="flex items-center gap-1.5">
-                    <label className="text-[11px] font-mono text-[#444]">scenes</label>
+                    <label className="text-[11px] font-mono text-[#444]">shots</label>
                     <select
                       value={options.numScenes}
                       onChange={(e) => setOptions(prev => ({ ...prev, numScenes: parseInt(e.target.value) }))}
@@ -438,7 +461,7 @@ export function VideoGenerator() {
         {state.status === 'reviewing' && state.editableScenes && (
           <div className="space-y-4 animate-fade-in">
             <div className="flex items-center justify-between">
-              <h2 className="text-sm font-medium text-[#ededed]">Review Scenes</h2>
+              <h2 className="text-sm font-medium text-[#ededed]">Review Shots</h2>
               <Button onClick={handleGenerateVideos} className="gap-2">
                 <Play className="h-4 w-4" />
                 Generate Videos
@@ -456,13 +479,13 @@ export function VideoGenerator() {
                       <div className="flex-shrink-0 w-6 h-6 rounded-md bg-[#1a1a1a] border border-[#333] text-[#888] flex items-center justify-center text-xs font-mono">
                         {i + 1}
                       </div>
-                      <span className="text-xs font-mono text-[#555]">Scene {i + 1}</span>
+                      <span className="text-xs font-mono text-[#555]">Shot {i + 1}</span>
                     </div>
                     {state.editableScenes!.length > 1 && (
                       <button
                         onClick={() => removeScene(i)}
                         className="p-1 rounded-md text-[#444] hover:text-[#ff4444] hover:bg-[#1a1a1a] transition-colors"
-                        title="Remove scene"
+                        title="Remove shot"
                       >
                         <X className="h-3.5 w-3.5" />
                       </button>

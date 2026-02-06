@@ -55,7 +55,7 @@ export function VideoGallery({ videos, sessionId }: VideoGalleryProps) {
             </div>
             <div className="p-4 space-y-3">
               <div className="flex items-center gap-2">
-                <span className="text-xs font-mono text-[#444]">Scene {i + 1}</span>
+                <span className="text-xs font-mono text-[#444]">Shot {i + 1}</span>
                 <span className="text-[#333]">/</span>
                 <span className="text-xs font-mono text-[#444]">{video.aspectRatio}</span>
                 <span className="text-[#333]">/</span>

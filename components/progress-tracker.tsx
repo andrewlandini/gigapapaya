@@ -33,7 +33,7 @@ export function ProgressTracker({ events }: ProgressTrackerProps) {
     for (const event of events) {
       if (event.type === 'agent-start' && event.agent) {
         const label = event.agent === 'idea' ? 'Concept Agent'
-          : event.agent === 'scenes' ? 'Scene Agent'
+          : event.agent === 'scenes' ? 'Shot Agent'
           : event.agent === 'veo3-prompter' ? 'Veo 3 Prompter'
           : 'Video Agent';
         currentGroup = {
@@ -57,7 +57,7 @@ export function ProgressTracker({ events }: ProgressTrackerProps) {
           if (event.result?.title) {
             group.message = event.result.title;
           } else if (event.result?.scenes) {
-            group.message = `${event.result.scenes.length} scenes generated`;
+            group.message = `${event.result.scenes.length} shots generated`;
           } else if (event.result?.optimizedPrompts) {
             group.message = `${event.result.optimizedPrompts.length} prompts optimized`;
           }

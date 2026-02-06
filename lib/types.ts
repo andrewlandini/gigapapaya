@@ -72,7 +72,8 @@ export interface AgentConfig {
 
 export interface GenerationOptions {
   aspectRatio: '16:9' | '9:16' | '4:3' | '1:1';
-  duration: number;
+  duration: number | 'auto';
+  totalLength?: number; // target total length in seconds when duration is 'auto'
   numScenes?: number;
   noMusic?: boolean;
   mode: 'agents' | 'direct';

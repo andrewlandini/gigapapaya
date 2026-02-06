@@ -120,8 +120,9 @@ export async function executeScenesAgent(
   idea: VideoIdea,
   numScenes: number = 3,
   config?: { model?: string; prompt?: string },
-  duration: number = 8,
-  noMusic: boolean = false
+  duration: number | 'auto' = 8,
+  noMusic: boolean = false,
+  totalLength?: number
 ): Promise<ScenesResult> {
   const modelId = config?.model || 'anthropic/claude-sonnet-4.5';
   const systemPrompt = config?.prompt || SCENES_AGENT_PROMPT;
@@ -139,23 +140,45 @@ Mood: ${idea.mood}
 Key Elements: ${idea.keyElements.join(', ')}
 `;
 
-  const maxWords = duration <= 4 ? 8 : duration <= 6 ? 12 : 18;
-  const durationGuidance = `
+  const isAuto = duration === 'auto';
+  const fixedDuration = typeof duration === 'number' ? duration : 8;
 
-SCENE DURATION: Each scene is EXACTLY ${duration} seconds long. This is a HARD constraint:
+  let durationGuidance: string;
+  if (isAuto) {
+    const totalLen = totalLength || 30;
+    durationGuidance = `
+
+SHOT DURATION — AUTO MODE:
+You decide the duration of each shot based on what it needs. Available durations: 2, 4, 6, or 8 seconds.
+- Quick reactions, reveals, cutaways: 2-4 seconds
+- Action beats, medium dialogue: 4-6 seconds
+- Establishing shots, longer dialogue, emotional moments: 6-8 seconds
+- TARGET TOTAL LENGTH: ~${totalLen} seconds across all ${numScenes} shots. Vary the durations — not all the same.
+- Set the "duration" field on each shot to the appropriate length.
+
+DIALOGUE WORD LIMITS (based on per-shot duration):
+- 2s = MAX 4 words. 4s = MAX 8 words. 6s = MAX 12 words. 8s = MAX 18 words.
+- COUNT the words for EACH shot based on its individual duration. If dialogue exceeds the limit, the video WILL cut off mid-sentence.
+
+PACING: Use duration variety to create rhythm. A quick 2s cut followed by an 8s hold creates tension. An 8s establishing shot into 4s rapid cuts creates momentum.`;
+  } else {
+    const maxWords = fixedDuration <= 4 ? 8 : fixedDuration <= 6 ? 12 : 18;
+    durationGuidance = `
+
+SHOT DURATION: Each shot is EXACTLY ${fixedDuration} seconds long. This is a HARD constraint:
 
 DIALOGUE WORD LIMIT (NON-NEGOTIABLE):
 - People speak ~2.5 words per second
-- ${duration}s = MAXIMUM ${maxWords} words of dialogue per scene
+- ${fixedDuration}s = MAXIMUM ${maxWords} words of dialogue per shot
 - COUNT EVERY WORD. If dialogue exceeds ${maxWords} words, the video WILL cut off mid-sentence
-- ${duration <= 4 ? 'At 4s you get ONE short sentence. Example: "Wait, did you hear that?" (5 words)' : duration <= 6 ? 'At 6s you get ONE medium sentence. Example: "I don\'t think we should be here right now" (9 words)' : 'At 8s you get 1-2 short sentences. Example: "So picture this, we line the hallway with lawyers\' cards. Greg, thoughts?" (12 words)'}
 - When in doubt, SHORTER. A 10-word line that lands is better than an 18-word line that gets cut off
 
 PHYSICAL PACING:
-- Walking: ~${Math.round(duration * 1.4)}m in ${duration}s. Running: ~${Math.round(duration * 3)}m
-- Slow camera push: ~${Math.round(duration * 0.3)}m in ${duration}s
+- Walking: ~${Math.round(fixedDuration * 1.4)}m in ${fixedDuration}s. Running: ~${Math.round(fixedDuration * 3)}m
+- Slow camera push: ~${Math.round(fixedDuration * 0.3)}m in ${fixedDuration}s
 - Specify movement speed explicitly (slow walk, brisk pace, sprinting)
-- Everything described must be PHYSICALLY ACHIEVABLE in ${duration} real seconds`;
+- Everything described must be PHYSICALLY ACHIEVABLE in ${fixedDuration} real seconds`;
+  }
 
   const musicNote = noMusic ? `\n\nNO MUSIC: The user has disabled music. Do NOT include any background music, soundtrack, or musical score in audio cues. Only include diegetic sounds — ambient noise, dialogue, footsteps, environmental sounds, etc. The user will add music in post-production.` : '';
 
@@ -200,7 +223,7 @@ Vary pacing — not every scene should be the same intensity. Use quiet moments 
     model: getTextModel(modelId),
     temperature: 1,
     schema: scenesResultSchema,
-    prompt: `${systemPrompt}${SCENE_AGENT_BASE}${durationGuidance}\n\n${sceneNarrative}${musicNote}\n\nVideo Idea:\n${ideaSummary}\n\nGenerate ${numScenes} scenes, each ${duration} seconds long. Everything described must fit within ${duration} seconds of real time. Do not self-censor or water down the creative concept — commit fully to the idea.`,
+    prompt: `${systemPrompt}${SCENE_AGENT_BASE}${durationGuidance}\n\n${sceneNarrative}${musicNote}\n\nVideo Idea:\n${ideaSummary}\n\nGenerate ${numScenes} shots.${isAuto ? ` Choose the best duration (2/4/6/8s) for each shot. Target ~${totalLength || 30}s total.` : ` Each shot is ${fixedDuration} seconds long. Everything described must fit within ${fixedDuration} seconds of real time.`} Do not self-censor or water down the creative concept — commit fully to the idea.`,
   });
 
   console.log('✅ SCENES AGENT: Complete');
@@ -228,8 +251,9 @@ export async function executeVeo3PrompterAgent(
   style: string,
   mood: string,
   consistencyNotes: string,
-  duration: number = 8,
-  noMusic: boolean = false
+  duration: number | 'auto' = 8,
+  noMusic: boolean = false,
+  perShotDurations?: number[]
 ): Promise<string[]> {
   console.log('\n🎬 VEO3 PROMPTER: Starting...');
   console.log(`📹 Optimizing ${scenePrompts.length} scene prompts for Veo 3.1 (${duration}s each)`);
@@ -239,9 +263,21 @@ export async function executeVeo3PrompterAgent(
     .map((p, i) => `Scene ${i + 1}: ${p}`)
     .join('\n\n');
 
-  const veoMaxWords = duration <= 4 ? 8 : duration <= 6 ? 12 : 18;
+  const isAutoVeo = duration === 'auto';
   const veoMusicNote = noMusic ? ' NO MUSIC in audio cues — only diegetic/ambient sounds, dialogue, and environmental audio. No soundtrack, no score, no background music.' : '';
-  const durationNote = `\n\nDURATION CONSTRAINT (CRITICAL): Each scene is ${duration} seconds. DIALOGUE HARD LIMIT: MAX ${veoMaxWords} words per scene. Count every word. At 2.5 words/second, ${veoMaxWords} words = ${(veoMaxWords / 2.5).toFixed(1)}s of speaking, which leaves breathing room in a ${duration}s clip. If dialogue exceeds ${veoMaxWords} words, the video WILL cut off mid-sentence. One punchy line beats a monologue that gets truncated. Also specify movement speed explicitly.${veoMusicNote}`;
+
+  let durationNote: string;
+  if (isAutoVeo && perShotDurations?.length) {
+    const shotNotes = perShotDurations.map((d, i) => {
+      const maxW = d <= 2 ? 4 : d <= 4 ? 8 : d <= 6 ? 12 : 18;
+      return `Shot ${i + 1}: ${d}s (max ${maxW} words dialogue)`;
+    }).join(', ');
+    durationNote = `\n\nDURATION CONSTRAINT (CRITICAL — VARIABLE PER SHOT): Each shot has its OWN duration. ${shotNotes}. Count dialogue words for EACH shot individually based on its duration. If dialogue exceeds the limit for that shot, the video WILL cut off mid-sentence. Specify movement speed explicitly.${veoMusicNote}`;
+  } else {
+    const fixedD = typeof duration === 'number' ? duration : 8;
+    const veoMaxWords = fixedD <= 4 ? 8 : fixedD <= 6 ? 12 : 18;
+    durationNote = `\n\nDURATION CONSTRAINT (CRITICAL): Each shot is ${fixedD} seconds. DIALOGUE HARD LIMIT: MAX ${veoMaxWords} words per shot. Count every word. If dialogue exceeds ${veoMaxWords} words, the video WILL cut off mid-sentence. One punchy line beats a monologue that gets truncated. Specify movement speed explicitly.${veoMusicNote}`;
+  }
 
   const result = await generateObject({
     model: getTextModel('anthropic/claude-sonnet-4.5'),
@@ -282,11 +318,13 @@ export async function executeVideoAgent(
 
   try {
     // Generate video via AI Gateway using Veo 3.1
+    const videoDuration = typeof options.duration === 'number' ? options.duration : 8;
+
     const { videos } = await generateVideo({
       model: getVideoModel('google/veo-3.1-generate-001'),
       prompt: enhancedPrompt,
       aspectRatio: options.aspectRatio,
-      duration: options.duration,
+      duration: videoDuration,
     });
 
     const elapsedTime = ((Date.now() - startTime) / 1000).toFixed(1);
@@ -303,7 +341,7 @@ export async function executeVideoAgent(
 
     const video = await saveVideo(videoFile, {
       prompt: enhancedPrompt,
-      duration: options.duration,
+      duration: videoDuration,
       aspectRatio: options.aspectRatio,
     });
 
@@ -338,7 +376,7 @@ export async function executeFullWorkflow(
   const idea = await executeIdeaAgent(userInput);
 
   // Agent 2: Generate scenes
-  const scenesResult = await executeScenesAgent(idea, options.numScenes || 3, undefined, options.duration || 8, options.noMusic || false);
+  const scenesResult = await executeScenesAgent(idea, options.numScenes || 3, undefined, options.duration || 8, options.noMusic || false, options.totalLength);
 
   // Agent 3: Generate videos for each scene
   const videos: Video[] = [];

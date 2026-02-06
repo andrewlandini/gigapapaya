@@ -57,28 +57,35 @@ export async function POST(request: NextRequest) {
           sendEvent({ type: 'agent-start', agent: 'veo3-prompter', status: 'Optimizing prompts for Veo 3.1...' });
           sendEvent({ type: 'agent-log', agent: 'veo3-prompter', status: `Analyzing ${scenes.length} scenes — selecting camera, lens, lighting, adding dialogue...` });
 
+          const perShotDurations = scenes.map((s: any) => s.duration || (typeof options?.duration === 'number' ? options.duration : 8));
+
           const optimizedPrompts = await executeVeo3PrompterAgent(
-            scenes.map(s => s.prompt),
+            scenes.map((s: any) => s.prompt),
             style,
             mood,
-            '', // consistencyNotes passed as empty — the prompter handles consistency itself
+            '',
             options?.duration || 8,
-            options?.noMusic || false
+            options?.noMusic || false,
+            perShotDurations
           );
 
-          optimizedPrompts.forEach((p, i) => {
-            sendEvent({ type: 'agent-log', agent: 'veo3-prompter', status: `Scene ${i + 1} optimized: ${p.substring(0, 100)}...` });
+          optimizedPrompts.forEach((p: string, i: number) => {
+            sendEvent({ type: 'agent-log', agent: 'veo3-prompter', status: `Shot ${i + 1} optimized (${perShotDurations[i]}s): ${p.substring(0, 100)}...` });
           });
           sendEvent({ type: 'agent-complete', agent: 'veo3-prompter', result: { optimizedPrompts } });
 
           // Video generation
-          sendEvent({ type: 'agent-log', agent: 'videos', status: `Starting video generation for ${scenes.length} optimized scenes` });
-          sendEvent({ type: 'agent-log', agent: 'videos', status: `Config: ${options.aspectRatio} / ${options.duration}s / model: veo-3.1-generate-001` });
+          sendEvent({ type: 'agent-log', agent: 'videos', status: `Starting video generation for ${scenes.length} optimized shots` });
+          sendEvent({ type: 'agent-log', agent: 'videos', status: `Config: ${options.aspectRatio} / ${options.duration === 'auto' ? 'auto' : options.duration + 's'} / model: veo-3.1-generate-001` });
 
           for (let i = 0; i < scenes.length; i++) {
             const finalPrompt = optimizedPrompts[i] || scenes[i].prompt;
+            const shotDuration = perShotDurations[i];
 
-            sendEvent({ type: 'agent-log', agent: 'videos', status: `Sending optimized scene ${i + 1} to Veo 3.1` });
+            // Override options.duration with per-shot duration for auto mode
+            const shotOptions = { ...options, duration: shotDuration };
+
+            sendEvent({ type: 'agent-log', agent: 'videos', status: `Sending optimized shot ${i + 1} to Veo 3.1 (${shotDuration}s)` });
             sendEvent({
               type: 'video-start', sceneIndex: i, prompt: finalPrompt,
               status: `Generating video ${i + 1}/${scenes.length}...`,
@@ -86,7 +93,7 @@ export async function POST(request: NextRequest) {
 
             try {
               const video = await executeVideoAgent(
-                finalPrompt, style, mood, options, i
+                finalPrompt, style, mood, shotOptions, i
               );
 
               await saveVideoRecord({
