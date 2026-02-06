@@ -54,6 +54,7 @@ export function VideoGenerator() {
   const headline = useMemo(() => HEADLINES[Math.floor(Math.random() * HEADLINES.length)], []);
 
   const settingsMode = getModeById(settingsTab);
+  const isActive = state.status !== 'idle';
 
   // Get effective values (custom or default) for the settings tab
   const custom = customPrompts[settingsTab] || {};
@@ -152,15 +153,15 @@ export function VideoGenerator() {
             <h1 className="text-[40px] font-bold tracking-tight leading-tight animate-fade-in">{headline}</h1>
           )}
 
-          {!wizardActive && (
-            <div className="space-y-5">
+          {/* Input & mode buttons — hidden when generating/reviewing/complete */}
+          {!wizardActive && !isActive && (
+            <div className="space-y-5 animate-fade-in">
               {/* Unified input box */}
               <div className="border border-[#333] rounded-2xl bg-[#0a0a0a] focus-within:border-[#555] focus-within:ring-1 focus-within:ring-white/10 transition-all">
                 <textarea
                   placeholder="A frog drinking a cocktail at Martha's Vineyard..."
                   value={state.idea}
                   onChange={(e) => setIdea(e.target.value)}
-                  disabled={isGenerating || state.status === 'reviewing'}
                   rows={3}
                   className="w-full bg-transparent px-5 pt-4 pb-2 text-[15px] text-[#ededed] placeholder:text-[#555] focus:outline-none resize-none leading-relaxed"
                 />
@@ -170,7 +171,6 @@ export function VideoGenerator() {
                     <select
                       value={options.aspectRatio}
                       onChange={(e) => setOptions(prev => ({ ...prev, aspectRatio: e.target.value as any }))}
-                      disabled={isGenerating}
                       className="h-7 px-1.5 rounded-md bg-transparent text-xs text-[#888] font-mono focus:outline-none cursor-pointer hover:text-[#ededed] transition-colors"
                     >
                       <option value="16:9">16:9</option>
@@ -184,7 +184,6 @@ export function VideoGenerator() {
                     <select
                       value={options.duration}
                       onChange={(e) => setOptions(prev => ({ ...prev, duration: parseInt(e.target.value) }))}
-                      disabled={isGenerating}
                       className="h-7 px-1.5 rounded-md bg-transparent text-xs text-[#888] font-mono focus:outline-none cursor-pointer hover:text-[#ededed] transition-colors"
                     >
                       <option value={4}>4s</option>
@@ -197,7 +196,6 @@ export function VideoGenerator() {
                     <select
                       value={options.numScenes}
                       onChange={(e) => setOptions(prev => ({ ...prev, numScenes: parseInt(e.target.value) }))}
-                      disabled={isGenerating}
                       className="h-7 px-1.5 rounded-md bg-transparent text-xs text-[#888] font-mono focus:outline-none cursor-pointer hover:text-[#ededed] transition-colors"
                     >
                       <option value={2}>2</option>
@@ -215,7 +213,7 @@ export function VideoGenerator() {
                   <button
                     key={mode.id}
                     onClick={() => startModeGeneration(mode.id)}
-                    disabled={isGenerating || state.status === 'reviewing' || !state.idea.trim()}
+                    disabled={!state.idea.trim()}
                     title={mode.description}
                     className="group flex items-center gap-2 h-11 px-5 rounded-full border border-[#333] bg-[#0a0a0a] hover:border-[#555] hover:bg-[#111] disabled:opacity-30 disabled:cursor-not-allowed transition-all"
                   >
@@ -223,19 +221,34 @@ export function VideoGenerator() {
                     <span className="text-sm text-[#ededed]">{mode.label}</span>
                   </button>
                 ))}
-                {state.status !== 'idle' && (
-                  <Button onClick={handleReset} variant="ghost" className="h-10" title="Reset">
-                    <RotateCcw className="h-4 w-4" />
-                  </Button>
-                )}
               </div>
 
             </div>
           )}
 
-          <div className={wizardActive ? '' : 'pt-4'}>
-            <IdeaWizard onSelectIdea={(idea) => setIdea(idea)} onActiveChange={(active) => { setWizardActive(active); if (active) clearGeneration(); }} />
-          </div>
+          {/* Progress tracker — shown under title when active */}
+          {state.progress.length > 0 && (
+            <div className="max-w-3xl mx-auto">
+              <ProgressTracker events={state.progress} />
+            </div>
+          )}
+
+          {/* Start over button — shown when complete */}
+          {state.status === 'complete' && (
+            <button
+              onClick={handleReset}
+              className="flex items-center gap-2 mx-auto text-sm text-[#555] hover:text-[#ededed] transition-colors animate-fade-in"
+            >
+              <RotateCcw className="h-4 w-4" />
+              Start over
+            </button>
+          )}
+
+          {!isActive && (
+            <div className={wizardActive ? '' : 'pt-4'}>
+              <IdeaWizard onSelectIdea={(idea) => setIdea(idea)} onActiveChange={(active) => { setWizardActive(active); if (active) clearGeneration(); }} />
+            </div>
+          )}
 
           {/* Agent settings modal */}
           {showAgentSettings && (
@@ -351,21 +364,11 @@ export function VideoGenerator() {
 
         </div>
 
-        {/* Progress */}
-        {state.progress.length > 0 && (
-          <div className="max-w-3xl">
-            <ProgressTracker events={state.progress} />
-          </div>
-        )}
-
         {/* Editable Scenes (review mode) */}
         {state.status === 'reviewing' && state.editableScenes && (
           <div className="space-y-4 animate-fade-in">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <h2 className="text-sm font-medium text-[#ededed]">Review Scenes</h2>
-                <span className="text-xs font-mono text-[#444]">edit prompts before generating</span>
-              </div>
+              <h2 className="text-sm font-medium text-[#ededed]">Review Scenes</h2>
               <Button onClick={handleGenerateVideos} className="gap-2">
                 <Play className="h-4 w-4" />
                 Generate Videos
