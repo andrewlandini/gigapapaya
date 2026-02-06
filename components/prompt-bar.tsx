@@ -240,7 +240,7 @@ export function PromptBar({ isAuthenticated }: PromptBarProps) {
               onChange={(e) => { setPrompt(e.target.value); autoResize(); }}
               onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSubmit(); } }}
               placeholder="Describe your video..."
-              rows={1}
+              rows={2}
               className="w-full bg-transparent text-[15px] text-[#ededed] placeholder:text-[#555] focus:outline-none resize-none overflow-hidden"
               style={{ maxHeight: 200 }}
             />
