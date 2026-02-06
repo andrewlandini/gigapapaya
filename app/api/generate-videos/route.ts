@@ -46,7 +46,7 @@ export async function POST(request: NextRequest) {
         };
 
         try {
-          const videos = [];
+          const videos: any[] = [];
 
           // Shot agent already writes Veo3-ready prompts — go straight to video generation
           const perShotDurations = scenes.map((s: any) => s.duration || (typeof options?.duration === 'number' ? options.duration : 8));
