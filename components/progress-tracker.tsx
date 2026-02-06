@@ -1,18 +1,20 @@
 'use client';
 
 import { useMemo, useState, useEffect, useRef } from 'react';
-import { CheckCircle2, Loader2, AlertCircle, ChevronDown } from 'lucide-react';
+import { CheckCircle2, Loader2, AlertCircle, ChevronDown, Circle } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import type { ProgressEvent } from '@/lib/types';
 
 interface ProgressTrackerProps {
   events: ProgressEvent[];
+  status?: string; // generation state status
+  shotCount?: number; // total shots for phase 2
 }
 
 interface AgentGroup {
   key: string;
   label: string;
-  status: 'running' | 'done' | 'error';
+  status: 'running' | 'done' | 'error' | 'pending';
   message: string;
   timestamp: Date;
   logs: { key: string; message: string }[];
@@ -21,7 +23,7 @@ interface AgentGroup {
   type: 'agent' | 'video' | 'complete' | 'error';
 }
 
-export function ProgressTracker({ events }: ProgressTrackerProps) {
+export function ProgressTracker({ events, status, shotCount }: ProgressTrackerProps) {
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [manualToggle, setManualToggle] = useState<Set<string>>(new Set());
   const collapsedByTimer = useRef<Set<string>>(new Set());
@@ -141,8 +143,32 @@ export function ProgressTracker({ events }: ProgressTrackerProps) {
       if ((event.type as string) === 'scenes-ready') continue;
     }
 
+    // Append upcoming steps based on what hasn't happened yet
+    const hasKey = (k: string) => result.some(g => g.key === k);
+    const isComplete = result.some(g => g.type === 'complete');
+    const hasError = result.some(g => g.type === 'error' && g.key.startsWith('error'));
+
+    if (!isComplete && !hasError) {
+      if (status === 'generating') {
+        // Phase 1: Concept → Shots → Review
+        if (!hasKey('agent-idea')) {
+          result.push({ key: 'agent-idea', label: 'Concept Agent', status: 'pending', message: '', timestamp: new Date(), logs: [], type: 'agent' });
+        }
+        if (!hasKey('agent-scenes')) {
+          result.push({ key: 'agent-scenes', label: 'Shot Agent', status: 'pending', message: '', timestamp: new Date(), logs: [], type: 'agent' });
+        }
+      } else if (status === 'generating-videos' && shotCount) {
+        // Phase 2: Video 1 → Video 2 → ... → Complete
+        for (let i = 0; i < shotCount; i++) {
+          if (!hasKey(`video-${i}`)) {
+            result.push({ key: `video-${i}`, label: `Video ${i + 1}`, status: 'pending', message: '', timestamp: new Date(), logs: [], type: 'video' });
+          }
+        }
+      }
+    }
+
     return result;
-  }, [events]);
+  }, [events, status, shotCount]);
 
   // Auto-collapse completed agents after 3 seconds
   useEffect(() => {
@@ -190,18 +216,21 @@ export function ProgressTracker({ events }: ProgressTrackerProps) {
         {groups.map((group) => {
           const isRunning = group.status === 'running';
           const isError = group.status === 'error';
+          const isPending = group.status === 'pending';
           const isExpanded = isRunning || isError || expanded.has(group.key);
           const hasLogs = group.logs.length > 0 || (group.type === 'video' && group.prompt);
 
           return (
-            <div key={group.key} className="border-b border-[#222] last:border-b-0 animate-fade-in">
+            <div key={group.key} className={`border-b border-[#222] last:border-b-0 ${isPending ? '' : 'animate-fade-in'}`}>
               {/* Header */}
               <div
-                className={`flex items-center gap-3 px-4 py-3 ${hasLogs && !isRunning ? 'cursor-pointer hover:bg-[#0a0a0a]' : ''}`}
-                onClick={() => hasLogs && !isRunning && toggleExpand(group.key)}
+                className={`flex items-center gap-3 px-4 py-3 ${hasLogs && !isRunning && !isPending ? 'cursor-pointer hover:bg-[#0a0a0a]' : ''}`}
+                onClick={() => hasLogs && !isRunning && !isPending && toggleExpand(group.key)}
               >
                 <div className="flex-shrink-0">
-                  {group.status === 'error' ? (
+                  {isPending ? (
+                    <Circle className="h-4 w-4 text-[#333]" />
+                  ) : group.status === 'error' ? (
                     <AlertCircle className="h-4 w-4 text-[#ff4444]" />
                   ) : group.status === 'done' ? (
                     <CheckCircle2 className="h-4 w-4 text-[#00cc88]" />
@@ -210,15 +239,17 @@ export function ProgressTracker({ events }: ProgressTrackerProps) {
                   )}
                 </div>
                 <div className="flex items-center gap-2 flex-1 min-w-0">
-                  <span className="text-sm text-[#ededed]">{group.label}</span>
-                  <Badge variant={group.status === 'error' ? 'error' : group.status === 'done' ? 'success' : 'blue'}>
-                    {group.status === 'running' ? 'running' : group.status === 'done' ? 'done' : 'error'}
-                  </Badge>
+                  <span className={`text-sm ${isPending ? 'text-[#444]' : 'text-[#ededed]'}`}>{group.label}</span>
+                  {!isPending && (
+                    <Badge variant={group.status === 'error' ? 'error' : group.status === 'done' ? 'success' : 'blue'}>
+                      {group.status === 'running' ? 'running' : group.status === 'done' ? 'done' : 'error'}
+                    </Badge>
+                  )}
                   {group.message && (
                     <span className="text-xs text-[#555] truncate ml-1">{group.message}</span>
                   )}
                 </div>
-                {hasLogs && !isRunning && (
+                {hasLogs && !isRunning && !isPending && (
                   <ChevronDown className={`h-3.5 w-3.5 text-[#555] transition-transform duration-300 flex-shrink-0 ${isExpanded ? 'rotate-180' : ''}`} />
                 )}
               </div>

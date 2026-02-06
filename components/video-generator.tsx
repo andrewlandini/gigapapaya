@@ -330,7 +330,7 @@ export function VideoGenerator() {
           {/* Progress tracker — shown under title when active */}
           {state.progress.length > 0 && (
             <div className="max-w-3xl mx-auto">
-              <ProgressTracker events={state.progress} />
+              <ProgressTracker events={state.progress} status={state.status} shotCount={state.editableScenes?.length} />
             </div>
           )}
 
