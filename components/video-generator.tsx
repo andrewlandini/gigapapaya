@@ -91,10 +91,8 @@ export function VideoGenerator() {
       <main className="max-w-6xl mx-auto px-6 py-10 space-y-10 flex-1">
         {/* Hero + Input */}
         <div className="max-w-3xl mx-auto space-y-8 text-center">
-          <div className="space-y-5">
-            <IdeaWizard onSelectIdea={(idea) => setIdea(idea)} onActiveChange={setWizardActive} />
-            <h1 className="text-[40px] font-bold tracking-tight leading-tight">{headline}</h1>
-          </div>
+          <h1 className="text-[40px] font-bold tracking-tight leading-tight">{headline}</h1>
+          <IdeaWizard onSelectIdea={(idea) => setIdea(idea)} onActiveChange={setWizardActive} />
 
           {!wizardActive && (
             <div className="space-y-5">
