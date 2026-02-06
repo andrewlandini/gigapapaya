@@ -28,14 +28,6 @@ export function getVideoModel(modelName: string = 'google/veo-3.1-generate-001')
   return gateway.videoModel(modelName);
 }
 
-/**
- * Get an image model for avatar/icon generation
- * Uses gateway.imageModel() with provider-prefixed model ID
- */
-export function getImageModel(modelName: string = 'google/gemini-3-pro-image') {
-  console.log(`🎨 Using image model: ${modelName}`);
-  return gateway.imageModel(modelName);
-}
 
 export const AVAILABLE_VIDEO_MODELS = [
   'google/veo-3.1-generate-001',
