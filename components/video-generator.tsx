@@ -48,6 +48,7 @@ export function VideoGenerator() {
   } = useStoryboard();
 
   const [showAgentSettings, setShowAgentSettings] = useState(false);
+  const [wizardActive, setWizardActive] = useState(false);
   const [settingsTab, setSettingsTab] = useState('amplify');
   const headline = useMemo(() => HEADLINES[Math.floor(Math.random() * HEADLINES.length)], []);
 
@@ -89,91 +90,93 @@ export function VideoGenerator() {
 
       <main className="max-w-6xl mx-auto px-6 py-10 space-y-10 flex-1">
         {/* Hero + Input */}
-        <div className="max-w-3xl mx-auto space-y-6 text-center">
-          <div className="space-y-3">
-            <h1 className="text-[32px] font-semibold tracking-tight">{headline}</h1>
-            <IdeaWizard onSelectIdea={(idea) => setIdea(idea)} />
+        <div className="max-w-3xl mx-auto space-y-8 text-center">
+          <div className="space-y-5">
+            <IdeaWizard onSelectIdea={(idea) => setIdea(idea)} onActiveChange={setWizardActive} />
+            <h1 className="text-[40px] font-bold tracking-tight leading-tight">{headline}</h1>
           </div>
 
-          <div className="space-y-4 text-left">
-            <div className="space-y-3">
-              <textarea
-                placeholder="A frog drinking a cocktail at Martha's Vineyard..."
-                value={state.idea}
-                onChange={(e) => setIdea(e.target.value)}
-                disabled={isGenerating || state.status === 'reviewing'}
-                rows={3}
-                className="w-full bg-black border border-[#333] rounded-xl px-4 py-3 text-[15px] text-[#ededed] placeholder:text-[#555] focus:outline-none focus:border-[#555] focus:ring-1 focus:ring-white/10 resize-none leading-relaxed"
-              />
+          {!wizardActive && (
+            <div className="space-y-5">
+              <div className="space-y-4">
+                <textarea
+                  placeholder="A frog drinking a cocktail at Martha's Vineyard..."
+                  value={state.idea}
+                  onChange={(e) => setIdea(e.target.value)}
+                  disabled={isGenerating || state.status === 'reviewing'}
+                  rows={4}
+                  className="w-full bg-black border border-[#333] rounded-2xl px-5 py-4 text-[15px] text-[#ededed] placeholder:text-[#555] focus:outline-none focus:border-[#555] focus:ring-1 focus:ring-white/10 resize-none leading-relaxed"
+                />
 
-              {/* Mode buttons */}
-              <div className="flex flex-wrap gap-2 justify-center">
-                {GENERATION_MODES.map((mode) => (
-                  <button
-                    key={mode.id}
-                    onClick={() => startModeGeneration(mode.id)}
-                    disabled={isGenerating || state.status === 'reviewing' || !state.idea.trim()}
-                    className="group flex items-center gap-2 h-10 px-4 rounded-xl border border-[#333] bg-[#0a0a0a] hover:border-[#555] hover:bg-[#111] disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                {/* Mode buttons */}
+                <div className="flex flex-wrap gap-3 justify-center">
+                  {GENERATION_MODES.map((mode) => (
+                    <button
+                      key={mode.id}
+                      onClick={() => startModeGeneration(mode.id)}
+                      disabled={isGenerating || state.status === 'reviewing' || !state.idea.trim()}
+                      className="group flex items-center gap-2 h-11 px-5 rounded-full border border-[#333] bg-[#0a0a0a] hover:border-[#555] hover:bg-[#111] disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                    >
+                      <span className="text-base">{mode.icon}</span>
+                      <span className="text-sm text-[#ededed]">{mode.label}</span>
+                    </button>
+                  ))}
+                  {state.status !== 'idle' && (
+                    <Button onClick={handleReset} variant="ghost" className="h-10" title="Reset">
+                      <RotateCcw className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
+              </div>
+
+              {/* Options */}
+              <div className="flex items-center gap-8 flex-wrap justify-center">
+                <div className="flex items-center gap-2">
+                  <label className="text-xs font-mono text-[#555]">ratio</label>
+                  <select
+                    value={options.aspectRatio}
+                    onChange={(e) => setOptions(prev => ({ ...prev, aspectRatio: e.target.value as any }))}
+                    disabled={isGenerating}
+                    className="h-8 px-2 rounded-md border border-[#333] bg-black text-xs text-[#888] font-mono"
                   >
-                    <span className="text-base">{mode.icon}</span>
-                    <span className="text-sm text-[#ededed]">{mode.label}</span>
-                  </button>
-                ))}
-                {state.status !== 'idle' && (
-                  <Button onClick={handleReset} variant="ghost" className="h-10" title="Reset">
-                    <RotateCcw className="h-4 w-4" />
-                  </Button>
-                )}
+                    <option value="16:9">16:9</option>
+                    <option value="9:16">9:16</option>
+                    <option value="4:3">4:3</option>
+                    <option value="1:1">1:1</option>
+                  </select>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <label className="text-xs font-mono text-[#555]">duration</label>
+                  <select
+                    value={options.duration}
+                    onChange={(e) => setOptions(prev => ({ ...prev, duration: parseInt(e.target.value) }))}
+                    disabled={isGenerating}
+                    className="h-8 px-2 rounded-md border border-[#333] bg-black text-xs text-[#888] font-mono"
+                  >
+                    <option value={4}>4s</option>
+                    <option value={6}>6s</option>
+                    <option value={8}>8s</option>
+                  </select>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <label className="text-xs font-mono text-[#555]">scenes</label>
+                  <select
+                    value={options.numScenes}
+                    onChange={(e) => setOptions(prev => ({ ...prev, numScenes: parseInt(e.target.value) }))}
+                    disabled={isGenerating}
+                    className="h-8 px-2 rounded-md border border-[#333] bg-black text-xs text-[#888] font-mono"
+                  >
+                    <option value={2}>2</option>
+                    <option value={3}>3</option>
+                    <option value={4}>4</option>
+                    <option value={5}>5</option>
+                  </select>
+                </div>
               </div>
             </div>
-
-            {/* Options */}
-            <div className="flex items-center gap-6 flex-wrap justify-center">
-              <div className="flex items-center gap-2">
-                <label className="text-xs font-mono text-[#555]">ratio</label>
-                <select
-                  value={options.aspectRatio}
-                  onChange={(e) => setOptions(prev => ({ ...prev, aspectRatio: e.target.value as any }))}
-                  disabled={isGenerating}
-                  className="h-8 px-2 rounded-md border border-[#333] bg-black text-xs text-[#888] font-mono"
-                >
-                  <option value="16:9">16:9</option>
-                  <option value="9:16">9:16</option>
-                  <option value="4:3">4:3</option>
-                  <option value="1:1">1:1</option>
-                </select>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <label className="text-xs font-mono text-[#555]">duration</label>
-                <select
-                  value={options.duration}
-                  onChange={(e) => setOptions(prev => ({ ...prev, duration: parseInt(e.target.value) }))}
-                  disabled={isGenerating}
-                  className="h-8 px-2 rounded-md border border-[#333] bg-black text-xs text-[#888] font-mono"
-                >
-                  <option value={4}>4s</option>
-                  <option value={6}>6s</option>
-                  <option value={8}>8s</option>
-                </select>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <label className="text-xs font-mono text-[#555]">scenes</label>
-                <select
-                  value={options.numScenes}
-                  onChange={(e) => setOptions(prev => ({ ...prev, numScenes: parseInt(e.target.value) }))}
-                  disabled={isGenerating}
-                  className="h-8 px-2 rounded-md border border-[#333] bg-black text-xs text-[#888] font-mono"
-                >
-                  <option value={2}>2</option>
-                  <option value={3}>3</option>
-                  <option value={4}>4</option>
-                  <option value={5}>5</option>
-                </select>
-              </div>
-            </div>
-          </div>
+          )}
 
           {/* Agent settings trigger */}
           <button

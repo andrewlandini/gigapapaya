@@ -5,6 +5,7 @@ import { Lightbulb, Loader2, RotateCcw, ArrowLeft } from 'lucide-react';
 
 interface IdeaWizardProps {
   onSelectIdea: (idea: string) => void;
+  onActiveChange?: (active: boolean) => void;
 }
 
 interface WizardStep {
@@ -35,7 +36,7 @@ const STEPS: WizardStep[] = [
   },
 ];
 
-export function IdeaWizard({ onSelectIdea }: IdeaWizardProps) {
+export function IdeaWizard({ onSelectIdea, onActiveChange }: IdeaWizardProps) {
   const [active, setActive] = useState(false);
   const [step, setStep] = useState(0);
   const [answers, setAnswers] = useState<string[]>([]);
@@ -84,13 +85,14 @@ export function IdeaWizard({ onSelectIdea }: IdeaWizardProps) {
 
   const handleClose = () => {
     setActive(false);
+    onActiveChange?.(false);
     handleReset();
   };
 
   if (!active) {
     return (
       <button
-        onClick={() => setActive(true)}
+        onClick={() => { setActive(true); onActiveChange?.(true); }}
         className="flex items-center gap-2 text-[#666] hover:text-[#ededed] transition-colors"
       >
         <Lightbulb className="h-4 w-4" />
@@ -103,14 +105,14 @@ export function IdeaWizard({ onSelectIdea }: IdeaWizardProps) {
   if (ideas.length > 0) {
     return (
       <div className="space-y-3 animate-fade-in">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-center gap-4">
           <span className="text-xs font-mono text-[#555]">Pick an idea</span>
           <button onClick={handleReset} className="flex items-center gap-1 text-xs text-[#555] hover:text-[#888] transition-colors">
             <RotateCcw className="h-3 w-3" />
             Start over
           </button>
         </div>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap justify-center gap-2">
           {ideas.slice(0, visibleCount).map((idea, i) => (
             <button
               key={i}
@@ -136,7 +138,7 @@ export function IdeaWizard({ onSelectIdea }: IdeaWizardProps) {
   // Loading state
   if (loading) {
     return (
-      <div className="flex items-center gap-3 py-2 animate-fade-in">
+      <div className="flex items-center justify-center gap-3 py-2 animate-fade-in">
         <Loader2 className="h-4 w-4 text-[#555] animate-spin" />
         <span className="text-sm text-[#555]">Generating ideas from your choices...</span>
       </div>
@@ -148,34 +150,21 @@ export function IdeaWizard({ onSelectIdea }: IdeaWizardProps) {
 
   return (
     <div className="space-y-3 animate-fade-in">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          {step > 0 && (
-            <button onClick={handleBack} className="text-[#555] hover:text-white transition-colors">
-              <ArrowLeft className="h-3.5 w-3.5" />
-            </button>
-          )}
-          <span className="text-xs font-mono text-[#555]">{step + 1}/{STEPS.length}</span>
-          <span className="text-sm text-[#ededed]">{current.question}</span>
-        </div>
+      <div className="flex items-center justify-center gap-3">
+        {step > 0 && (
+          <button onClick={handleBack} className="text-[#555] hover:text-white transition-colors">
+            <ArrowLeft className="h-3.5 w-3.5" />
+          </button>
+        )}
+        <span className="text-xs font-mono text-[#555]">{step + 1}/{STEPS.length}</span>
+        <span className="text-sm text-[#ededed]">{current.question}</span>
         <button onClick={handleClose} className="text-xs text-[#555] hover:text-[#888] transition-colors">
           Cancel
         </button>
       </div>
 
-      {/* Answer chips showing previous answers */}
-      {answers.length > 0 && (
-        <div className="flex gap-1.5 flex-wrap">
-          {answers.map((a, i) => (
-            <span key={i} className="text-[10px] px-2 py-0.5 rounded-full bg-[#222] text-[#888] font-mono">
-              {a}
-            </span>
-          ))}
-        </div>
-      )}
-
       {/* Current options */}
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap justify-center gap-2">
         {current.options.map((option) => (
           <button
             key={option}
