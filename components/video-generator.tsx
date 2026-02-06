@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { Zap, RotateCcw } from 'lucide-react';
+import { useState, useRef } from 'react';
+import { Zap, RotateCcw, Play } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -16,6 +16,7 @@ export function VideoGenerator() {
     idea: '',
     generatedIdea: null,
     scenes: null,
+    editableScenes: null,
     videos: [],
     progress: [],
     error: null,
@@ -28,16 +29,44 @@ export function VideoGenerator() {
     mode: 'agents',
   });
 
+  const sessionIdRef = useRef<string>('');
+
+  // Parse SSE stream helper
+  const readSSEStream = async (response: Response, onEvent: (data: SSEMessage) => void) => {
+    const reader = response.body?.getReader();
+    if (!reader) throw new Error('No response body');
+
+    const decoder = new TextDecoder();
+    let buffer = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n\n');
+      buffer = lines.pop() || '';
+
+      for (const line of lines) {
+        if (line.startsWith('data: ')) {
+          const data = JSON.parse(line.slice(6)) as SSEMessage;
+          console.log('📡 SSE:', data.type, data);
+          onEvent(data);
+        }
+      }
+    }
+  };
+
+  // Phase 1: Generate idea + scenes (agents mode) or direct video
   const handleGenerate = async () => {
     if (!state.idea.trim()) return;
-
-    console.log('🚀 Starting video generation...');
 
     setState(prev => ({
       ...prev,
       status: 'generating',
       generatedIdea: null,
       scenes: null,
+      editableScenes: null,
       videos: [],
       progress: [],
       error: null,
@@ -52,28 +81,48 @@ export function VideoGenerator() {
 
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
-      const reader = response.body?.getReader();
-      if (!reader) throw new Error('No response body');
+      await readSSEStream(response, (data) => {
+        const progressEvent: ProgressEvent = {
+          type: data.type,
+          timestamp: new Date(),
+          agent: data.agent as any,
+          status: data.status,
+          result: data.result,
+          sceneIndex: data.sceneIndex,
+          videoId: data.videoId,
+          prompt: data.prompt,
+          message: data.message,
+        };
 
-      const decoder = new TextDecoder();
-      let buffer = '';
+        setState(prev => ({ ...prev, progress: [...prev.progress, progressEvent] }));
 
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split('\n\n');
-        buffer = lines.pop() || '';
-
-        for (const line of lines) {
-          if (line.startsWith('data: ')) {
-            const data = JSON.parse(line.slice(6)) as SSEMessage;
-            console.log('📡 SSE:', data.type, data);
-            handleSSEEvent(data);
-          }
+        switch (data.type) {
+          case 'agent-complete':
+            if (data.agent === 'idea') {
+              setState(prev => ({ ...prev, generatedIdea: data.result }));
+            } else if (data.agent === 'scenes') {
+              setState(prev => ({ ...prev, scenes: data.result.scenes }));
+            }
+            break;
+          case 'scenes-ready':
+            // Pause for review
+            sessionIdRef.current = data.sessionId || '';
+            setState(prev => ({
+              ...prev,
+              status: 'reviewing',
+              editableScenes: prev.scenes ? prev.scenes.map(s => ({ ...s })) : null,
+            }));
+            break;
+          case 'complete':
+            setState(prev => ({ ...prev, status: 'complete', videos: data.videos || [] }));
+            break;
+          case 'error':
+            if (!data.sceneIndex && data.sceneIndex !== 0) {
+              setState(prev => ({ ...prev, status: 'error', error: data.message || 'Unknown error' }));
+            }
+            break;
         }
-      }
+      });
     } catch (error) {
       console.error('❌ Generation failed:', error);
       setState(prev => ({
@@ -88,47 +137,81 @@ export function VideoGenerator() {
     }
   };
 
-  const handleSSEEvent = (data: SSEMessage) => {
-    const progressEvent: ProgressEvent = {
-      type: data.type,
-      timestamp: new Date(),
-      agent: data.agent as any,
-      status: data.status,
-      result: data.result,
-      sceneIndex: data.sceneIndex,
-      videoId: data.videoId,
-      prompt: data.prompt,
-      message: data.message,
-    };
+  // Phase 2: Generate videos from approved/edited scenes
+  const handleGenerateVideos = async () => {
+    if (!state.editableScenes) return;
 
-    setState(prev => ({
-      ...prev,
-      progress: [...prev.progress, progressEvent],
-    }));
+    setState(prev => ({ ...prev, status: 'generating-videos' }));
 
-    switch (data.type) {
-      case 'agent-complete':
-        if (data.agent === 'idea') {
-          setState(prev => ({ ...prev, generatedIdea: data.result }));
-        } else if (data.agent === 'scenes') {
-          setState(prev => ({ ...prev, scenes: data.result.scenes }));
+    try {
+      const response = await fetch('/api/generate-videos', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sessionId: sessionIdRef.current,
+          scenes: state.editableScenes.map(s => ({ prompt: s.prompt, duration: s.duration })),
+          style: state.generatedIdea?.style || '',
+          mood: state.generatedIdea?.mood || '',
+          options,
+        }),
+      });
+
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+      await readSSEStream(response, (data) => {
+        const progressEvent: ProgressEvent = {
+          type: data.type,
+          timestamp: new Date(),
+          agent: data.agent as any,
+          status: data.status,
+          result: data.result,
+          sceneIndex: data.sceneIndex,
+          videoId: data.videoId,
+          prompt: data.prompt,
+          message: data.message,
+        };
+
+        setState(prev => ({ ...prev, progress: [...prev.progress, progressEvent] }));
+
+        switch (data.type) {
+          case 'complete':
+            setState(prev => ({ ...prev, status: 'complete', videos: data.videos || [] }));
+            break;
+          case 'error':
+            if (!data.sceneIndex && data.sceneIndex !== 0) {
+              setState(prev => ({ ...prev, status: 'error', error: data.message || 'Unknown error' }));
+            }
+            break;
         }
-        break;
-      case 'complete':
-        setState(prev => ({ ...prev, status: 'complete', videos: data.videos || [] }));
-        break;
-      case 'error':
-        setState(prev => ({ ...prev, status: 'error', error: data.message || 'Unknown error' }));
-        break;
+      });
+    } catch (error) {
+      console.error('❌ Video generation failed:', error);
+      setState(prev => ({
+        ...prev,
+        status: 'error',
+        error: error instanceof Error ? error.message : 'Unknown error',
+      }));
     }
   };
 
+  const updateScenePrompt = (index: number, prompt: string) => {
+    setState(prev => ({
+      ...prev,
+      editableScenes: prev.editableScenes?.map((s, i) =>
+        i === index ? { ...s, prompt } : s
+      ) || null,
+    }));
+  };
+
   const handleReset = () => {
+    sessionIdRef.current = '';
     setState({
       status: 'idle', idea: '', generatedIdea: null,
-      scenes: null, videos: [], progress: [], error: null,
+      scenes: null, editableScenes: null, videos: [], progress: [], error: null,
     });
   };
+
+  const isGenerating = state.status === 'generating' || state.status === 'generating-videos';
 
   return (
     <div className="min-h-screen bg-black flex flex-col">
@@ -141,11 +224,14 @@ export function VideoGenerator() {
             <span className="text-sm text-[#666]">generate</span>
           </div>
           <div className="flex items-center gap-3">
-            {state.status === 'generating' && (
+            {isGenerating && (
               <div className="flex items-center gap-2">
                 <div className="h-2 w-2 rounded-full bg-[#0070f3] animate-pulse-dot" />
                 <span className="text-xs font-mono text-[#666]">generating</span>
               </div>
+            )}
+            {state.status === 'reviewing' && (
+              <Badge variant="blue">review scenes</Badge>
             )}
             {state.status === 'complete' && (
               <Badge variant="success">complete</Badge>
@@ -154,7 +240,7 @@ export function VideoGenerator() {
         </div>
       </header>
 
-      <main className="max-w-6xl mx-auto px-6 py-10 space-y-10">
+      <main className="max-w-6xl mx-auto px-6 py-10 space-y-10 flex-1">
         {/* Hero + Input */}
         <div className="max-w-2xl space-y-6">
           <div className="space-y-2">
@@ -172,13 +258,13 @@ export function VideoGenerator() {
                 placeholder="A frog drinking a cocktail at Martha's Vineyard..."
                 value={state.idea}
                 onChange={(e) => setState(prev => ({ ...prev, idea: e.target.value }))}
-                onKeyDown={(e) => e.key === 'Enter' && handleGenerate()}
-                disabled={state.status === 'generating'}
+                onKeyDown={(e) => e.key === 'Enter' && state.status === 'idle' && handleGenerate()}
+                disabled={isGenerating || state.status === 'reviewing'}
                 className="h-12 text-[15px] bg-black"
               />
               <Button
                 onClick={handleGenerate}
-                disabled={state.status === 'generating' || !state.idea.trim()}
+                disabled={isGenerating || state.status === 'reviewing' || !state.idea.trim()}
                 className="h-12 px-6"
               >
                 <Zap className="h-4 w-4 mr-2" />
@@ -198,7 +284,7 @@ export function VideoGenerator() {
                 <select
                   value={options.mode}
                   onChange={(e) => setOptions(prev => ({ ...prev, mode: e.target.value as any }))}
-                  disabled={state.status === 'generating'}
+                  disabled={isGenerating}
                   className="h-8 px-2 rounded-md border border-[#333] bg-black text-xs text-[#888] font-mono"
                 >
                   <option value="agents">agents</option>
@@ -211,7 +297,7 @@ export function VideoGenerator() {
                 <select
                   value={options.aspectRatio}
                   onChange={(e) => setOptions(prev => ({ ...prev, aspectRatio: e.target.value as any }))}
-                  disabled={state.status === 'generating'}
+                  disabled={isGenerating}
                   className="h-8 px-2 rounded-md border border-[#333] bg-black text-xs text-[#888] font-mono"
                 >
                   <option value="16:9">16:9</option>
@@ -226,7 +312,7 @@ export function VideoGenerator() {
                 <select
                   value={options.duration}
                   onChange={(e) => setOptions(prev => ({ ...prev, duration: parseInt(e.target.value) }))}
-                  disabled={state.status === 'generating'}
+                  disabled={isGenerating}
                   className="h-8 px-2 rounded-md border border-[#333] bg-black text-xs text-[#888] font-mono"
                 >
                   <option value={4}>4s</option>
@@ -241,7 +327,7 @@ export function VideoGenerator() {
                   <select
                     value={options.numScenes}
                     onChange={(e) => setOptions(prev => ({ ...prev, numScenes: parseInt(e.target.value) }))}
-                    disabled={state.status === 'generating'}
+                    disabled={isGenerating}
                     className="h-8 px-2 rounded-md border border-[#333] bg-black text-xs text-[#888] font-mono"
                   >
                     <option value={2}>2</option>
@@ -258,7 +344,6 @@ export function VideoGenerator() {
         {/* Two Column: Concept + Progress */}
         {(state.generatedIdea || state.progress.length > 0) && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {/* Left: Concept */}
             <div className="space-y-6">
               {state.generatedIdea && (
                 <div className="space-y-3 animate-fade-in">
@@ -277,16 +362,52 @@ export function VideoGenerator() {
                 </div>
               )}
             </div>
-
-            {/* Right: Progress */}
             <div>
               <ProgressTracker events={state.progress} />
             </div>
           </div>
         )}
 
-        {/* Scenes */}
-        {state.scenes && state.scenes.length > 0 && (
+        {/* Editable Scenes (review mode) */}
+        {state.status === 'reviewing' && state.editableScenes && (
+          <div className="space-y-4 animate-fade-in">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <h2 className="text-sm font-medium text-[#ededed]">Review Scenes</h2>
+                <span className="text-xs font-mono text-[#444]">edit prompts before generating</span>
+              </div>
+              <Button onClick={handleGenerateVideos} className="gap-2">
+                <Play className="h-4 w-4" />
+                Generate Videos
+              </Button>
+            </div>
+
+            <div className="grid gap-3">
+              {state.editableScenes.map((scene, i) => (
+                <div
+                  key={i}
+                  className="border border-[#222] rounded-xl p-4 space-y-3 hover:border-[#333] transition-colors"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="flex-shrink-0 w-6 h-6 rounded-md bg-[#1a1a1a] border border-[#333] text-[#888] flex items-center justify-center text-xs font-mono">
+                      {i + 1}
+                    </div>
+                    <span className="text-xs font-mono text-[#555]">Scene {i + 1}</span>
+                  </div>
+                  <textarea
+                    value={scene.prompt}
+                    onChange={(e) => updateScenePrompt(i, e.target.value)}
+                    rows={3}
+                    className="w-full bg-[#0a0a0a] border border-[#333] rounded-lg px-3 py-2 text-sm text-[#ccc] placeholder:text-[#555] focus:outline-none focus:border-[#555] focus:ring-1 focus:ring-white/10 resize-none leading-relaxed"
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Read-only Scenes (after video gen started) */}
+        {state.status !== 'reviewing' && state.scenes && state.scenes.length > 0 && (
           <ScenePreview
             scenes={state.scenes}
             style={state.generatedIdea?.style}

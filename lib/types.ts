@@ -36,6 +36,7 @@ export type ProgressEventType =
   | 'agent-start'
   | 'agent-complete'
   | 'agent-log'
+  | 'scenes-ready'
   | 'video-start'
   | 'video-complete'
   | 'complete'
@@ -54,10 +55,11 @@ export interface ProgressEvent {
 }
 
 export interface GenerationState {
-  status: 'idle' | 'generating' | 'complete' | 'error';
+  status: 'idle' | 'generating' | 'reviewing' | 'generating-videos' | 'complete' | 'error';
   idea: string;
   generatedIdea: VideoIdea | null;
   scenes: Scene[] | null;
+  editableScenes: Scene[] | null;
   videos: Video[];
   progress: ProgressEvent[];
   error: string | null;
