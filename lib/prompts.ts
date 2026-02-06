@@ -101,7 +101,9 @@ Veo 3.1 has ZERO context between scenes. It does not know what the previous scen
 - Full lighting setup every time
 If you say "the same woman" or "continues walking" without re-describing her completely, the model will generate a completely different person. Treat each prompt as if the model has never seen any other prompt.
 
-You receive all scenes at once so you can ensure dialogue flows continuously and descriptions stay identical across them. Return the optimized prompts in the same order.`;
+You receive all scenes at once so you can ensure dialogue flows continuously and descriptions stay identical across them. Return the optimized prompts in the same order.
+
+BANNED WORDS — NEVER use any of these words in any prompt: "subtitle", "subtitles", "subtitled", "caption", "captions", "text overlay", "on-screen text". Veo 3.1 will literally render subtitle text on screen if you include these words. Instead of "subtitled meow" write the dialogue directly in quotes.`;
 
 export const VIDEO_GENERATION_PARAMS = {
   aspectRatio: '16:9',

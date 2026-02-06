@@ -104,7 +104,8 @@ DIALOGUE RULES (MANDATORY):
 - Write dialogue like people ACTUALLY TALK in real life — not how they write. Use contractions ("I'm", "don't", "can't"), false starts ("I was gonna— actually"), filler words where natural ("like", "you know", "I mean"), trailing off ("so I thought maybe...")
 - Dialogue across scenes MUST be a continuation — when scenes are played back-to-back, it should sound like one coherent conversation or monologue. Each scene picks up where the last one left off.
 - The dialogue should match the mood and vibe of the concept — a tense scene has clipped, urgent speech; a dreamy scene has soft, wandering words
-- NEVER write stiff, formal, or "written" dialogue. Real people don't speak in complete, grammatically perfect sentences.`;
+- NEVER write stiff, formal, or "written" dialogue. Real people don't speak in complete, grammatically perfect sentences.
+- BANNED WORDS: NEVER use "subtitle", "subtitles", "subtitled", "caption", "captions", or "text overlay" in any prompt. Veo 3.1 will render literal subtitle text on screen if these words appear. Write dialogue directly in quotes instead.`;
 
 /**
  * Agent 2: Generate scene breakdown from video idea
