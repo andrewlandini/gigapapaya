@@ -83,7 +83,7 @@ function DraftCard({ draft, onClear }: { draft: Draft; onClear: (id: string) => 
 
         {/* Info */}
         <div className="flex-1 min-w-0">
-          <p className="text-sm text-[#ededed] line-clamp-2">{draft.prompt}</p>
+          <p className="text-sm text-[#ededed]">{draft.prompt}</p>
           <div className="flex items-center gap-3 mt-2">
             {draft.status === 'generating' && (
               <div className="flex items-center gap-1.5">

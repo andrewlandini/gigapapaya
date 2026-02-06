@@ -207,7 +207,7 @@ export function ProgressTracker({ events }: ProgressTrackerProps) {
               <div
                 className="overflow-hidden transition-all duration-300 ease-in-out"
                 style={{
-                  maxHeight: isExpanded ? `${group.logs.length * 32 + (group.prompt ? 100 : 0)}px` : '0px',
+                  maxHeight: isExpanded ? '2000px' : '0px',
                   opacity: isExpanded ? 1 : 0,
                 }}
               >
@@ -217,12 +217,12 @@ export function ProgressTracker({ events }: ProgressTrackerProps) {
                     className="flex items-center gap-2 px-4 py-1.5 border-t border-[#181818]"
                   >
                     <span className="text-[#333] font-mono text-[10px] flex-shrink-0">&gt;</span>
-                    <p className="text-xs font-mono text-[#555] truncate">{log.message}</p>
+                    <p className="text-xs font-mono text-[#555]">{log.message}</p>
                   </div>
                 ))}
                 {group.type === 'video' && group.prompt && (
                   <div className="px-4 py-2 border-t border-[#181818]">
-                    <p className="text-xs font-mono text-[#555] bg-[#111] p-3 rounded-lg border border-[#222] leading-relaxed line-clamp-4">
+                    <p className="text-xs font-mono text-[#555] bg-[#111] p-3 rounded-lg border border-[#222] leading-relaxed">
                       {group.prompt}
                     </p>
                   </div>

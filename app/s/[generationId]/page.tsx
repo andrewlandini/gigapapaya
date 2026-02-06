@@ -124,7 +124,7 @@ export default function SceneGroupPage() {
                   className="flex items-center gap-3 px-4 py-3 rounded-xl border border-[#222] hover:border-[#333] transition-colors"
                 >
                   <span className="text-xs font-mono text-[#555] w-16">Scene {i + 1}</span>
-                  <p className="text-xs text-[#666] truncate flex-1">{video.prompt}</p>
+                  <p className="text-xs text-[#666] flex-1">{video.prompt}</p>
                   <div className="flex items-center gap-1">
                     <button
                       onClick={() => handleReorder(video.id, Math.max(0, i - 1))}

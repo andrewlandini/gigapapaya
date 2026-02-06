@@ -63,7 +63,7 @@ export function VideoGallery({ videos, sessionId }: VideoGalleryProps) {
                 <span className="text-[#333]">/</span>
                 <span className="text-xs font-mono text-[#444]">{(video.size / (1024 * 1024)).toFixed(1)}MB</span>
               </div>
-              <p className="text-xs text-[#666] line-clamp-2 leading-relaxed">
+              <p className="text-xs text-[#666] leading-relaxed">
                 {video.prompt}
               </p>
               <a
