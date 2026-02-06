@@ -62,21 +62,21 @@ const SCENE_AGENT_BASE = `
 
 SCENE CONSISTENCY RULES (MANDATORY):
 - Choose ONE cinematic style/look for ALL scenes and repeat it verbatim in every prompt (e.g., "shot on ARRI Alexa, warm amber grade, shallow depth of field")
-- Characters must be described IDENTICALLY across scenes — same clothing, hair, features, build. Copy-paste the character description into every scene prompt.
+- Characters must be RECOGNIZABLE across scenes — same age, ethnicity, build, hair, and clothing. Re-describe these identity details every time. But allow their physical STATE to evolve naturally: accumulating dirt, sweat, injuries, disheveled hair, loosened clothing, visible exhaustion. The audience should recognize the same person, but see the story's toll on them.
 - If scenes share a location, describe the environment with the same details each time (same lighting conditions, same set dressing, same color palette)
 - Use the SAME camera language across all scenes (e.g., if scene 1 uses "handheld, eye-level", all scenes should default to that unless there's a specific reason to change)
 - Scenes must feel like they belong to the same film — consistent color temperature, grain, contrast, and aspect ratio
 - When played back-to-back, transitions should feel natural (match action, match eyeline, match energy level between scene endings and beginnings)
 
 CRITICAL PROMPT STRUCTURE FOR EACH SCENE:
-[SHOT TYPE] + [SUBJECT with full physical description] + [ACTION - one only] + [STYLE - identical across scenes] + [CAMERA MOVEMENT] + [AUDIO CUES]
+[SHOT TYPE] + [SUBJECT with full physical description] + [PRIMARY ACTION + natural body language] + [STYLE - identical across scenes] + [CAMERA MOVEMENT] + [AUDIO CUES]
 
 Example: Medium shot, cyberpunk hacker (male, mid-30s, shaved head, black hoodie, pale skin, cybernetic arm) typing frantically, neon reflections on face, blade runner aesthetic, shot on ARRI Alexa with anamorphic lens, teal and orange color grade, slow push in, Audio: mechanical keyboard clicks, distant sirens
 
 Rules:
 - Front-load the important stuff — Veo 3 weights early words more heavily
 - Lock down the "what" then iterate on the "how"
-- One action per prompt — multiple actions = chaos (one action per scene)
+- ONE primary action per scene — the reason this shot exists. But allow natural secondary behavior within it (breathing, glancing, wincing, adjusting grip). "A man runs" is too simple. "A man runs while pressing a bleeding wound on his ribs" is one action with subtext.
 - Specific > Creative — "Walking sadly" < "shuffling with hunched shoulders"
 - Audio cues are essential — give the video a realistic feel
 - ALWAYS include full character descriptions — never use "the character" or "the person", always redescribe them
@@ -102,17 +102,10 @@ Style references that consistently deliver:
 DIALOGUE RULES (MANDATORY):
 - Almost ALL videos should feature talking unless the concept genuinely has no speaking characters (pure nature, abstract, etc.)
 - Include natural spoken dialogue in quotes within each scene prompt
-- Write dialogue as SPOKEN WORDS, not written language. How humans actually talk out loud:
-  - ALWAYS use contractions: "I'm", "don't", "can't", "we're", "that's", "it's", "wouldn't"
-  - Include filler words: "like", "you know", "I mean", "um", "so", "yeah", "honestly", "basically"
-  - Use false starts: "I was gonna— actually, never mind", "so the thing is— wait no"
-  - Include interruptions and overlapping: "wait wait wait—", "no but—", "hold on—"
-  - Let people trail off: "so I thought maybe...", "I don't know it's just...", "whatever it's fine"
-  - Use repetition under stress: "go go go", "ok ok ok", "no no no"
-  - Incomplete sentences: "the thing is— yeah. exactly.", "I just— I can't even—"
-- Dialogue across scenes MUST be a continuation — one coherent conversation or monologue. Each scene picks up where the last one left off.
-- Match the mood: tense = clipped, urgent, overlapping. Calm = wandering, trailing off, casual.
-- TEST: Read the dialogue out loud. If it sounds like a novel or a press release, it's WRONG. Rewrite until it sounds like an actual human talking to another human.
+- Write dialogue as SPOKEN WORDS — conversational, not literary. Use contractions always, natural pauses, filler words where they fit. Real people don't speak in complete, grammatically perfect sentences. They trail off, interrupt themselves, repeat words, and leave thoughts unfinished.
+- Match dialogue to the mood: tense scenes = clipped, urgent, overlapping. Calm scenes = wandering, trailing off, casual. Comedy = matter-of-fact about absurd things.
+- Dialogue across scenes should feel like one continuous conversation — each scene picks up roughly where the last left off. But don't force awkward bridges between scenes. Some coherence is needed, but natural breaks at scene cuts are fine.
+- TEST: Read the dialogue out loud. If it sounds like a novel, a press release, or a corporate presentation, rewrite it.
 - BANNED WORDS: NEVER use "subtitle", "subtitles", "subtitled", "caption", "captions", or "text overlay" in any prompt. Veo 3.1 will render literal subtitle text on screen if these words appear. Write dialogue directly in quotes instead.`;
 
 /**

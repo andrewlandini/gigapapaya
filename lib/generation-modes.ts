@@ -148,7 +148,7 @@ Return a structured response with:
 {
   "title": "A dry, understated title (the less exciting it sounds, the funnier)",
   "description": "A 2-3 sentence pitch written in the same deadpan tone — describe something insane as if it's boring",
-  "style": "The visual style (static cameras, symmetrical framing, documentary-style, flat lighting)",
+  "style": "The visual style (controlled composition, symmetrical framing, documentary-style, flat lighting)",
   "mood": "The comedic tone (bone-dry, aggressively calm, bureaucratic absurdity)",
   "keyElements": ["element1", "element2", "element3"] // 3-5 deadpan visual elements
 }
@@ -156,14 +156,14 @@ Return a structured response with:
 The funniest version is the one where nobody thinks it's funny.`,
     scenePrompt: `You are a scene breakdown specialist focused on DEADPAN COMEDY.
 
-Deadpan comedy relies on: static or locked-off cameras (no energy in the cinematography), symmetrical framing (Wes Anderson style), long uncomfortable pauses, characters delivering absurd lines with zero inflection, reaction shots where nobody reacts, and the audience being the only ones who notice how insane things are.
+Deadpan comedy relies on: compositionally precise, controlled camera work (symmetrical framing, clean lines, deliberate composition), long uncomfortable pauses, characters delivering absurd lines with zero inflection, reaction shots where nobody reacts, and the audience being the only ones who notice how insane things are.
 
-Your approach: "Play it like a documentary about the most boring day ever — except everything is on fire" — the camera is clinical, the framing is precise, and no one in the scene acknowledges that anything unusual is happening.
+Your approach: "Play it like a documentary about the most boring day ever — except everything is on fire" — the camera is clinical, the framing is precise, and no one in the scene acknowledges that anything unusual is happening. Camera movement should feel inevitable and purposeful — if the camera moves, it has a reason (a slow methodical pan, a matter-of-fact push-in). Think architectural photography of spaces filled with absurdity.
 
 Take the deadpan concept and break it into scenes:
 
 For EACH scene:
-1. **Static Camera**: Locked-off, symmetrical, clinical framing — the camera doesn't care either
+1. **Controlled Camera**: Symmetrical, clinical, composed framing — camera movement is deliberate and unhurried, matching the characters' indifference
 2. **Anti-Reaction**: Characters respond to chaos with boredom, mild annoyance, or bureaucratic procedure
 3. **Uncomfortable Timing**: Hold shots longer than expected. Let the silence do the work. Awkward pauses.
 4. **Understated Escalation**: Things get progressively more insane but everyone's energy stays exactly the same
@@ -174,15 +174,15 @@ Return a structured response:
   "scenes": [
     {
       "index": 1,
-      "prompt": "Static, symmetrical shot of characters responding to an absurd situation with complete indifference.",
+      "prompt": "Controlled, symmetrical shot of characters responding to an absurd situation with complete indifference.",
       "duration": 8,
       "notes": "The deadpan beat — what's insane and how nobody cares"
     }
   ],
-  "consistencyNotes": "How to maintain the flat, unfazed tone and visual stillness across scenes"
+  "consistencyNotes": "How to maintain the flat, unfazed tone and controlled composition across scenes"
 }
 
-The camera should feel like a security camera that happened to capture something unbelievable and doesn't care.
+The camera should feel like it was placed by someone who finds everything perfectly normal — composed, unhurried, precise.
 
 DIALOGUE: Include natural spoken dialogue in quotes. Write FLAT, MONOTONE, matter-of-fact dialogue — characters say absurd things with the energy of reading a grocery list. Think: "Yeah so the building's on fire. Anyway, did you get my email?" Dialogue across scenes must continue as one coherent flow when played back-to-back. Only skip dialogue if the concept has no speaking characters.`,
   },
@@ -202,7 +202,7 @@ Given user input, generate a video concept where mood is everything:
 - Reference specific visual styles, eras, or art movements
 - Prioritize texture, color, and tone over plot
 
-CRITICAL: These must be clean, usable shots — NO overlay graphics, NO film cell borders, NO split screens, NO text on screen, NO collage effects, NO picture-in-picture, NO letterbox overlays, NO stylized frames or borders. Just beautiful, clean cinematography with mood built through lighting, color, composition, and camera work.
+CRITICAL: These must be clean, usable shots — NO overlay graphics, NO film cell borders, NO split screens, NO text on screen, NO collage effects, NO picture-in-picture, NO decorative frames. Atmospheric effects that exist IN the scene are great (haze, fog, rain, dust particles, lens flares from practical lights, film grain from the camera/stock choice). The ban is on POST-PRODUCTION graphic overlays, not on real atmospheric cinematography.
 
 Return a structured response with:
 {
@@ -223,11 +223,11 @@ Take the stylized concept and break it into scenes that are pure atmosphere:
 For EACH scene:
 1. **Color**: Strict palette rules — warm/cool temperature, saturation level, dominant hue
 2. **Focus**: Deliberate depth of field — shallow for intimacy, deep for isolation
-3. **Camera**: Height and angle serve the mood — low for power, high for vulnerability, eye-level for connection
-4. **Movement**: Camera movement language — smooth and slow for dreamy, handheld for anxiety, static for contemplation
+3. **Camera**: Height and angle serve the mood — choose intentionally, not by formula. Consider what the audience needs to feel.
+4. **Movement**: Choose camera movement that serves the content. Slow dolly for building tension, handheld for immediacy, orbit for curiosity, static for weight. Match the movement to the CHARACTER'S psychology, not a preset emotion.
 5. **Texture**: Film grain, lens characteristics, atmospheric haze, light quality — achieved through camera/lens choice, NOT post-production overlays
 
-CRITICAL: Every scene must describe a CLEAN shot — no overlay graphics, no film cell borders, no split screens, no text on screen, no collage effects, no picture-in-picture, no decorative frames. Style comes from lighting, color grading, lens choice, composition, and camera movement — NOT from graphical elements layered on top of the footage.
+CRITICAL: No post-production graphic overlays (no borders, no split screens, no text, no collage effects, no picture-in-picture). But IN-CAMERA and IN-SCENE atmosphere is encouraged — haze, fog, rain, dust particles, lens flares from practical lights, film grain from the stock. Style comes from real cinematography, not graphic design.
 
 Return a structured response:
 {
