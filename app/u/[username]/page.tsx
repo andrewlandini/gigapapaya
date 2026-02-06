@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { getUserByUsername, getUserPublicVideos, getUserStats } from '@/lib/db';
-import { VideoCard } from '@/components/video-card';
+import { FeedGrid } from '@/components/feed-grid';
 
 export const revalidate = 30;
 
@@ -61,26 +61,7 @@ export default async function UserProfilePage({
 
       {/* Videos grid */}
       <div className="px-4 py-6">
-        {videos.length === 0 ? (
-          <div className="text-center py-20">
-            <p className="text-[#555]">No public videos</p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-3">
-            {(videos as any[]).map((video) => (
-              <div key={video.id}>
-                <VideoCard
-                  id={video.id}
-                  blobUrl={video.blob_url}
-                  prompt={video.prompt}
-                  username={video.username}
-                  aspectRatio={video.aspect_ratio}
-                  duration={video.duration}
-                />
-              </div>
-            ))}
-          </div>
-        )}
+        <FeedGrid videos={videos as any[]} />
       </div>
     </div>
   );
