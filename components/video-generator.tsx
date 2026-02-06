@@ -149,23 +149,36 @@ export function VideoGenerator() {
             </div>
           </div>
 
-          {/* Agent settings — per-mode tabs */}
-          <div className="border border-[#222] rounded-xl overflow-hidden">
-            <button
-              onClick={() => setShowAgentSettings(!showAgentSettings)}
-              className="w-full flex items-center justify-between px-4 py-3 hover:bg-[#0a0a0a] transition-colors"
-            >
-              <div className="flex items-center gap-2">
-                <Settings2 className="h-4 w-4 text-[#555]" />
-                <span className="text-sm text-[#888]">Agent Settings</span>
-              </div>
-              <ChevronDown className={`h-4 w-4 text-[#555] transition-transform ${showAgentSettings ? 'rotate-180' : ''}`} />
-            </button>
+          {/* Agent settings trigger */}
+          <button
+            onClick={() => setShowAgentSettings(true)}
+            className="flex items-center gap-2 text-[#555] hover:text-[#888] transition-colors"
+          >
+            <Settings2 className="h-4 w-4" />
+            <span className="text-xs">Agent Settings</span>
+          </button>
 
-            {showAgentSettings && (
-              <div className="border-t border-[#222]">
+          {/* Agent settings modal */}
+          {showAgentSettings && (
+            <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+              <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={() => setShowAgentSettings(false)} />
+              <div className="relative bg-[#111] border border-[#333] rounded-2xl w-full max-w-2xl max-h-[85vh] flex flex-col shadow-2xl">
+                {/* Modal header */}
+                <div className="flex items-center justify-between px-5 py-4 border-b border-[#222]">
+                  <div className="flex items-center gap-2">
+                    <Settings2 className="h-4 w-4 text-[#888]" />
+                    <span className="text-sm font-medium text-[#ededed]">Agent Settings</span>
+                  </div>
+                  <button
+                    onClick={() => setShowAgentSettings(false)}
+                    className="p-1 rounded-lg text-[#555] hover:text-white hover:bg-[#222] transition-colors"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+
                 {/* Mode tabs */}
-                <div className="flex border-b border-[#222] overflow-x-auto">
+                <div className="flex border-b border-[#222] overflow-x-auto px-2">
                   {GENERATION_MODES.map((mode) => {
                     const hasCustom = customPrompts[mode.id] && (
                       customPrompts[mode.id].ideaPrompt || customPrompts[mode.id].scenePrompt ||
@@ -189,9 +202,10 @@ export function VideoGenerator() {
                   })}
                 </div>
 
-                <div className="divide-y divide-[#222]">
+                {/* Scrollable content */}
+                <div className="flex-1 overflow-y-auto divide-y divide-[#222]">
                   {/* Idea Agent */}
-                  <div className="p-4 space-y-3">
+                  <div className="p-5 space-y-3">
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-mono text-[#888]">Idea Agent</span>
                       <div className="flex items-center gap-2">
@@ -222,7 +236,7 @@ export function VideoGenerator() {
                   </div>
 
                   {/* Scene Agent */}
-                  <div className="p-4 space-y-3">
+                  <div className="p-5 space-y-3">
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-mono text-[#888]">Scene Agent</span>
                       <div className="flex items-center gap-2">
@@ -253,8 +267,8 @@ export function VideoGenerator() {
                   </div>
                 </div>
               </div>
-            )}
-          </div>
+            </div>
+          )}
 
           {/* Prompt history */}
           {state.status === 'idle' && history.length > 0 && (

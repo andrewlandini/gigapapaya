@@ -59,10 +59,18 @@ export async function executeIdeaAgent(
 // Base prompt appended to all scene agent calls (not shown in UI)
 const SCENE_AGENT_BASE = `
 
-CRITICAL PROMPT STRUCTURE FOR EACH SCENE:
-[SHOT TYPE] + [SUBJECT] + [ACTION] + [STYLE] + [CAMERA MOVEMENT] + [AUDIO CUES]
+SCENE CONSISTENCY RULES (MANDATORY):
+- Choose ONE cinematic style/look for ALL scenes and repeat it verbatim in every prompt (e.g., "shot on ARRI Alexa, warm amber grade, shallow depth of field")
+- Characters must be described IDENTICALLY across scenes — same clothing, hair, features, build. Copy-paste the character description into every scene prompt.
+- If scenes share a location, describe the environment with the same details each time (same lighting conditions, same set dressing, same color palette)
+- Use the SAME camera language across all scenes (e.g., if scene 1 uses "handheld, eye-level", all scenes should default to that unless there's a specific reason to change)
+- Scenes must feel like they belong to the same film — consistent color temperature, grain, contrast, and aspect ratio
+- When played back-to-back, transitions should feel natural (match action, match eyeline, match energy level between scene endings and beginnings)
 
-Example: Medium shot, cyberpunk hacker typing frantically, neon reflections on face, blade runner aesthetic, slow push in, Audio: mechanical keyboard clicks, distant sirens
+CRITICAL PROMPT STRUCTURE FOR EACH SCENE:
+[SHOT TYPE] + [SUBJECT with full physical description] + [ACTION - one only] + [STYLE - identical across scenes] + [CAMERA MOVEMENT] + [AUDIO CUES]
+
+Example: Medium shot, cyberpunk hacker (male, mid-30s, shaved head, black hoodie, pale skin, cybernetic arm) typing frantically, neon reflections on face, blade runner aesthetic, shot on ARRI Alexa with anamorphic lens, teal and orange color grade, slow push in, Audio: mechanical keyboard clicks, distant sirens
 
 Rules:
 - Front-load the important stuff — Veo 3 weights early words more heavily
@@ -70,6 +78,7 @@ Rules:
 - One action per prompt — multiple actions = chaos (one action per scene)
 - Specific > Creative — "Walking sadly" < "shuffling with hunched shoulders"
 - Audio cues are essential — give the video a realistic feel
+- ALWAYS include full character descriptions — never use "the character" or "the person", always redescribe them
 
 Camera movements that work:
 - Slow push/pull (dolly in/out)
@@ -81,12 +90,13 @@ Avoid:
 - Complex combinations ("pan while zooming during a dolly")
 - Unmotivated movements
 - Multiple focal points
+- Vague character references — always fully describe every person in frame
 
 Style references that consistently deliver:
-- "Shot on [specific camera]"
-- "[Director name] style"
-- "[Movie] cinematography"
-- Specific color grading terms`;
+- "Shot on [specific camera]" (use the SAME camera for all scenes)
+- "[Director name] style" (use the SAME director reference for all scenes)
+- "[Movie] cinematography" (use the SAME film reference for all scenes)
+- Specific color grading terms (use the SAME grade for all scenes)`;
 
 /**
  * Agent 2: Generate scene breakdown from video idea
