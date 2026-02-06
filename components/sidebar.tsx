@@ -16,7 +16,7 @@ export function Sidebar({ user }: SidebarProps) {
 
   const links = [
     { href: '/', icon: Play, label: 'Feed' },
-    { href: '/generate', icon: Zap, label: 'Storyboard' },
+    { href: '/storyboard', icon: Zap, label: 'Storyboard' },
     ...(user ? [{ href: '/profile', icon: User, label: 'Profile' }] : []),
   ];
 

@@ -49,7 +49,7 @@ export async function signUp(formData: FormData) {
   }
 
   await createSession({ id, username, name, avatarUrl: null });
-  redirect('/generate');
+  redirect('/storyboard');
 }
 
 export async function signIn(formData: FormData) {
@@ -80,7 +80,7 @@ export async function signIn(formData: FormData) {
     avatarUrl: user.avatar_url,
     isAdmin: admin,
   });
-  redirect('/generate');
+  redirect('/storyboard');
 }
 
 export async function signOut() {

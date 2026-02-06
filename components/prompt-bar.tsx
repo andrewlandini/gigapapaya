@@ -177,7 +177,7 @@ export function PromptBar({ isAuthenticated }: PromptBarProps) {
                 <Plus className="h-4 w-4" />
               </button>
               <Link
-                href="/generate"
+                href="/storyboard"
                 className="h-9 px-4 rounded-xl bg-[#1a1a1a] border border-[#333] flex items-center justify-center text-sm text-[#888] hover:text-white hover:border-[#555] transition-colors"
               >
                 Storyboard
