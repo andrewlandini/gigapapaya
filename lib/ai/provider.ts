@@ -9,7 +9,7 @@ import { gateway } from 'ai';
  * Get a text model for idea and scene generation
  * Uses gateway.languageModel() with provider-prefixed model ID
  */
-export function getTextModel(modelName: string = 'openai/gpt-4o') {
+export function getTextModel(modelName: string = 'anthropic/claude-sonnet-4.5') {
   console.log(`📝 Using text model: ${modelName}`);
   return gateway.languageModel(modelName);
 }

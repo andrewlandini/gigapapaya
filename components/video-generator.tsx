@@ -55,7 +55,7 @@ export function VideoGenerator() {
             <h1 className="text-[32px] font-semibold tracking-tight">Generate videos</h1>
             <p className="text-[#666] text-[15px] leading-relaxed">
               {options.mode === 'agents'
-                ? 'Describe an idea. Three AI agents will generate a concept, craft scenes, and produce video variations.'
+                ? 'Describe an idea. Two AI agents will generate a concept and craft scenes, then Veo 3.1 produces video variations.'
                 : 'Write a prompt. Generate a single video directly with Veo 3.1 — no agents, no frills.'}
             </p>
           </div>
@@ -173,7 +173,7 @@ export function VideoGenerator() {
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-mono text-[#888]">Idea Agent</span>
                       <select
-                        value={options.ideaAgent?.model || 'openai/gpt-4o'}
+                        value={options.ideaAgent?.model || 'anthropic/claude-sonnet-4.5'}
                         onChange={(e) => setOptions(prev => ({
                           ...prev,
                           ideaAgent: { ...prev.ideaAgent, model: e.target.value, prompt: prev.ideaAgent?.prompt || IDEA_AGENT_PROMPT },
@@ -190,7 +190,7 @@ export function VideoGenerator() {
                       value={options.ideaAgent?.prompt || IDEA_AGENT_PROMPT}
                       onChange={(e) => setOptions(prev => ({
                         ...prev,
-                        ideaAgent: { model: prev.ideaAgent?.model || 'openai/gpt-4o', prompt: e.target.value },
+                        ideaAgent: { model: prev.ideaAgent?.model || 'anthropic/claude-sonnet-4.5', prompt: e.target.value },
                       }))}
                       disabled={isGenerating}
                       rows={6}
@@ -203,7 +203,7 @@ export function VideoGenerator() {
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-mono text-[#888]">Scene Agent</span>
                       <select
-                        value={options.sceneAgent?.model || 'openai/gpt-4o'}
+                        value={options.sceneAgent?.model || 'anthropic/claude-sonnet-4.5'}
                         onChange={(e) => setOptions(prev => ({
                           ...prev,
                           sceneAgent: { ...prev.sceneAgent, model: e.target.value, prompt: prev.sceneAgent?.prompt || SCENES_AGENT_PROMPT },
@@ -220,7 +220,7 @@ export function VideoGenerator() {
                       value={options.sceneAgent?.prompt || SCENES_AGENT_PROMPT}
                       onChange={(e) => setOptions(prev => ({
                         ...prev,
-                        sceneAgent: { model: prev.sceneAgent?.model || 'openai/gpt-4o', prompt: e.target.value },
+                        sceneAgent: { model: prev.sceneAgent?.model || 'anthropic/claude-sonnet-4.5', prompt: e.target.value },
                       }))}
                       disabled={isGenerating}
                       rows={6}

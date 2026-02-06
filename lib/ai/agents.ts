@@ -36,7 +36,7 @@ export async function executeIdeaAgent(
   userInput: string,
   config?: { model?: string; prompt?: string }
 ): Promise<VideoIdea> {
-  const modelId = config?.model || 'openai/gpt-4o';
+  const modelId = config?.model || 'anthropic/claude-sonnet-4.5';
   const systemPrompt = config?.prompt || IDEA_AGENT_PROMPT;
 
   console.log('\n🎨 IDEA AGENT: Starting...');
@@ -64,7 +64,7 @@ export async function executeScenesAgent(
   numScenes: number = 3,
   config?: { model?: string; prompt?: string }
 ): Promise<ScenesResult> {
-  const modelId = config?.model || 'openai/gpt-4o';
+  const modelId = config?.model || 'anthropic/claude-sonnet-4.5';
   const systemPrompt = config?.prompt || SCENES_AGENT_PROMPT;
 
   console.log('\n🎬 SCENES AGENT: Starting...');
