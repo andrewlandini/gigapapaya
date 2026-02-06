@@ -2,8 +2,8 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Play, Search, Zap, User, LogOut } from 'lucide-react';
-
+import { Play, Zap, User, LogOut, FileVideo } from 'lucide-react';
+import { useGeneration } from './generation-context';
 import { cn } from '@/lib/utils';
 
 interface SidebarProps {
@@ -12,10 +12,11 @@ interface SidebarProps {
 
 export function Sidebar({ user }: SidebarProps) {
   const pathname = usePathname();
+  const { activeDraftCount } = useGeneration();
 
   const links = [
     { href: '/', icon: Play, label: 'Feed' },
-    { href: '/generate', icon: Zap, label: 'Generate' },
+    { href: '/generate', icon: Zap, label: 'Storyboard' },
     ...(user ? [{ href: '/profile', icon: User, label: 'Profile' }] : []),
   ];
 
@@ -48,6 +49,27 @@ export function Sidebar({ user }: SidebarProps) {
             </Link>
           );
         })}
+
+        {/* Drafts — always visible for authenticated users */}
+        {user && (
+          <Link
+            href="/drafts"
+            title="Drafts"
+            className={cn(
+              'w-10 h-10 rounded-lg flex items-center justify-center transition-colors relative',
+              pathname === '/drafts'
+                ? 'bg-[#222] text-white'
+                : 'text-[#555] hover:text-white hover:bg-[#111]'
+            )}
+          >
+            <FileVideo className="h-5 w-5" />
+            {activeDraftCount > 0 && (
+              <span className="absolute -top-0.5 -right-0.5 h-4 min-w-[16px] px-1 rounded-full bg-[#0070f3] text-[10px] font-bold text-white flex items-center justify-center">
+                {activeDraftCount}
+              </span>
+            )}
+          </Link>
+        )}
       </nav>
 
       {/* Bottom */}

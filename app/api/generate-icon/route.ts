@@ -29,9 +29,7 @@ export async function POST(request: NextRequest) {
 
     const { images } = await generateImage({
       model: getImageModel('google/gemini-3-pro-image'),
-      prompt,
-      n: 1,
-      size: '1024x1024',
+      prompt: `Generate a square profile avatar/icon: ${prompt}. Clean, centered composition on a simple background.`,
     });
 
     if (!images || images.length === 0) {

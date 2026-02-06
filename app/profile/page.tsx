@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { Sparkles, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { VideoCard } from '@/components/video-card';
+import { PromptBar } from '@/components/prompt-bar';
 
 interface Video {
   id: string;
@@ -27,6 +28,7 @@ export default function ProfilePage() {
   const [iconPrompt, setIconPrompt] = useState('');
   const [generatingIcon, setGeneratingIcon] = useState(false);
   const [showIconGen, setShowIconGen] = useState(false);
+  const [iconError, setIconError] = useState<string | null>(null);
 
   const load = async () => {
     const res = await fetch('/api/profile');
@@ -50,6 +52,7 @@ export default function ProfilePage() {
   const generateIcon = async () => {
     if (!iconPrompt.trim()) return;
     setGeneratingIcon(true);
+    setIconError(null);
 
     try {
       const res = await fetch('/api/generate-icon', {
@@ -61,13 +64,13 @@ export default function ProfilePage() {
       if (res.ok) {
         setShowIconGen(false);
         setIconPrompt('');
-        load(); // Reload to get new avatar
+        load();
       } else {
         const err = await res.json();
-        alert(err.error || 'Failed to generate icon');
+        setIconError(err.error || 'Failed to generate icon');
       }
     } catch {
-      alert('Failed to generate icon');
+      setIconError('Failed to generate icon');
     } finally {
       setGeneratingIcon(false);
     }
@@ -92,7 +95,7 @@ export default function ProfilePage() {
   const { user, videos, stats } = data;
 
   return (
-    <div className="min-h-screen bg-black">
+    <div className="min-h-screen bg-black flex flex-col">
       {/* Profile header */}
       <div className="border-b border-[#222] py-10">
         <div className="max-w-4xl mx-auto px-6 text-center space-y-4">
@@ -110,8 +113,8 @@ export default function ProfilePage() {
               </div>
             )}
             <button
-              onClick={() => setShowIconGen(!showIconGen)}
-              title="Generate avatar with nanobanana"
+              onClick={() => { setShowIconGen(!showIconGen); setIconError(null); }}
+              title="Generate avatar"
               className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-[#222] border border-[#333] flex items-center justify-center text-[#888] hover:text-white hover:border-[#555] transition-colors"
             >
               <Sparkles className="h-3.5 w-3.5" />
@@ -135,6 +138,9 @@ export default function ProfilePage() {
                   disabled={generatingIcon}
                   className="w-full bg-black border border-[#333] rounded-lg px-3 py-2 text-sm text-[#ededed] placeholder:text-[#555] focus:outline-none focus:border-[#555] focus:ring-1 focus:ring-white/10"
                 />
+                {iconError && (
+                  <p className="text-xs text-[#ff4444]">{iconError}</p>
+                )}
                 <Button
                   onClick={generateIcon}
                   disabled={generatingIcon || !iconPrompt.trim()}
@@ -176,7 +182,7 @@ export default function ProfilePage() {
       </div>
 
       {/* Videos grid */}
-      <div className="max-w-6xl mx-auto p-6">
+      <div className="max-w-6xl mx-auto p-6 flex-1">
         {videos.length === 0 ? (
           <div className="text-center py-20">
             <p className="text-[#555]">No videos yet</p>
@@ -202,6 +208,9 @@ export default function ProfilePage() {
           </div>
         )}
       </div>
+
+      {/* Prompt bar */}
+      <PromptBar isAuthenticated={true} />
     </div>
   );
 }

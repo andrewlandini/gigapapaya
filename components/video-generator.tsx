@@ -221,7 +221,7 @@ export function VideoGenerator() {
           <div className="flex items-center gap-3">
             <span className="text-[15px] font-semibold tracking-tight">gigapapaya</span>
             <span className="text-[#333]">/</span>
-            <span className="text-sm text-[#666]">generate</span>
+            <span className="text-sm text-[#666]">storyboard</span>
           </div>
           <div className="flex items-center gap-3">
             {isGenerating && (
