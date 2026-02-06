@@ -327,3 +327,9 @@ export async function setUserAdmin(userId: string, isAdmin: boolean) {
   const sql = getDb();
   await sql`UPDATE users SET is_admin = ${isAdmin} WHERE id = ${userId}`;
 }
+
+export async function deleteVideo(videoId: string) {
+  const sql = getDb();
+  await sql`DELETE FROM hearts WHERE video_id = ${videoId}`;
+  await sql`DELETE FROM videos WHERE id = ${videoId}`;
+}

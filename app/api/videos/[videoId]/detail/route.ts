@@ -20,6 +20,7 @@ export async function GET(
   const user = await getSession();
   const hearted = user ? await hasUserHearted(user.id, videoId) : false;
   const isOwner = user ? user.id === video.user_id : false;
+  const isAdmin = user?.isAdmin || false;
 
-  return Response.json({ video, hearted, isOwner });
+  return Response.json({ video, hearted, isOwner, isAdmin });
 }

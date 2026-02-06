@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Heart, ArrowLeft, Download, Check, Pencil } from 'lucide-react';
+import { Heart, ArrowLeft, Download, Pencil, Trash2 } from 'lucide-react';
 
 interface VideoDetail {
   id: string;
@@ -29,6 +29,7 @@ export default function VideoPage() {
   const [hearted, setHearted] = useState(false);
   const [heartCount, setHeartCount] = useState(0);
   const [isOwner, setIsOwner] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [editingDesc, setEditingDesc] = useState(false);
   const [description, setDescription] = useState('');
   const [savingDesc, setSavingDesc] = useState(false);
@@ -42,6 +43,7 @@ export default function VideoPage() {
         setHearted(data.hearted);
         setHeartCount(parseInt(data.video.heart_count, 10));
         setIsOwner(data.isOwner);
+        setIsAdmin(data.isAdmin);
         setDescription(data.video.description || '');
       }
       setLoading(false);
@@ -67,6 +69,11 @@ export default function VideoPage() {
     });
     setSavingDesc(false);
     setEditingDesc(false);
+  };
+
+  const handleDelete = async () => {
+    const res = await fetch(`/api/videos/${videoId}/delete`, { method: 'POST' });
+    if (res.ok) router.back();
   };
 
   if (loading) {
@@ -210,6 +217,16 @@ export default function VideoPage() {
               >
                 <Download className="h-5 w-5" />
               </a>
+
+              {isAdmin && (
+                <button
+                  onClick={handleDelete}
+                  className="flex items-center gap-1.5 text-[#555] hover:text-[#ff4444] transition-colors ml-auto"
+                  title="Delete video (admin)"
+                >
+                  <Trash2 className="h-5 w-5" />
+                </button>
+              )}
             </div>
           </div>
 
