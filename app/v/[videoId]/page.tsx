@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Heart, ArrowLeft, Download, Pencil, Trash2, X } from 'lucide-react';
+import { Heart, ArrowLeft, Download, Pencil, Trash2, X, Film } from 'lucide-react';
 
 interface VideoDetail {
   id: string;
@@ -19,6 +19,7 @@ interface VideoDetail {
   heart_count: string;
   created_at: string;
   visibility: string;
+  generation_id: string;
 }
 
 export default function VideoPage() {
@@ -221,6 +222,16 @@ export default function VideoPage() {
               >
                 <Download className="h-5 w-5" />
               </a>
+
+              {video.generation_id && (
+                <Link
+                  href={`/s/${video.generation_id}`}
+                  className="flex items-center gap-1.5 text-[#888] hover:text-white transition-colors"
+                  title="View all scenes"
+                >
+                  <Film className="h-5 w-5" />
+                </Link>
+              )}
 
               {(isOwner || isAdmin) && (
                 <button
