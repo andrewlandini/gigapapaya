@@ -8,6 +8,7 @@ import { ProgressTracker } from './progress-tracker';
 import { ScenePreview } from './scene-preview';
 import { VideoGallery } from './video-gallery';
 import { useStoryboard } from './storyboard-context';
+import { IdeaWizard } from './idea-wizard';
 import { TEXT_MODELS } from '@/lib/types';
 import { GENERATION_MODES, getModeById } from '@/lib/generation-modes';
 
@@ -62,11 +63,9 @@ export function VideoGenerator() {
       <main className="max-w-6xl mx-auto px-6 py-10 space-y-10 flex-1">
         {/* Hero + Input */}
         <div className="max-w-3xl space-y-6">
-          <div className="space-y-2">
+          <div className="space-y-3">
             <h1 className="text-[32px] font-semibold tracking-tight">Generate videos</h1>
-            <p className="text-[#666] text-[15px] leading-relaxed">
-              Describe an idea, choose a style. Two AI agents craft the concept and scenes, then Veo 3.1 produces video variations.
-            </p>
+            <IdeaWizard onSelectIdea={(idea) => setIdea(idea)} />
           </div>
 
           <div className="space-y-4">
