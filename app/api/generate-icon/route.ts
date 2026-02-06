@@ -1,7 +1,8 @@
 import { NextRequest } from 'next/server';
-import { gateway, generateImage } from 'ai';
+import { generateImage } from 'ai';
 import { put } from '@vercel/blob';
 import { getSession } from '@/lib/auth/session';
+import { getImageModel } from '@/lib/ai/provider';
 import { initDb, updateUserAvatar } from '@/lib/db';
 
 export const runtime = 'nodejs';
@@ -27,7 +28,7 @@ export async function POST(request: NextRequest) {
     console.log(`🎨 Generating icon for @${user.username}: "${prompt}"`);
 
     const { images } = await generateImage({
-      model: gateway.imageModel('google/gemini-3-pro-image'),
+      model: getImageModel('google/gemini-3-pro-image'),
       prompt,
       n: 1,
       size: '1024x1024',

@@ -9,8 +9,6 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "@ai-sdk/google": "^3.0.21",
-    "@ai-sdk/openai": "^3.0.25",
     "@neondatabase/serverless": "^1.0.2",
     "@vercel/blob": "^2.1.0",
     "ai": "^6.0.73",
