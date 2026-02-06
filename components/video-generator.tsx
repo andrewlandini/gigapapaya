@@ -64,7 +64,7 @@ import { GENERATION_MODES, getModeById } from '@/lib/generation-modes';
 export function VideoGenerator() {
   const {
     state, options, sessionId, setIdea, setOptions,
-    updateScenePrompt, startModeGeneration, handleGenerateVideos, handleReset, clearGeneration,
+    updateScenePrompt, removeScene, startModeGeneration, handleGenerateVideos, handleReset, clearGeneration,
     isGenerating,
     customPrompts, updateModeCustomization, restoreModeDefault,
     history, deleteHistoryEntry, loadFromHistory,
@@ -410,11 +410,22 @@ export function VideoGenerator() {
                   key={i}
                   className="border border-[#222] rounded-xl p-4 space-y-3 hover:border-[#333] transition-colors"
                 >
-                  <div className="flex items-center gap-3">
-                    <div className="flex-shrink-0 w-6 h-6 rounded-md bg-[#1a1a1a] border border-[#333] text-[#888] flex items-center justify-center text-xs font-mono">
-                      {i + 1}
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="flex-shrink-0 w-6 h-6 rounded-md bg-[#1a1a1a] border border-[#333] text-[#888] flex items-center justify-center text-xs font-mono">
+                        {i + 1}
+                      </div>
+                      <span className="text-xs font-mono text-[#555]">Scene {i + 1}</span>
                     </div>
-                    <span className="text-xs font-mono text-[#555]">Scene {i + 1}</span>
+                    {state.editableScenes!.length > 1 && (
+                      <button
+                        onClick={() => removeScene(i)}
+                        className="p-1 rounded-md text-[#444] hover:text-[#ff4444] hover:bg-[#1a1a1a] transition-colors"
+                        title="Remove scene"
+                      >
+                        <X className="h-3.5 w-3.5" />
+                      </button>
+                    )}
                   </div>
                   <textarea
                     value={scene.prompt}
@@ -426,11 +437,6 @@ export function VideoGenerator() {
               ))}
             </div>
           </div>
-        )}
-
-        {/* Read-only Scenes (after video gen started) */}
-        {state.status !== 'reviewing' && state.scenes && state.scenes.length > 0 && (
-          <ScenePreview scenes={state.scenes} />
         )}
 
         {/* Videos */}

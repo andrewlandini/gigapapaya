@@ -31,6 +31,7 @@ interface StoryboardContextValue {
   setIdea: (idea: string) => void;
   setOptions: (updater: (prev: GenerationOptions) => GenerationOptions) => void;
   updateScenePrompt: (index: number, prompt: string) => void;
+  removeScene: (index: number) => void;
   startModeGeneration: (modeId: string) => void;
   handleGenerateVideos: () => void;
   handleReset: () => void;
@@ -175,6 +176,13 @@ export function StoryboardProvider({ children }: { children: ReactNode }) {
       editableScenes: prev.editableScenes?.map((s, i) =>
         i === index ? { ...s, prompt } : s
       ) || null,
+    }));
+  }, []);
+
+  const removeScene = useCallback((index: number) => {
+    setState(prev => ({
+      ...prev,
+      editableScenes: prev.editableScenes?.filter((_, i) => i !== index) || null,
     }));
   }, []);
 
@@ -382,7 +390,7 @@ export function StoryboardProvider({ children }: { children: ReactNode }) {
   return (
     <StoryboardContext.Provider value={{
       state, options, sessionId: sessionIdRef.current,
-      setIdea, setOptions, updateScenePrompt,
+      setIdea, setOptions, updateScenePrompt, removeScene,
       startModeGeneration, handleGenerateVideos, handleReset, clearGeneration,
       isGenerating,
       customPrompts, updateModeCustomization, restoreModeDefault,
