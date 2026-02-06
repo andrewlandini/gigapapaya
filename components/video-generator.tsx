@@ -536,6 +536,21 @@ export function VideoGenerator() {
           </div>
         )}
 
+        {/* Character Portraits (review mode) */}
+        {state.status === 'reviewing' && Object.keys(state.characterPortraits).length > 0 && (
+          <div className="space-y-3 animate-fade-in">
+            <h2 className="text-sm font-medium text-[#ededed]">Characters</h2>
+            <div className="flex gap-3 flex-wrap">
+              {Object.entries(state.characterPortraits).map(([name, img]) => (
+                <div key={name} className="text-center space-y-1.5">
+                  <img src={img} alt={name} className="w-20 h-20 object-cover rounded-full border border-[#333]" />
+                  <span className="text-xs font-mono text-[#888] block">{name}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Editable Scenes (review mode) */}
         {state.status === 'reviewing' && state.editableScenes && (
           <div className="space-y-4 animate-fade-in">

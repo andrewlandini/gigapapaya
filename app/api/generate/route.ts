@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server';
 import crypto from 'crypto';
-import { executeIdeaAgent, executeScenesAgent, executeVideoAgent, executeMoodBoardAgent, executeStoryboardAgent } from '@/lib/ai/agents';
+import { executeIdeaAgent, executeScenesAgent, executeVideoAgent, executeMoodBoardAgent, generateCharacterPortraits, generateGroupReferences, generateSceneStoryboards } from '@/lib/ai/agents';
 import { getSession } from '@/lib/auth/session';
 import {
   initDb,
@@ -130,29 +130,45 @@ export async function POST(request: NextRequest) {
             sendEvent({ type: 'agent-log', agent: 'scenes', status: `Consistency: ${scenesResult.consistencyNotes.substring(0, 100)}...` });
             sendEvent({ type: 'agent-complete', agent: 'scenes', result: scenesResult });
 
-            // Storyboard: Generate preview images per scene (beta)
+            // Storyboard: Character portraits → Group refs → Scene frames
             let storyboardImages: string[] = [];
-            if (options.useMoodBoard) {
-              sendEvent({ type: 'storyboard-start' as any, status: 'Generating storyboard frames...' });
-              sendEvent({ type: 'agent-log', agent: 'mood-board', status: `Creating preview frame for each of ${scenesResult.scenes.length} shots` });
+            let characterPortraits: Record<string, string> = {};
 
-              try {
-                storyboardImages = await executeStoryboardAgent(
-                  scenesResult.scenes,
-                  ideaResult.style,
-                  ideaResult.mood,
-                );
-                sendEvent({ type: 'agent-log', agent: 'mood-board', status: `Generated ${storyboardImages.filter(Boolean).length} storyboard frames` });
-                sendEvent({ type: 'storyboard-complete' as any, storyboardImages });
-              } catch (error) {
-                console.error('❌ Storyboard generation failed:', error);
-                sendEvent({ type: 'storyboard-complete' as any, storyboardImages: [] });
+            sendEvent({ type: 'storyboard-start' as any, status: 'Generating character-consistent storyboard...' });
+
+            try {
+              const chars = scenesResult.characters || [];
+
+              // Step 1: Character portraits
+              if (chars.length > 0) {
+                sendEvent({ type: 'agent-log', agent: 'mood-board', status: `Generating ${chars.length} character portrait(s)...` });
+                characterPortraits = await generateCharacterPortraits(chars, ideaResult.style, ideaResult.mood);
+                sendEvent({ type: 'agent-log', agent: 'mood-board', status: `${Object.keys(characterPortraits).length} portrait(s) ready` });
               }
+
+              // Step 2: Group references for multi-character scenes
+              const groupRefs = await generateGroupReferences(
+                scenesResult.scenes, chars, characterPortraits, ideaResult.style, ideaResult.mood,
+              );
+              if (Object.keys(groupRefs).length > 0) {
+                sendEvent({ type: 'agent-log', agent: 'mood-board', status: `${Object.keys(groupRefs).length} group reference(s) ready` });
+              }
+
+              // Step 3: Scene storyboard frames
+              sendEvent({ type: 'agent-log', agent: 'mood-board', status: `Generating ${scenesResult.scenes.length} scene frames...` });
+              storyboardImages = await generateSceneStoryboards(
+                scenesResult.scenes, chars, characterPortraits, groupRefs, ideaResult.style, ideaResult.mood,
+              );
+              sendEvent({ type: 'agent-log', agent: 'mood-board', status: `${storyboardImages.filter(Boolean).length} storyboard frames ready` });
+              sendEvent({ type: 'storyboard-complete' as any, storyboardImages, characterPortraits });
+            } catch (error) {
+              console.error('❌ Storyboard generation failed:', error);
+              sendEvent({ type: 'storyboard-complete' as any, storyboardImages: [], characterPortraits: {} });
             }
 
             // Pause for review — send scenes-ready event and stop
             sendEvent({ type: 'agent-log', agent: 'system', status: 'Scenes ready for review. Edit prompts and click Generate Videos to continue.' });
-            sendEvent({ type: 'scenes-ready' as any, sessionId, result: { idea: ideaResult, scenes: scenesResult }, moodBoard, storyboardImages });
+            sendEvent({ type: 'scenes-ready' as any, sessionId, result: { idea: ideaResult, scenes: scenesResult }, moodBoard, storyboardImages, characterPortraits });
           }
 
           console.log(`✅ API: Generation complete\n`);

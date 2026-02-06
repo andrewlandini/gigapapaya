@@ -8,16 +8,24 @@ export interface VideoIdea {
   keyElements: string[];
 }
 
+export interface Character {
+  name: string;
+  description: string;
+  sceneIndices: number[];
+}
+
 export interface Scene {
   index: number;
   prompt: string;
   dialogue: string;
+  characters: string[];
   duration: number;
   notes: string;
 }
 
 export interface ScenesResult {
   scenes: Scene[];
+  characters: Character[];
   consistencyNotes: string;
 }
 
@@ -71,6 +79,7 @@ export interface GenerationState {
   failedShots: Set<number>;
   moodBoard: string[]; // generated mood board image data URLs
   storyboardImages: string[]; // per-scene preview images
+  characterPortraits: Record<string, string>; // name → data URL
 }
 
 export interface AgentConfig {
@@ -118,4 +127,5 @@ export interface SSEMessage {
   videos?: Video[];
   moodBoard?: string[]; // mood board image data URLs
   storyboardImages?: string[]; // per-scene preview images
+  characterPortraits?: Record<string, string>; // name → data URL
 }

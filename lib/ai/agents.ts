@@ -7,7 +7,7 @@ import { z } from 'zod';
 import { getTextModel, getVideoModel, getImageModel } from './provider';
 import { IDEA_AGENT_PROMPT, SCENES_AGENT_PROMPT } from '../prompts';
 import { saveVideo } from './video-storage';
-import type { VideoIdea, ScenesResult, Video, GenerationOptions } from '../types';
+import type { VideoIdea, ScenesResult, Video, GenerationOptions, Character } from '../types';
 
 // Zod schemas for structured output validation
 const videoIdeaSchema = z.object({
@@ -22,13 +22,21 @@ const sceneSchema = z.object({
   index: z.number().describe('Shot number'),
   prompt: z.string().describe('Veo 3.1-ready VISUAL prompt: [SHOT TYPE] + [SUBJECT with full description] + [ACTION] + [STYLE/CAMERA/LENS] + [CAMERA MOVEMENT] + [AUDIO]. Do NOT include dialogue here — dialogue goes in the separate dialogue field. Must be fully self-contained — Veo 3.1 has zero context between shots.'),
   dialogue: z.string().describe('The exact spoken words for this shot, without surrounding quotes. Natural conversational speech. Empty string if no one speaks in this shot.'),
+  characters: z.array(z.string()).describe('Short consistent names of characters appearing in this scene (e.g. ["Mike", "Sarah"]). Use the same name across all scenes for the same character. Empty array if no characters.'),
   duration: z.number().describe('Duration in seconds (2, 4, 6, or 8)'),
   notes: z.string().describe('What happens narratively in this shot and how it connects to the next'),
 });
 
+const characterSchema = z.object({
+  name: z.string().describe('Short consistent name used in scene character arrays'),
+  description: z.string().describe('Full physical description: age, gender, ethnicity, build, hair, clothing, skin tone, distinguishing features'),
+  sceneIndices: z.array(z.number()).describe('Which scene indices (1-based) this character appears in'),
+});
+
 const scenesResultSchema = z.object({
   scenes: z.array(sceneSchema).describe('Array of shots with Veo 3.1-ready prompts'),
-  consistencyNotes: z.string().describe('Character descriptions and camera/style setup to maintain across all shots'),
+  characters: z.array(characterSchema).describe('All characters in the video with full physical descriptions and which scenes they appear in'),
+  consistencyNotes: z.string().describe('Camera/style setup to maintain across all shots'),
 });
 
 /**
@@ -127,7 +135,14 @@ Each prompt you write is sent to Veo 3.1 INDEPENDENTLY. The model has ZERO conte
 - Full style/look every time (camera body, lens, color grade, film stock reference)
 - Full lighting setup every time
 - Let physical STATE evolve naturally (more dirt, sweat, injuries as story progresses) while keeping IDENTITY consistent
-Treat each prompt as if the model has never seen any other prompt in its life.`;
+Treat each prompt as if the model has never seen any other prompt in its life.
+
+CHARACTER TRACKING (MANDATORY):
+- Give each character a short, consistent NAME (first name only, e.g. "Mike", "Sarah"). Use the SAME name across all scenes.
+- List character names in each scene's "characters" array.
+- Output a top-level "characters" array with each character's name, full physical description, and which scenes (by index) they appear in.
+- Even if there's only one character, name them and track them.`;
+
 
 /**
  * Agent 2: Generate scene breakdown from video idea
@@ -330,52 +345,170 @@ Create a photorealistic, cinematic reference image that captures the visual styl
   return results;
 }
 
+// ── Storyboard Pipeline: Character Portraits → Group Refs → Scene Frames ──
+
+function imageFromResult(result: any): string {
+  if (result.images && result.images.length > 0) {
+    const img = result.images[0];
+    const base64 = Buffer.from(img.uint8Array).toString('base64');
+    const mediaType = (img as any).mimeType || (img as any).mediaType || 'image/png';
+    return `data:${mediaType};base64,${base64}`;
+  }
+  return '';
+}
+
 /**
- * Storyboard Agent: Generate one preview image per scene (parallel)
+ * Step 1: Generate individual character portraits
  */
-export async function executeStoryboardAgent(
-  scenes: { prompt: string; dialogue: string; duration: number }[],
+export async function generateCharacterPortraits(
+  characters: Character[],
   style: string,
   mood: string,
-): Promise<string[]> {
-  console.log(`\n🖼️  STORYBOARD AGENT: Generating ${scenes.length} preview images...`);
+): Promise<Record<string, string>> {
+  console.log(`\n🧑 PORTRAITS: Generating ${characters.length} character portraits...`);
+  const portraits: Record<string, string> = {};
 
-  const results = new Array<string>(scenes.length).fill('');
-
-  const promises = scenes.map(async (scene, i) => {
+  const promises = characters.map(async (char) => {
     try {
-      const storyboardPrompt = `Generate a cinematic still frame for this shot:
-
-${scene.prompt}
-
-Visual Style: ${style}
-Mood: ${mood}
-
-Create a photorealistic, cinematic frame that looks like a production still from this exact shot. Match the camera angle, lighting, and composition described. This is a storyboard reference image.`;
-
-      console.log(`🖼️  Generating storyboard frame ${i + 1}/${scenes.length}...`);
+      console.log(`🧑 Generating portrait for ${char.name}...`);
       const result = await generateImage({
         model: getImageModel('google/gemini-3-pro-image'),
-        prompt: storyboardPrompt,
+        prompt: `Photorealistic portrait of ${char.description}. Style: ${style}. Mood: ${mood}. Cinematic lighting, clean background, character clearly visible. This is a character reference sheet for video production.`,
         n: 1,
-        aspectRatio: '16:9',
+        aspectRatio: '1:1',
       });
-
-      if (result.images && result.images.length > 0) {
-        const img = result.images[0];
-        const base64 = Buffer.from(img.uint8Array).toString('base64');
-        const mediaType = (img as any).mimeType || (img as any).mediaType || 'image/png';
-        results[i] = `data:${mediaType};base64,${base64}`;
-        console.log(`✅ Storyboard frame ${i + 1} generated`);
+      const url = imageFromResult(result);
+      if (url) {
+        portraits[char.name] = url;
+        console.log(`✅ Portrait for ${char.name} generated`);
       }
     } catch (error) {
-      console.error(`❌ Failed to generate storyboard frame ${i + 1}:`, error);
+      console.error(`❌ Failed to generate portrait for ${char.name}:`, error);
     }
   });
 
   await Promise.allSettled(promises);
+  console.log(`✅ PORTRAITS: ${Object.keys(portraits).length}/${characters.length} generated\n`);
+  return portraits;
+}
 
-  console.log(`✅ STORYBOARD AGENT: Complete — ${results.filter(Boolean).length}/${scenes.length} frames generated\n`);
+/**
+ * Step 2: Generate group references for scenes with 2+ characters
+ */
+export async function generateGroupReferences(
+  scenes: { characters: string[] }[],
+  characters: Character[],
+  portraits: Record<string, string>,
+  style: string,
+  mood: string,
+): Promise<Record<string, string>> {
+  console.log('\n👥 GROUP REFS: Finding multi-character scenes...');
+  const groupRefs: Record<string, string> = {};
+
+  // Find unique character combos
+  const combos = new Map<string, string[]>();
+  for (const scene of scenes) {
+    if (scene.characters.length >= 2) {
+      const key = [...scene.characters].sort().join('+');
+      if (!combos.has(key)) combos.set(key, scene.characters);
+    }
+  }
+
+  if (combos.size === 0) {
+    console.log('👥 No multi-character scenes — skipping group refs\n');
+    return groupRefs;
+  }
+
+  console.log(`👥 Generating ${combos.size} group reference(s)...`);
+
+  const promises = Array.from(combos.entries()).map(async ([key, names]) => {
+    try {
+      // Collect portraits for these characters
+      const refImages = names.map(n => portraits[n]).filter(Boolean);
+      const charDescs = names.map(n => {
+        const c = characters.find(ch => ch.name === n);
+        return c ? `${c.name}: ${c.description}` : n;
+      }).join('. ');
+
+      const prompt = refImages.length > 0
+        ? {
+            images: refImages,
+            text: `These characters together in the same frame: ${charDescs}. Style: ${style}. Cinematic medium shot showing both characters clearly. This is a reference image for video production.`,
+          }
+        : `Two characters together: ${charDescs}. Style: ${style}. Cinematic medium shot.`;
+
+      console.log(`👥 Generating group ref for ${key}...`);
+      const result = await generateImage({
+        model: getImageModel('google/gemini-3-pro-image'),
+        prompt,
+        n: 1,
+        aspectRatio: '16:9',
+      });
+      const url = imageFromResult(result);
+      if (url) {
+        groupRefs[key] = url;
+        console.log(`✅ Group ref for ${key} generated`);
+      }
+    } catch (error) {
+      console.error(`❌ Failed to generate group ref for ${key}:`, error);
+    }
+  });
+
+  await Promise.allSettled(promises);
+  console.log(`✅ GROUP REFS: ${Object.keys(groupRefs).length}/${combos.size} generated\n`);
+  return groupRefs;
+}
+
+/**
+ * Step 3: Generate scene storyboard frames using character references
+ */
+export async function generateSceneStoryboards(
+  scenes: { prompt: string; characters: string[]; duration: number }[],
+  characters: Character[],
+  portraits: Record<string, string>,
+  groupRefs: Record<string, string>,
+  style: string,
+  mood: string,
+): Promise<string[]> {
+  console.log(`\n🎬 STORYBOARD: Generating ${scenes.length} scene frames...`);
+  const results = new Array<string>(scenes.length).fill('');
+
+  const promises = scenes.map(async (scene, i) => {
+    try {
+      // Pick the right reference image
+      let refImage: string | undefined;
+      if (scene.characters.length >= 2) {
+        const key = [...scene.characters].sort().join('+');
+        refImage = groupRefs[key];
+      } else if (scene.characters.length === 1) {
+        refImage = portraits[scene.characters[0]];
+      }
+
+      const sceneText = `Cinematic still frame: ${scene.prompt}. Style: ${style}. Mood: ${mood}. Match the camera angle, lighting, and composition described. Photorealistic production still.`;
+
+      const prompt = refImage
+        ? { images: [refImage], text: sceneText }
+        : sceneText;
+
+      console.log(`🎬 Generating frame ${i + 1}/${scenes.length}...`);
+      const result = await generateImage({
+        model: getImageModel('google/gemini-3-pro-image'),
+        prompt,
+        n: 1,
+        aspectRatio: '16:9',
+      });
+      const url = imageFromResult(result);
+      if (url) {
+        results[i] = url;
+        console.log(`✅ Frame ${i + 1} generated`);
+      }
+    } catch (error) {
+      console.error(`❌ Failed to generate frame ${i + 1}:`, error);
+    }
+  });
+
+  await Promise.allSettled(promises);
+  console.log(`✅ STORYBOARD: ${results.filter(Boolean).length}/${scenes.length} frames generated\n`);
   return results;
 }
 

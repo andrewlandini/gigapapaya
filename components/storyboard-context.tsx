@@ -76,6 +76,7 @@ export function StoryboardProvider({ children }: { children: ReactNode }) {
     failedShots: new Set(),
     moodBoard: [],
     storyboardImages: [],
+    characterPortraits: {},
   });
 
   const [options, setOptionsState] = useState<GenerationOptions>({
@@ -264,6 +265,7 @@ export function StoryboardProvider({ children }: { children: ReactNode }) {
       failedShots: new Set(),
       moodBoard: [],
       storyboardImages: [],
+      characterPortraits: {},
     }));
 
     const agentConfig = getAgentConfigForMode(modeId);
@@ -316,9 +318,11 @@ export function StoryboardProvider({ children }: { children: ReactNode }) {
               }
               break;
             case 'storyboard-complete':
-              if (data.storyboardImages) {
-                setState(prev => ({ ...prev, storyboardImages: data.storyboardImages || [] }));
-              }
+              setState(prev => ({
+                ...prev,
+                storyboardImages: data.storyboardImages || prev.storyboardImages,
+                characterPortraits: data.characterPortraits || prev.characterPortraits,
+              }));
               break;
             case 'scenes-ready':
               sessionIdRef.current = data.sessionId || '';
@@ -328,6 +332,7 @@ export function StoryboardProvider({ children }: { children: ReactNode }) {
                 editableScenes: prev.scenes ? prev.scenes.map(s => ({ ...s })) : null,
                 moodBoard: data.moodBoard || prev.moodBoard,
                 storyboardImages: data.storyboardImages || prev.storyboardImages,
+                characterPortraits: data.characterPortraits || prev.characterPortraits,
               }));
               break;
             case 'complete':
@@ -501,6 +506,7 @@ export function StoryboardProvider({ children }: { children: ReactNode }) {
       failedShots: new Set(),
       moodBoard: [],
       storyboardImages: [],
+      characterPortraits: {},
       status: 'idle',
     }));
   }, []);
@@ -514,7 +520,7 @@ export function StoryboardProvider({ children }: { children: ReactNode }) {
     setState({
       status: 'idle', idea: '', generatedIdea: null,
       scenes: null, editableScenes: null, videos: [], progress: [], error: null,
-      failedShots: new Set(), moodBoard: [], storyboardImages: [],
+      failedShots: new Set(), moodBoard: [], storyboardImages: [], characterPortraits: {},
     });
   }, []);
 
