@@ -25,12 +25,13 @@ export async function POST(request: NextRequest) {
     const user = await getSession();
     const userId = user?.id;
 
-    const { sessionId, scenes, style, mood, options } = body as {
+    const { sessionId, scenes, style, mood, options, moodBoard } = body as {
       sessionId: string;
       scenes: { prompt: string; duration: number }[];
       style: string;
       mood: string;
       options: GenerationOptions;
+      moodBoard?: string[];
     };
 
     console.log(`📝 Session: ${sessionId}`);
@@ -67,8 +68,11 @@ export async function POST(request: NextRequest) {
             });
 
             try {
+              // Pick a mood board image for this shot (round-robin across available images)
+              const refImage = moodBoard?.length ? moodBoard[i % moodBoard.length] : undefined;
+
               const video = await executeVideoAgent(
-                finalPrompt, style, mood, shotOptions, i
+                finalPrompt, style, mood, shotOptions, i, refImage
               );
 
               await saveVideoRecord({

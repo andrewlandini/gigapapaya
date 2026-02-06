@@ -44,6 +44,9 @@ interface StoryboardContextValue {
   customPrompts: CustomPrompts;
   updateModeCustomization: (modeId: string, field: keyof ModeCustomization, value: string) => void;
   restoreModeDefault: (modeId: string, agent: 'idea' | 'scene') => void;
+  // Reference images
+  addReferenceImage: (dataUrl: string) => void;
+  removeReferenceImage: (index: number) => void;
   // History
   history: HistoryEntry[];
   deleteHistoryEntry: (id: string) => void;
@@ -70,6 +73,7 @@ export function StoryboardProvider({ children }: { children: ReactNode }) {
     progress: [],
     error: null,
     failedShots: new Set(),
+    moodBoard: [],
   });
 
   const [options, setOptionsState] = useState<GenerationOptions>({
@@ -130,6 +134,20 @@ export function StoryboardProvider({ children }: { children: ReactNode }) {
 
   const setIdea = useCallback((idea: string) => {
     setState(prev => ({ ...prev, idea }));
+  }, []);
+
+  const addReferenceImage = useCallback((dataUrl: string) => {
+    setOptionsState(prev => ({
+      ...prev,
+      referenceImages: [...(prev.referenceImages || []), dataUrl],
+    }));
+  }, []);
+
+  const removeReferenceImage = useCallback((index: number) => {
+    setOptionsState(prev => ({
+      ...prev,
+      referenceImages: (prev.referenceImages || []).filter((_, i) => i !== index),
+    }));
   }, []);
 
   const setOptions = useCallback((updater: (prev: GenerationOptions) => GenerationOptions) => {
@@ -233,6 +251,7 @@ export function StoryboardProvider({ children }: { children: ReactNode }) {
       progress: [],
       error: null,
       failedShots: new Set(),
+      moodBoard: [],
     }));
 
     const agentConfig = getAgentConfigForMode(modeId);
@@ -279,12 +298,18 @@ export function StoryboardProvider({ children }: { children: ReactNode }) {
                 setState(prev => ({ ...prev, scenes: data.result.scenes }));
               }
               break;
+            case 'mood-board-complete':
+              if (data.moodBoard) {
+                setState(prev => ({ ...prev, moodBoard: data.moodBoard || [] }));
+              }
+              break;
             case 'scenes-ready':
               sessionIdRef.current = data.sessionId || '';
               setState(prev => ({
                 ...prev,
                 status: 'reviewing',
                 editableScenes: prev.scenes ? prev.scenes.map(s => ({ ...s })) : null,
+                moodBoard: data.moodBoard || prev.moodBoard,
               }));
               break;
             case 'complete':
@@ -321,6 +346,7 @@ export function StoryboardProvider({ children }: { children: ReactNode }) {
       const mood = prev.generatedIdea?.mood || '';
       const sid = sessionIdRef.current;
       const currentOptions = options;
+      const currentMoodBoard = prev.moodBoard;
 
       // Start fetch in a microtask so we can return the state update first
       setTimeout(() => {
@@ -331,7 +357,7 @@ export function StoryboardProvider({ children }: { children: ReactNode }) {
         fetch('/api/generate-videos', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ sessionId: sid, scenes, style, mood, options: currentOptions }),
+          body: JSON.stringify({ sessionId: sid, scenes, style, mood, options: currentOptions, moodBoard: currentMoodBoard }),
           signal: controller.signal,
         })
           .then(async (response) => {
@@ -455,6 +481,7 @@ export function StoryboardProvider({ children }: { children: ReactNode }) {
       progress: [],
       error: null,
       failedShots: new Set(),
+      moodBoard: [],
       status: 'idle',
     }));
   }, []);
@@ -468,7 +495,7 @@ export function StoryboardProvider({ children }: { children: ReactNode }) {
     setState({
       status: 'idle', idea: '', generatedIdea: null,
       scenes: null, editableScenes: null, videos: [], progress: [], error: null,
-      failedShots: new Set(),
+      failedShots: new Set(), moodBoard: [],
     });
   }, []);
 
@@ -481,6 +508,7 @@ export function StoryboardProvider({ children }: { children: ReactNode }) {
       startModeGeneration, handleGenerateVideos, handleReset, clearGeneration,
       isGenerating,
       rerunShot, rerunningShots,
+      addReferenceImage, removeReferenceImage,
       customPrompts, updateModeCustomization, restoreModeDefault,
       history, deleteHistoryEntry, clearHistory, loadFromHistory,
     }}>

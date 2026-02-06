@@ -36,6 +36,8 @@ export type ProgressEventType =
   | 'agent-start'
   | 'agent-complete'
   | 'agent-log'
+  | 'mood-board-start'
+  | 'mood-board-complete'
   | 'scenes-ready'
   | 'video-start'
   | 'video-complete'
@@ -45,7 +47,7 @@ export type ProgressEventType =
 export interface ProgressEvent {
   type: ProgressEventType;
   timestamp: Date;
-  agent?: 'idea' | 'scenes' | 'videos';
+  agent?: 'idea' | 'scenes' | 'videos' | 'mood-board';
   status?: string;
   result?: any;
   sceneIndex?: number;
@@ -64,6 +66,7 @@ export interface GenerationState {
   progress: ProgressEvent[];
   error: string | null;
   failedShots: Set<number>;
+  moodBoard: string[]; // generated mood board image data URLs
 }
 
 export interface AgentConfig {
@@ -80,6 +83,8 @@ export interface GenerationOptions {
   mode: 'agents' | 'direct';
   ideaAgent?: AgentConfig;
   sceneAgent?: AgentConfig;
+  referenceImages?: string[]; // user-uploaded reference image data URLs
+  useMoodBoard?: boolean; // beta: enable mood board generation + reference images
 }
 
 export const TEXT_MODELS = [
@@ -107,4 +112,5 @@ export interface SSEMessage {
   message?: string;
   sessionId?: string;
   videos?: Video[];
+  moodBoard?: string[]; // mood board image data URLs
 }

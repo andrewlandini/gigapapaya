@@ -79,6 +79,30 @@ export function ProgressTracker({ events, status, shotCount }: ProgressTrackerPr
         continue;
       }
 
+      if (event.type === 'mood-board-start') {
+        currentGroup = {
+          key: 'mood-board',
+          label: 'Mood Board',
+          status: 'running',
+          message: event.status || 'Generating reference images...',
+          timestamp: event.timestamp,
+          logs: [],
+          type: 'agent',
+        };
+        result.push(currentGroup);
+        continue;
+      }
+
+      if (event.type === 'mood-board-complete') {
+        const group = result.find(g => g.key === 'mood-board');
+        if (group) {
+          group.status = 'done';
+          group.message = `${(event as any).moodBoard?.length || 0} images generated`;
+        }
+        currentGroup = null;
+        continue;
+      }
+
       if (event.type === 'video-start') {
         const sceneIdx = event.sceneIndex ?? 0;
         let videoGroup = result.find(g => g.key === 'video-generation');
@@ -173,7 +197,7 @@ export function ProgressTracker({ events, status, shotCount }: ProgressTrackerPr
 
     if (!isComplete && !hasError) {
       if (status === 'generating') {
-        // Phase 1: Concept → Shots → Review
+        // Phase 1: Concept → (Mood Board if beta) → Shots → Review
         if (!hasKey('agent-idea')) {
           result.push({ key: 'agent-idea', label: 'Concept Agent', status: 'pending', message: '', timestamp: new Date(), logs: [], type: 'agent' });
         }

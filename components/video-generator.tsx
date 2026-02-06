@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
-import { RotateCcw, Play, X, Clock, ChevronDown, Settings2, RotateCw, AlertCircle, Loader2 } from 'lucide-react';
+import { RotateCcw, Play, X, Clock, ChevronDown, Settings2, RotateCw, AlertCircle, Loader2, ImagePlus } from 'lucide-react';
 
 const HEADLINES = [
   "What should we cook, chef?",
@@ -32,6 +32,7 @@ const HEADLINES = [
 // Headlines mapped to each phase of the generation process
 const PHASE_HEADLINES: Record<string, string[]> = {
   idea: ["Writing your concept.", "Crafting the story.", "Building the world.", "Finding the angle."],
+  'mood-board': ["Setting the vibe.", "Finding the look.", "Building the mood board.", "Locking the aesthetic."],
   scenes: ["Breaking it into shots.", "Blocking the shots.", "Mapping the sequence.", "Setting up each shot."],
   reviewing: ["Your scenes are ready.", "Review and edit.", "Make it yours.", "Check the shots."],
   video: ["Generating videos.", "Rendering scenes.", "Cameras rolling.", "Bringing it to life.", "Processing shots.", "Building the shots.", "Assembling the clips."],
@@ -57,6 +58,7 @@ export function VideoGenerator() {
     updateScenePrompt, removeScene, startModeGeneration, handleGenerateVideos, handleReset, clearGeneration,
     isGenerating,
     rerunShot, rerunningShots,
+    addReferenceImage, removeReferenceImage,
     customPrompts, updateModeCustomization, restoreModeDefault,
     history, deleteHistoryEntry, loadFromHistory,
   } = useStoryboard();
@@ -90,6 +92,7 @@ export function VideoGenerator() {
     } else {
       for (const event of state.progress) {
         if (event.type === 'agent-start' && event.agent === 'idea') phase = 'idea';
+        if (event.type === 'mood-board-start') phase = 'mood-board';
         if (event.type === 'agent-start' && event.agent === 'scenes') phase = 'scenes';
         if (event.type === 'video-start') phase = 'video';
       }
@@ -299,6 +302,50 @@ export function VideoGenerator() {
                 </div>
               </div>
 
+              {/* Reference images (beta only) */}
+              {options.useMoodBoard && (options.referenceImages?.length || 0) > 0 && (
+                <div className="flex items-center gap-2 flex-wrap">
+                  {options.referenceImages!.map((img, i) => (
+                    <div key={i} className="relative group/img">
+                      <img src={img} alt={`Reference ${i + 1}`} className="h-16 w-24 object-cover rounded-lg border border-[#333]" />
+                      <button
+                        onClick={() => removeReferenceImage(i)}
+                        className="absolute -top-1.5 -right-1.5 h-5 w-5 rounded-full bg-[#222] border border-[#444] flex items-center justify-center opacity-0 group-hover/img:opacity-100 transition-opacity"
+                      >
+                        <X className="h-3 w-3 text-[#888]" />
+                      </button>
+                    </div>
+                  ))}
+                  <label className="h-16 w-16 rounded-lg border border-dashed border-[#333] flex items-center justify-center cursor-pointer hover:border-[#555] transition-colors">
+                    <ImagePlus className="h-4 w-4 text-[#555]" />
+                    <input type="file" accept="image/*" multiple className="hidden" onChange={(e) => {
+                      const files = Array.from(e.target.files || []);
+                      files.forEach(file => {
+                        const reader = new FileReader();
+                        reader.onload = () => addReferenceImage(reader.result as string);
+                        reader.readAsDataURL(file);
+                      });
+                      e.target.value = '';
+                    }} />
+                  </label>
+                </div>
+              )}
+              {options.useMoodBoard && (options.referenceImages?.length || 0) === 0 && (
+                <label className="flex items-center gap-2 h-9 px-3 rounded-lg border border-dashed border-[#333] cursor-pointer hover:border-[#555] transition-colors">
+                  <ImagePlus className="h-3.5 w-3.5 text-[#555]" />
+                  <span className="text-xs text-[#555]">Add reference images</span>
+                  <input type="file" accept="image/*" multiple className="hidden" onChange={(e) => {
+                    const files = Array.from(e.target.files || []);
+                    files.forEach(file => {
+                      const reader = new FileReader();
+                      reader.onload = () => addReferenceImage(reader.result as string);
+                      reader.readAsDataURL(file);
+                    });
+                    e.target.value = '';
+                  }} />
+                </label>
+              )}
+
               {/* Mode buttons */}
               <div className="flex flex-wrap gap-3 justify-center">
                 {GENERATION_MODES.map((mode) => {
@@ -319,6 +366,20 @@ export function VideoGenerator() {
                   );
                 })}
               </div>
+
+              {/* Beta: Mood Board toggle */}
+              <button
+                onClick={() => setOptions(prev => ({ ...prev, useMoodBoard: !prev.useMoodBoard }))}
+                className={`flex items-center gap-2 h-8 px-4 rounded-full border text-xs font-mono transition-all ${
+                  options.useMoodBoard
+                    ? 'border-[#0070f3]/40 bg-[#0070f3]/10 text-[#0070f3]'
+                    : 'border-[#333] bg-transparent text-[#555] hover:border-[#555] hover:text-[#888]'
+                }`}
+              >
+                <ImagePlus className="h-3 w-3" />
+                Mood Board
+                <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-[#333] text-[#888]">beta</span>
+              </button>
 
             </div>
           )}
@@ -460,6 +521,18 @@ export function VideoGenerator() {
           )}
 
         </div>
+
+        {/* Mood Board (review mode) */}
+        {state.status === 'reviewing' && state.moodBoard.length > 0 && (
+          <div className="space-y-3 animate-fade-in">
+            <h2 className="text-sm font-medium text-[#ededed]">Mood Board</h2>
+            <div className="grid grid-cols-3 gap-3">
+              {state.moodBoard.map((img, i) => (
+                <img key={i} src={img} alt={`Mood board ${i + 1}`} className="w-full aspect-video object-cover rounded-xl border border-[#222]" />
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Editable Scenes (review mode) */}
         {state.status === 'reviewing' && state.editableScenes && (

@@ -1,9 +1,10 @@
 import {
   generateObject,
   experimental_generateVideo as generateVideo,
+  experimental_generateImage as generateImage,
 } from 'ai';
 import { z } from 'zod';
-import { getTextModel, getVideoModel } from './provider';
+import { getTextModel, getVideoModel, getImageModel } from './provider';
 import { IDEA_AGENT_PROMPT, SCENES_AGENT_PROMPT } from '../prompts';
 import { saveVideo } from './video-storage';
 import type { VideoIdea, ScenesResult, Video, GenerationOptions } from '../types';
@@ -277,6 +278,57 @@ Vary pacing — not every scene should be the same intensity. Use quiet moments 
 // Veo3 prompter agent removed — shot agent now writes Veo3-ready prompts directly
 
 /**
+ * Mood Board Agent: Generate reference images from concept using Gemini
+ */
+export async function executeMoodBoardAgent(
+  idea: VideoIdea,
+  referenceImages?: string[],
+): Promise<string[]> {
+  console.log('\n🖼️  MOOD BOARD AGENT: Starting...');
+  console.log(`📋 Concept: ${idea.title}`);
+  console.log(`🎨 Style: ${idea.style}, Mood: ${idea.mood}`);
+
+  const moodBoardPrompt = `Generate a cinematic still frame / reference image for this video concept:
+
+Title: ${idea.title}
+Description: ${idea.description}
+Visual Style: ${idea.style}
+Mood: ${idea.mood}
+Key Elements: ${idea.keyElements.join(', ')}
+
+Create a photorealistic, cinematic reference image that captures the visual style, color palette, lighting, and atmosphere of this concept. This image will be used as a visual reference for AI video generation — focus on establishing the look and feel, not telling a story. Think of it as a single frame from the final video.`;
+
+  const results: string[] = [];
+
+  // Generate 3 mood board images
+  for (let i = 0; i < 3; i++) {
+    try {
+      console.log(`🖼️  Generating mood board image ${i + 1}/3...`);
+      const result = await generateImage({
+        model: getImageModel('google/gemini-3-pro-image'),
+        prompt: moodBoardPrompt,
+        n: 1,
+        aspectRatio: '16:9',
+      });
+
+      if (result.images && result.images.length > 0) {
+        const img = result.images[0];
+        const base64 = Buffer.from(img.uint8Array).toString('base64');
+        const mediaType = (img as any).mimeType || (img as any).mediaType || 'image/png';
+        const dataUrl = `data:${mediaType};base64,${base64}`;
+        results.push(dataUrl);
+        console.log(`✅ Mood board image ${i + 1} generated`);
+      }
+    } catch (error) {
+      console.error(`❌ Failed to generate mood board image ${i + 1}:`, error);
+    }
+  }
+
+  console.log(`✅ MOOD BOARD AGENT: Complete — ${results.length}/3 images generated\n`);
+  return results;
+}
+
+/**
  * Agent 3: Generate video from scene prompt using AI Gateway + Veo 3.1
  */
 export async function executeVideoAgent(
@@ -284,7 +336,8 @@ export async function executeVideoAgent(
   style: string,
   mood: string,
   options: GenerationOptions,
-  sceneIndex: number
+  sceneIndex: number,
+  referenceImage?: string,
 ): Promise<Video> {
   console.log(`\n🎥 VIDEO AGENT: Starting for scene ${sceneIndex + 1}...`);
   console.log(`📝 Scene Prompt: ${scenePrompt.substring(0, 150)}...`);
@@ -302,9 +355,14 @@ export async function executeVideoAgent(
     // Generate video via AI Gateway using Veo 3.1
     const videoDuration = typeof options.duration === 'number' ? options.duration : 8;
 
+    // If a reference image is provided, use image-to-video mode
+    const videoPrompt = referenceImage
+      ? { image: referenceImage, text: enhancedPrompt }
+      : enhancedPrompt;
+
     const { videos } = await generateVideo({
       model: getVideoModel('google/veo-3.1-generate-001'),
-      prompt: enhancedPrompt,
+      prompt: videoPrompt,
       aspectRatio: options.aspectRatio,
       duration: videoDuration,
     });
