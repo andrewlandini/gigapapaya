@@ -63,6 +63,7 @@ export interface GenerationState {
   videos: Video[];
   progress: ProgressEvent[];
   error: string | null;
+  failedShots: Set<number>;
 }
 
 export interface AgentConfig {

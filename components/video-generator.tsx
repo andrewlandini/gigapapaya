@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
-import { RotateCcw, Play, X, Clock, ChevronDown, Settings2, RotateCw } from 'lucide-react';
+import { RotateCcw, Play, X, Clock, ChevronDown, Settings2, RotateCw, AlertCircle, Loader2 } from 'lucide-react';
 
 const HEADLINES = [
   "What should we cook, chef?",
@@ -515,6 +515,57 @@ export function VideoGenerator() {
         {/* Videos */}
         {state.videos.length > 0 && (
           <VideoGallery videos={state.videos} sessionId={sessionId} onRerunShot={rerunShot} rerunningShots={rerunningShots} />
+        )}
+
+        {/* Failed shots — editable prompts with re-run */}
+        {state.failedShots.size > 0 && state.editableScenes && (
+          <div className="space-y-4 animate-fade-in">
+            <div className="flex items-center gap-3">
+              <AlertCircle className="h-4 w-4 text-[#ff4444]" />
+              <h2 className="text-sm font-medium text-[#ededed]">Failed Shots</h2>
+              <span className="text-xs font-mono text-[#555]">{state.failedShots.size} failed — edit prompt and re-run</span>
+            </div>
+            <div className="grid gap-3">
+              {Array.from(state.failedShots).sort().map(idx => {
+                const scene = state.editableScenes![idx];
+                if (!scene) return null;
+                const isRerunning = rerunningShots.has(idx);
+                return (
+                  <div
+                    key={idx}
+                    className="border border-[#ff4444]/20 rounded-xl p-4 space-y-3 bg-[#ff4444]/5"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="flex-shrink-0 w-6 h-6 rounded-md bg-[#1a1a1a] border border-[#ff4444]/30 text-[#ff4444] flex items-center justify-center text-xs font-mono">
+                          {idx + 1}
+                        </div>
+                        <span className="text-xs font-mono text-[#ff4444]">Shot {idx + 1}</span>
+                        <span className="text-xs font-mono text-[#444]">{scene.duration}s</span>
+                      </div>
+                      <button
+                        onClick={() => rerunShot(idx)}
+                        disabled={isRerunning}
+                        className="flex items-center gap-2 h-8 px-3 text-xs font-medium rounded-lg border border-[#333] bg-transparent text-[#ededed] hover:bg-[#111] hover:border-[#555] transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                      >
+                        {isRerunning ? (
+                          <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Re-running...</>
+                        ) : (
+                          <><RotateCw className="h-3.5 w-3.5" /> Re-run</>
+                        )}
+                      </button>
+                    </div>
+                    <textarea
+                      value={scene.prompt}
+                      onChange={(e) => updateScenePrompt(idx, e.target.value)}
+                      className="w-full bg-[#0a0a0a] border border-[#333] rounded-lg px-3 py-2 text-sm text-[#ccc] placeholder:text-[#555] focus:outline-none focus:border-[#555] focus:ring-1 focus:ring-white/10 resize-y leading-relaxed"
+                      style={{ fieldSizing: 'content' as any, minHeight: '4rem' }}
+                    />
+                  </div>
+                );
+              })}
+            </div>
+          </div>
         )}
 
         {/* Error */}

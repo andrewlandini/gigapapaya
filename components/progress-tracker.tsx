@@ -189,15 +189,16 @@ export function ProgressTracker({ events }: ProgressTrackerProps) {
       <div className="border border-[#222] rounded-xl overflow-hidden">
         {groups.map((group) => {
           const isRunning = group.status === 'running';
-          const isExpanded = isRunning || expanded.has(group.key);
-          const hasLogs = group.logs.length > 0;
+          const isError = group.status === 'error';
+          const isExpanded = isRunning || isError || expanded.has(group.key);
+          const hasLogs = group.logs.length > 0 || (group.type === 'video' && group.prompt);
 
           return (
             <div key={group.key} className="border-b border-[#222] last:border-b-0 animate-fade-in">
               {/* Header */}
               <div
-                className={`flex items-center gap-3 px-4 py-3 ${hasLogs && group.status === 'done' ? 'cursor-pointer hover:bg-[#0a0a0a]' : ''}`}
-                onClick={() => hasLogs && group.status === 'done' && toggleExpand(group.key)}
+                className={`flex items-center gap-3 px-4 py-3 ${hasLogs && !isRunning ? 'cursor-pointer hover:bg-[#0a0a0a]' : ''}`}
+                onClick={() => hasLogs && !isRunning && toggleExpand(group.key)}
               >
                 <div className="flex-shrink-0">
                   {group.status === 'error' ? (
@@ -217,7 +218,7 @@ export function ProgressTracker({ events }: ProgressTrackerProps) {
                     <span className="text-xs text-[#555] truncate ml-1">{group.message}</span>
                   )}
                 </div>
-                {hasLogs && group.status === 'done' && (
+                {hasLogs && !isRunning && (
                   <ChevronDown className={`h-3.5 w-3.5 text-[#555] transition-transform duration-300 flex-shrink-0 ${isExpanded ? 'rotate-180' : ''}`} />
                 )}
               </div>

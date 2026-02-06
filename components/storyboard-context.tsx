@@ -69,6 +69,7 @@ export function StoryboardProvider({ children }: { children: ReactNode }) {
     videos: [],
     progress: [],
     error: null,
+    failedShots: new Set(),
   });
 
   const [options, setOptionsState] = useState<GenerationOptions>({
@@ -230,6 +231,7 @@ export function StoryboardProvider({ children }: { children: ReactNode }) {
       videos: [],
       progress: [],
       error: null,
+      failedShots: new Set(),
     }));
 
     const agentConfig = getAgentConfigForMode(modeId);
@@ -359,7 +361,14 @@ export function StoryboardProvider({ children }: { children: ReactNode }) {
                   setState(p => ({ ...p, status: 'complete' }));
                   break;
                 case 'error':
-                  if (!data.sceneIndex && data.sceneIndex !== 0) {
+                  if (data.sceneIndex !== undefined && data.sceneIndex !== null) {
+                    // Per-shot error — track the failed shot
+                    setState(p => {
+                      const next = new Set(p.failedShots);
+                      next.add(data.sceneIndex!);
+                      return { ...p, failedShots: next };
+                    });
+                  } else {
                     setState(p => ({ ...p, status: 'error', error: data.message || 'Unknown error' }));
                   }
                   break;
@@ -376,7 +385,7 @@ export function StoryboardProvider({ children }: { children: ReactNode }) {
           });
       }, 0);
 
-      return { ...prev, status: 'generating-videos' };
+      return { ...prev, status: 'generating-videos', failedShots: new Set() };
     });
   }, [options]);
 
@@ -415,7 +424,10 @@ export function StoryboardProvider({ children }: { children: ReactNode }) {
               } else {
                 newVideos.push(data.video!);
               }
-              return { ...prev, videos: newVideos };
+              // Clear from failed shots
+              const nextFailed = new Set(prev.failedShots);
+              nextFailed.delete(sceneIndex);
+              return { ...prev, videos: newVideos, failedShots: nextFailed };
             });
           }
         });
@@ -441,6 +453,7 @@ export function StoryboardProvider({ children }: { children: ReactNode }) {
       videos: [],
       progress: [],
       error: null,
+      failedShots: new Set(),
       status: 'idle',
     }));
   }, []);
@@ -454,6 +467,7 @@ export function StoryboardProvider({ children }: { children: ReactNode }) {
     setState({
       status: 'idle', idea: '', generatedIdea: null,
       scenes: null, editableScenes: null, videos: [], progress: [], error: null,
+      failedShots: new Set(),
     });
   }, []);
 
