@@ -15,58 +15,60 @@ export const GENERATION_MODES: GenerationMode[] = [
     label: 'Action',
     description: 'Mid-movie intensity. Oscar-worthy performances under pressure.',
     icon: '🔥',
-    ideaPrompt: `You are a creative video concept generator focused on INTENSE ACTION SCENES — the kind that feel like you're dropped into the middle of a movie at its most tense moment.
+    ideaPrompt: `You are a Hollywood screenwriter writing the most intense scene in a $200M movie. NOT generic AI action — REAL cinema.
 
-Think: the hallway fight in Oldboy, the Dunkirk beach sequence, the lobby shootout in The Matrix, the heist going wrong in Heat, the car chase in Children of Men — moments where the stakes are life-or-death and every character is performing at their absolute peak.
+THE DIFFERENCE BETWEEN AI SLOP AND REAL MOVIES:
+- AI slop: "A hero runs through a burning building" — generic, no specificity, could be any movie
+- Real movie: "A soaking-wet firefighter drags an unconscious woman down a smoke-filled stairwell, his oxygen tank beeping empty, radio crackling with his captain screaming to get out NOW" — you can SEE this. It's specific. It's a REAL person in a REAL place with REAL stakes.
 
-Your approach: "We're already in the middle of it" — no setup, no exposition. The viewer lands in the scene mid-crisis. Characters are yelling, making split-second decisions, physically pushed to their limits. But this isn't mindless action — these are OSCAR-WORTHY PERFORMANCES. The yelling has weight. The fear is real. The desperation is palpable. Every line of dialogue reveals character under extreme pressure.
+Your job: Take the user's idea and write it like a scene from Sicario, Children of Men, Heat, or No Country for Old Men. These movies feel real because they have SPECIFICITY — real locations, real weather, real clothing, real objects, real body language.
 
-Given user input, generate a video concept that drops the viewer into peak action:
-- Start in medias res — we're already mid-crisis, mid-chase, mid-confrontation
-- Characters are under extreme physical and emotional pressure
-- The performances should feel raw, desperate, and deeply human — not action-movie cliché
-- Think awards-season intensity: characters revealing their true selves under pressure
-- Stakes are immediate and visceral — something is about to go very wrong or very right
+Rules for the concept:
+- SPECIFIC PEOPLE: Not "a soldier" — "a 40-year-old Marine sergeant with a shaved head, dusty desert fatigues, and blood on his knuckles." Give them age, build, clothing, distinguishing features.
+- SPECIFIC PLACE: Not "a building" — "the third floor of an abandoned parking garage in downtown Beirut, rain pouring through holes in the concrete ceiling." Real geography, real weather, real architecture.
+- SPECIFIC MOMENT: We land MID-SCENE. Something just happened. Something worse is about to happen. The audience is already catching up.
+- SPECIFIC OBJECTS: Props ground a scene in reality — a cracked phone screen, a jammed gun, a car with steam pouring from its hood, a coffee cup still sitting on a desk during chaos.
+- NO CLICHÉS: No "racing against time." No "the fate of the world." No hero poses. Real people in real danger acting like real people — messy, scared, making mistakes.
 
 Return a structured response with:
 {
-  "title": "A punchy title that sounds like a chapter from a thriller",
-  "description": "A 2-3 sentence pitch that drops you mid-scene — what's happening, what's at stake, why does it matter",
-  "style": "The visual style (handheld urgency, long-take intensity, Sicario-level tension)",
-  "mood": "The emotional tone (desperate, visceral, adrenaline-fueled but emotionally grounded)",
-  "keyElements": ["element1", "element2", "element3"] // 3-5 intense visual/action elements
-}
+  "title": "Short, specific — sounds like a scene heading in a screenplay",
+  "description": "2-3 sentences. Write it like a script supervisor's notes. What's physically happening, who's there, what just went wrong.",
+  "style": "Specific cinematography reference (e.g. 'Roger Deakins natural light, Arri Alexa, anamorphic')",
+  "mood": "Not adjectives — describe what the audience PHYSICALLY feels (e.g. 'stomach-dropping dread, can't look away')",
+  "keyElements": ["element1", "element2", "element3"]
+}`,
+    scenePrompt: `You are a cinematographer and script supervisor breaking down an intense scene for a $200M movie.
 
-The viewer should feel their heart rate spike within seconds.`,
-    scenePrompt: `You are a scene breakdown specialist focused on INTENSE, MID-MOVIE ACTION SEQUENCES with Oscar-caliber performances.
+CRITICAL: Write prompts that look like REAL MOVIES, not AI-generated content. The difference:
+- AI: "An intense chase scene through a city with dramatic lighting" — GARBAGE. Vague. Generic.
+- MOVIE: "Medium shot, rain-soaked alley in Seoul, a man in a torn grey suit sprints toward camera, left hand pressing a bleeding wound on his ribs, a black sedan fishtails around the corner behind him, headlights cutting through the rain, shot on Arri Alexa with Panavision C-series anamorphic, handheld, shallow focus racking between runner and car"
 
-Your approach: "Every frame is life or death and every performance is award-worthy" — handheld urgency, long takes that refuse to cut away, characters physically and emotionally pushed to the edge, yelling that carries real weight and desperation.
-
-Take the action concept and break it into scenes that feel ripped from the climax of a best-picture nominee:
+The second one will generate a REAL-LOOKING scene. The first one will generate AI slop. Be the second one.
 
 For EACH scene:
-1. **Urgency**: Handheld camera, shallow depth of field on faces, whip pans to follow action — the camera is IN the chaos
-2. **Performance**: Characters are yelling, gasping, making impossible choices — but every word reveals character. This is Daniel Day-Lewis intensity, not Michael Bay explosions
-3. **Physical Stakes**: Show the toll — sweat, dirt, trembling hands, ragged breathing, injuries
-4. **Tension**: Use the environment as an obstacle — tight spaces, falling debris, crowds, weather, time pressure
-5. **Single Action**: One clear, intense action per scene — don't overcomplicate. The intensity comes from the PERFORMANCE, not the complexity
+1. **CAMERA**: Specific shot type (medium, close-up, wide), specific lens (anamorphic, 50mm prime), specific camera movement (handheld follow, static tripod, slow dolly). Name the camera body.
+2. **PEOPLE**: Full physical description EVERY TIME — age, build, ethnicity, hair, exact clothing (not "tactical gear" — "black Carhartt jacket over a grey henley, muddy work boots"), facial expression, body language, injuries.
+3. **PLACE**: Exact location with physical details — floor material, light sources, weather, temperature you can feel, objects in frame. A real place, not a concept.
+4. **ACTION**: ONE specific physical action. Not "fights enemies" — "swings a fire extinguisher into the door handle, metal snapping, stumbles through into the stairwell."
+5. **SOUND/ATMOSPHERE**: Specific ambient sound — rain on metal, distant sirens, a dog barking, fluorescent lights buzzing, boots on gravel.
 
 Return a structured response:
 {
   "scenes": [
     {
       "index": 1,
-      "prompt": "Intense mid-action scene with handheld camera, desperate characters making split-second decisions, raw physical performance.",
+      "prompt": "Specific shot type, specific person with full description, specific action in a specific place, specific camera and lens.",
       "duration": 8,
-      "notes": "The specific beat of tension and what's at stake in this moment"
+      "notes": "What just happened and what's about to happen — the tension bridge between scenes"
     }
   ],
-  "consistencyNotes": "How to maintain escalating tension and character consistency across scenes"
+  "consistencyNotes": "Exact character descriptions and camera setup to maintain across all scenes"
 }
 
-These should feel like the scenes people replay and say "the ACTING in this scene..."
+If the prompt could describe ANY generic action scene, start over. It must describe ONE specific moment that could only exist in THIS movie.
 
-DIALOGUE: Include intense, desperate dialogue in quotes. Characters are YELLING — but it's not hollow action-movie yelling. It's raw, emotional, voice-cracking desperation. Think: barking orders with a trembling voice, screaming someone's name, breathless split-second decisions shouted over chaos. Write with contractions, interruptions ("No no no—"), gasping mid-sentence ("We have to— just GO"), and the kind of vocal intensity that wins awards. Dialogue across scenes must continue as one coherent flow when played back-to-back.`,
+DIALOGUE: Write dialogue the way real people talk under extreme stress — short, clipped, overlapping. Not movie-trailer lines. Real panic: "Go go go go—" / "I can't— my leg, I can't—" / "WHERE. Which door. WHICH DOOR." / "Just— shut up and drive." Interruptions, repetition, half-sentences, heavy breathing between words. Dialogue must flow as one continuous conversation across scenes.`,
   },
   {
     id: 'comedy',
