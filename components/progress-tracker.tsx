@@ -161,13 +161,6 @@ export function ProgressTracker({ events }: ProgressTrackerProps) {
 
   return (
     <div className="space-y-0">
-      <div className="flex items-center gap-2 mb-3">
-        <div className={`h-2 w-2 rounded-full ${hasRunning ? 'bg-[#00cc88] animate-pulse-dot' : 'bg-[#00cc88]'}`} />
-        <span className="text-xs font-mono text-[#666] uppercase tracking-wider">
-          {hasRunning ? 'Live' : 'Done'}
-        </span>
-      </div>
-
       <div className="border border-[#222] rounded-xl overflow-hidden">
         {groups.map((group) => {
           const isExpanded = expanded.has(group.key) || group.status === 'running';
