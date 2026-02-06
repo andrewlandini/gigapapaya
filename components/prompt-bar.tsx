@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { Plus, ArrowUp, ChevronRight, Monitor, Smartphone, Square, Clock, Film, Layers } from 'lucide-react';
 import { useGeneration } from './generation-context';
@@ -24,6 +24,7 @@ export function PromptBar({ isAuthenticated }: PromptBarProps) {
   const [aspectRatio, setAspectRatio] = useState<string>('16:9');
   const [duration, setDuration] = useState<number>(8);
   const settingsRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { startGeneration } = useGeneration();
   const { showToast } = useToast();
 
@@ -40,6 +41,13 @@ export function PromptBar({ isAuthenticated }: PromptBarProps) {
     }
   }, [showSettings]);
 
+  const autoResize = useCallback(() => {
+    const el = textareaRef.current;
+    if (!el) return;
+    el.style.height = 'auto';
+    el.style.height = Math.min(el.scrollHeight, 200) + 'px';
+  }, []);
+
   const handleSubmit = () => {
     if (!prompt.trim()) return;
     if (!isAuthenticated) return;
@@ -48,6 +56,7 @@ export function PromptBar({ isAuthenticated }: PromptBarProps) {
     showToast('Video generation started', 'info');
     setPrompt('');
     setShowSettings(false);
+    if (textareaRef.current) textareaRef.current.style.height = 'auto';
   };
 
   const orientationLabel = ORIENTATIONS.find(o => o.value === aspectRatio)?.label || 'Landscape';
@@ -157,13 +166,15 @@ export function PromptBar({ isAuthenticated }: PromptBarProps) {
         <div className="rounded-2xl border border-[#333] bg-[#0a0a0a] overflow-hidden">
           {/* Input */}
           <div className="px-4 pt-3 pb-2">
-            <input
-              type="text"
+            <textarea
+              ref={textareaRef}
               value={prompt}
-              onChange={(e) => setPrompt(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
+              onChange={(e) => { setPrompt(e.target.value); autoResize(); }}
+              onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSubmit(); } }}
               placeholder="Describe your video..."
-              className="w-full bg-transparent text-[15px] text-[#ededed] placeholder:text-[#555] focus:outline-none"
+              rows={1}
+              className="w-full bg-transparent text-[15px] text-[#ededed] placeholder:text-[#555] focus:outline-none resize-none overflow-hidden"
+              style={{ maxHeight: 200 }}
             />
           </div>
 
