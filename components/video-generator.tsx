@@ -31,7 +31,6 @@ const HEADLINES = [
 
 // Headlines mapped to each phase of the generation process
 const PHASE_HEADLINES: Record<string, string[]> = {
-  opener: ["Rolling.", "And... action.", "Cameras up.", "Quiet on set."],
   idea: ["Writing your concept.", "Crafting the story.", "Building the world.", "Finding the angle."],
   scenes: ["Breaking it into scenes.", "Blocking the shots.", "Mapping the sequence.", "Setting up each scene."],
   reviewing: ["Your scenes are ready.", "Review and edit.", "Make it yours.", "Check the shots."],
@@ -82,7 +81,7 @@ export function VideoGenerator() {
     }
 
     // Determine current phase from progress events and status
-    let phase = 'opener';
+    let phase = 'idea';
     let videoNum = 0;
 
     if (state.status === 'reviewing') {
@@ -105,7 +104,7 @@ export function VideoGenerator() {
     // Fade out, swap, fade in
     setHeadlineFade(false);
     setTimeout(() => {
-      const headlines = PHASE_HEADLINES[phase] || PHASE_HEADLINES.opener;
+      const headlines = PHASE_HEADLINES[phase] || PHASE_HEADLINES.idea;
       let text = pickRandom(headlines);
       if (phase === 'video' && videoNum > 0) text = `${text} ${videoNum}.`;
       setGeneratingHeadline(text);
@@ -280,7 +279,7 @@ export function VideoGenerator() {
                   return (
                     <div key={mode.id} className="relative group">
                       <button
-                        onClick={() => { if (!noIdea) { setGeneratingHeadline(pickRandom(PHASE_HEADLINES.opener)); setHeadlineFade(true); lastPhaseRef.current = ''; startModeGeneration(mode.id); } }}
+                        onClick={() => { if (!noIdea) { setGeneratingHeadline(pickRandom(PHASE_HEADLINES.idea)); setHeadlineFade(true); lastPhaseRef.current = ''; startModeGeneration(mode.id); } }}
                         className={`flex items-center gap-2 h-11 px-5 rounded-full border border-[#333] bg-[#0a0a0a] transition-all ${noIdea ? 'opacity-30' : 'hover:border-[#555] hover:bg-[#111] cursor-pointer'}`}
                       >
                         <span className="text-base">{mode.icon}</span>

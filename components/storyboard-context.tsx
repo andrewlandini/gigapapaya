@@ -78,6 +78,7 @@ export function StoryboardProvider({ children }: { children: ReactNode }) {
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [customPrompts, setCustomPrompts] = useState<CustomPrompts>({});
   const sessionIdRef = useRef<string>('');
+  const abortRef = useRef<AbortController | null>(null);
 
   // Load history and custom prompts from localStorage on mount
   useEffect(() => {
@@ -236,10 +237,15 @@ export function StoryboardProvider({ children }: { children: ReactNode }) {
       sceneAgent: agentConfig.sceneAgent,
     };
 
+    if (abortRef.current) abortRef.current.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+
     fetch('/api/generate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ idea, options: currentOptions }),
+      signal: controller.signal,
     })
       .then(async (response) => {
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
@@ -287,6 +293,7 @@ export function StoryboardProvider({ children }: { children: ReactNode }) {
         });
       })
       .catch((error) => {
+        if (error instanceof DOMException && error.name === 'AbortError') return;
         setState(prev => ({
           ...prev,
           status: 'error',
@@ -311,10 +318,15 @@ export function StoryboardProvider({ children }: { children: ReactNode }) {
 
       // Start fetch in a microtask so we can return the state update first
       setTimeout(() => {
+        if (abortRef.current) abortRef.current.abort();
+        const controller = new AbortController();
+        abortRef.current = controller;
+
         fetch('/api/generate-videos', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ sessionId: sid, scenes, style, mood, options: currentOptions }),
+          signal: controller.signal,
         })
           .then(async (response) => {
             if (!response.ok) throw new Error(`HTTP ${response.status}`);
@@ -352,6 +364,7 @@ export function StoryboardProvider({ children }: { children: ReactNode }) {
             });
           })
           .catch((error) => {
+            if (error instanceof DOMException && error.name === 'AbortError') return;
             setState(p => ({
               ...p,
               status: 'error',
@@ -378,6 +391,10 @@ export function StoryboardProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const handleReset = useCallback(() => {
+    if (abortRef.current) {
+      abortRef.current.abort();
+      abortRef.current = null;
+    }
     sessionIdRef.current = '';
     setState({
       status: 'idle', idea: '', generatedIdea: null,
