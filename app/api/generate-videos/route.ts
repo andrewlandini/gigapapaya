@@ -51,14 +51,13 @@ export async function POST(request: NextRequest) {
           // Shot agent already writes Veo3-ready prompts — go straight to video generation
           const perShotDurations = scenes.map((s: any) => s.duration || (typeof options?.duration === 'number' ? options.duration : 8));
 
-          sendEvent({ type: 'agent-log', agent: 'videos', status: `Starting video generation for ${scenes.length} shots` });
+          sendEvent({ type: 'agent-log', agent: 'videos', status: `Starting video generation for ${scenes.length} shots (parallel)` });
           sendEvent({ type: 'agent-log', agent: 'videos', status: `Config: ${options.aspectRatio} / ${options.duration === 'auto' ? 'auto' : options.duration + 's'} / model: veo-3.1-generate-001` });
 
-          for (let i = 0; i < scenes.length; i++) {
-            const finalPrompt = scenes[i].prompt;
+          // Launch all shots in parallel
+          const shotPromises = scenes.map(async (scene: { prompt: string; duration: number }, i: number) => {
+            const finalPrompt = scene.prompt;
             const shotDuration = perShotDurations[i];
-
-            // Override options.duration with per-shot duration for auto mode
             const shotOptions = { ...options, duration: shotDuration };
 
             sendEvent({ type: 'agent-log', agent: 'videos', status: `Sending shot ${i + 1} to Veo 3.1 (${shotDuration}s)` });
@@ -90,7 +89,9 @@ export async function POST(request: NextRequest) {
                 sceneIndex: i,
               });
             }
-          }
+          });
+
+          await Promise.allSettled(shotPromises);
 
           sendEvent({ type: 'agent-log', agent: 'videos', status: `Pipeline complete: ${videos.length}/${scenes.length} videos generated` });
           await updateGenerationStatus(sessionId, 'complete');
