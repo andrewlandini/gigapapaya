@@ -1,5 +1,6 @@
 import { NextRequest } from 'next/server';
 import { executeVideoAgent } from '@/lib/ai/agents';
+import { getSession } from '@/lib/auth/session';
 import {
   initDb,
   updateGenerationStatus,
@@ -26,6 +27,9 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
+    const user = await getSession();
+    const userId = user?.id;
+
     const { sessionId, scenes, style, mood, options } = body as {
       sessionId: string;
       scenes: { prompt: string; duration: number }[];
@@ -67,8 +71,8 @@ export async function POST(request: NextRequest) {
               );
 
               await saveVideoRecord({
-                id: video.id, generationId: sessionId, blobUrl: video.url,
-                prompt: video.prompt, duration: video.duration,
+                id: video.id, generationId: sessionId, userId,
+                blobUrl: video.url, prompt: video.prompt, duration: video.duration,
                 aspectRatio: video.aspectRatio, size: video.size, sceneIndex: i,
               });
 

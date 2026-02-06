@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server';
 import crypto from 'crypto';
 import { executeIdeaAgent, executeScenesAgent, executeVideoAgent } from '@/lib/ai/agents';
+import { getSession } from '@/lib/auth/session';
 import {
   initDb,
   createGeneration,
@@ -44,6 +45,8 @@ export async function POST(request: NextRequest) {
     }
 
     const sessionId = crypto.randomUUID();
+    const user = await getSession();
+    const userId = user?.id;
 
     const encoder = new TextEncoder();
     const stream = new ReadableStream({
@@ -55,7 +58,7 @@ export async function POST(request: NextRequest) {
         };
 
         try {
-          await createGeneration(sessionId, idea);
+          await createGeneration(sessionId, idea, userId);
 
           if (mode === 'direct') {
             // ── Direct mode: skip agents, generate video from raw prompt ──
@@ -73,8 +76,8 @@ export async function POST(request: NextRequest) {
             const video = await executeVideoAgent(idea, '', '', options, 0);
 
             await saveVideoRecord({
-              id: video.id, generationId: sessionId, blobUrl: video.url,
-              prompt: video.prompt, duration: video.duration,
+              id: video.id, generationId: sessionId, userId,
+              blobUrl: video.url, prompt: video.prompt, duration: video.duration,
               aspectRatio: video.aspectRatio, size: video.size, sceneIndex: 0,
             });
 
