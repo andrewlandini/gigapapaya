@@ -1,9 +1,9 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { LogOut, Key, User } from 'lucide-react';
+import { useAvatar } from './avatar-context';
 
 interface UserMenuProps {
   user: { username: string; name: string; avatarUrl?: string | null } | null;
@@ -17,7 +17,7 @@ export function UserMenu({ user }: UserMenuProps) {
   const [pwStatus, setPwStatus] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
-  const pathname = usePathname();
+  const { avatarUrl } = useAvatar();
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -32,8 +32,7 @@ export function UserMenu({ user }: UserMenuProps) {
     }
   }, [open]);
 
-  // Hide on /profile page
-  if (!user || pathname === '/profile') return null;
+  if (!user) return null;
 
   const handleChangePassword = async () => {
     if (!currentPw || !newPw || newPw.length < 6) {
@@ -65,8 +64,8 @@ export function UserMenu({ user }: UserMenuProps) {
         onClick={() => setOpen(!open)}
         className="w-8 h-8 rounded-full overflow-hidden border border-[#333] hover:border-[#555] transition-colors bg-[#222] flex items-center justify-center"
       >
-        {user.avatarUrl ? (
-          <img src={user.avatarUrl} alt={user.name} className="w-full h-full object-cover" />
+        {avatarUrl ? (
+          <img src={avatarUrl} alt={user.name} className="w-full h-full object-cover" />
         ) : (
           <span className="text-xs font-bold text-[#888]">{user.name[0].toUpperCase()}</span>
         )}

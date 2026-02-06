@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { VideoCard } from '@/components/video-card';
 import { PromptBar } from '@/components/prompt-bar';
 import { AvatarCropper } from '@/components/avatar-cropper';
+import { useAvatar } from '@/components/avatar-context';
 
 interface Video {
   id: string;
@@ -31,6 +32,7 @@ export default function ProfilePage() {
   const [showIconGen, setShowIconGen] = useState(false);
   const [iconError, setIconError] = useState<string | null>(null);
   const [cropImageUrl, setCropImageUrl] = useState<string | null>(null);
+  const { setAvatarUrl } = useAvatar();
 
   const load = async () => {
     const res = await fetch('/api/profile');
@@ -101,11 +103,15 @@ export default function ProfilePage() {
     const reader = new FileReader();
     reader.onloadend = async () => {
       const base64 = reader.result as string;
-      await fetch('/api/generate-icon', {
+      const res = await fetch('/api/generate-icon', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'save-cropped', prompt: base64 }),
       });
+      if (res.ok) {
+        const { url } = await res.json();
+        setAvatarUrl(url);
+      }
       setCropImageUrl(null);
       load();
     };
@@ -183,6 +189,7 @@ export default function ProfilePage() {
                           headers: { 'Content-Type': 'application/json' },
                           body: JSON.stringify({ action: 'delete' }),
                         });
+                        setAvatarUrl(null);
                         load();
                         setShowIconGen(false);
                       }}

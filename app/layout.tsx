@@ -47,7 +47,7 @@ export default async function RootLayout({
   return (
     <html lang="en" className={`${GeistSans.variable} ${GeistMono.variable}`}>
       <body className="font-sans">
-        <Providers>
+        <Providers initialAvatarUrl={user?.avatarUrl}>
           <Sidebar user={user} />
           <UserMenu user={user} />
           <div className="ml-[60px]">
