@@ -28,6 +28,29 @@ const HEADLINES = [
   "What world do we enter?",
   "Give me the pitch.",
 ];
+
+const GENERATING_HEADLINES = [
+  "This is gonna be good.",
+  "Oh we're cooking now.",
+  "Buckle up.",
+  "Here we go.",
+  "The machine is thinking.",
+  "Something's brewing.",
+  "Hold tight.",
+  "This one's gonna hit.",
+  "Let the agents cook.",
+  "Magic in progress.",
+  "Working on something special.",
+  "Trust the process.",
+  "Almost there... probably.",
+  "The vibes are immaculate.",
+  "You're gonna love this.",
+  "Manifesting greatness.",
+  "Big things loading.",
+  "The gears are turning.",
+  "Patience, masterpiece incoming.",
+  "Sit back and enjoy the show.",
+];
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ProgressTracker } from './progress-tracker';
@@ -51,6 +74,7 @@ export function VideoGenerator() {
   const [wizardActive, setWizardActive] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const [settingsTab, setSettingsTab] = useState('amplify');
+  const [generatingHeadline, setGeneratingHeadline] = useState('');
   const headline = useMemo(() => HEADLINES[Math.floor(Math.random() * HEADLINES.length)], []);
 
   const settingsMode = getModeById(settingsTab);
@@ -150,7 +174,7 @@ export function VideoGenerator() {
         {/* Hero + Input */}
         <div className="max-w-3xl mx-auto space-y-8 text-center">
           {!wizardActive && (
-            <h1 className="text-[40px] font-bold tracking-tight leading-tight animate-fade-in">{headline}</h1>
+            <h1 className="text-[40px] font-bold tracking-tight leading-tight animate-fade-in">{isActive && generatingHeadline ? generatingHeadline : headline}</h1>
           )}
 
           {/* Input & mode buttons — hidden when generating/reviewing/complete */}
@@ -214,7 +238,7 @@ export function VideoGenerator() {
                   return (
                     <div key={mode.id} className="relative group">
                       <button
-                        onClick={() => !noIdea && startModeGeneration(mode.id)}
+                        onClick={() => { if (!noIdea) { setGeneratingHeadline(GENERATING_HEADLINES[Math.floor(Math.random() * GENERATING_HEADLINES.length)]); startModeGeneration(mode.id); } }}
                         className={`flex items-center gap-2 h-11 px-5 rounded-full border border-[#333] bg-[#0a0a0a] transition-all ${noIdea ? 'opacity-30' : 'hover:border-[#555] hover:bg-[#111] cursor-pointer'}`}
                       >
                         <span className="text-base">{mode.icon}</span>
