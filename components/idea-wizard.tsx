@@ -113,7 +113,7 @@ export function IdeaWizard({ onSelectIdea, onActiveChange }: IdeaWizardProps) {
       setStep(step + 1);
       await fetchNextStep(newQuestions, newAnswers);
     } else {
-      // All questions answered — generate ideas
+      // All questions answered — generate a single prompt and auto-fill
       setLoading(true);
       try {
         const res = await fetch('/api/generate-ideas', {
@@ -123,7 +123,11 @@ export function IdeaWizard({ onSelectIdea, onActiveChange }: IdeaWizardProps) {
         });
         if (res.ok) {
           const data = await res.json();
-          setIdeas(data.ideas || []);
+          const prompt = data.idea || (data.ideas && data.ideas[0]);
+          if (prompt) {
+            onSelectIdea(prompt);
+            handleClose();
+          }
         }
       } catch {}
       setLoading(false);

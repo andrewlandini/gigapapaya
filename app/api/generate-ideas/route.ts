@@ -7,8 +7,8 @@ import { getTextModel } from '@/lib/ai/provider';
 export const runtime = 'nodejs';
 export const maxDuration = 30;
 
-const ideasSchema = z.object({
-  ideas: z.array(z.string()).describe('10 creative video ideas, each 1-2 sentences'),
+const ideaSchema = z.object({
+  idea: z.string().describe('A single filmable video prompt, 1-2 sentences'),
 });
 
 const nextStepSchema = z.object({
@@ -98,7 +98,7 @@ For each option, also write a short reaction (2-5 words) that would show if the 
     return Response.json(result.object);
   }
 
-  // Generate ideas from completed Q&A (default / backwards-compatible)
+  // Generate a single prompt from completed Q&A
   const { answers, steps } = body;
 
   const choicesSummary = steps
@@ -107,36 +107,24 @@ For each option, also write a short reaction (2-5 words) that would show if the 
 
   const result = await generateObject({
     model: getTextModel('anthropic/claude-sonnet-4.5'),
-    temperature: 1,
-    schema: ideasSchema,
-    prompt: `You are a creative video prompt writer. The user just built a story through a series of creative choices. Your job is to turn THEIR story into 10 filmable video prompts.
+    temperature: 0,
+    schema: ideaSchema,
+    prompt: `You are a video prompt writer. The user built a story through creative choices. Write ONE video prompt that is a DIRECT, FAITHFUL translation of their story into a filmable scene.
 
-IMPORTANT: The user's answers below form a COHERENT NARRATIVE — a world, characters, and a storyline. Every prompt you generate must be rooted in THIS story. Do not drift into unrelated territory.
-
-User's story choices:
+User's story:
 ${choicesSummary}
 
-Read those answers carefully. Together they describe a specific world, specific characters, and a specific scenario. ALL 10 prompts must live inside that story.
+Your job: Combine ALL of the user's answers into a SINGLE filmable scene. Every detail from their answers must appear in the prompt. Do not add characters, worlds, or concepts they didn't choose. Do not interpret loosely — use their EXACT choices.
 
-Each prompt MUST be a single sentence that answers: WHO is doing WHAT, WHERE, WHEN, and HOW it looks. It should read like a direct instruction to a video generation AI.
+The prompt must be 1-2 sentences answering: WHO is doing WHAT, WHERE, WHEN, and HOW it looks. It should read like a direct instruction to a video generation AI.
 
-Good examples:
-- "A golden retriever in a tiny chef hat flips pancakes in a sunlit cabin kitchen at dawn, shot on 35mm film"
-- "Two astronauts slow-dance on the surface of Mars while Earth rises behind them, cinematic wide shot"
-
-Bad examples (too vague, not a prompt):
-- "The feeling of discovery" ← no who/what/where
-- "Something magical happens" ← not specific enough
-
-Generate 10 video prompts. CRITICAL RULES:
-- ALL 10 prompts must feature the same world, characters, and story the user described
-- The FIRST 3 should be direct translations of the user's exact answers into filmable scenes — use their specific characters, setting, and scenario
-- The next 4 should explore different MOMENTS or ANGLES within the same story — different scenes, camera angles, or beats from the same narrative
-- The last 3 can be the most creative — unexpected moments, dramatic reveals, or cinematic set pieces — but still starring the same characters in the same world
-- NEVER introduce unrelated characters, worlds, or concepts that the user didn't describe
-- Each one must be ONE concrete sentence — a filmable scene with who/what/where/when/how
-- NOTHING morbid, dark, violent, depressing, or disturbing — keep the energy fun and exciting`,
+RULES:
+- Use the SPECIFIC world, characters, scenario, and details from EVERY answer
+- The prompt must feel like a direct translation of their choices — if they chose "robots in a neon junkyard" and "learning to dance" and "a rival crew shows up", ALL of that must be in the prompt
+- Do NOT generalize, abstract, or drift — stay literal to their choices
+- ONE concrete sentence — a filmable scene with who/what/where/when/how
+- NOTHING morbid, dark, violent, depressing, or disturbing`,
   });
 
-  return Response.json({ ideas: result.object.ideas });
+  return Response.json({ idea: result.object.idea });
 }
