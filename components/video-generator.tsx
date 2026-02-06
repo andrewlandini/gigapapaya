@@ -29,40 +29,20 @@ const HEADLINES = [
   "Give me the pitch.",
 ];
 
-// First headline shown immediately (director-style)
-const GENERATING_OPENERS = [
-  "Rolling.",
-  "And... action.",
-  "Cameras up.",
-  "Quiet on set.",
-];
+// Headlines mapped to each phase of the generation process
+const PHASE_HEADLINES: Record<string, string[]> = {
+  opener: ["Rolling.", "And... action.", "Cameras up.", "Quiet on set."],
+  idea: ["Writing your concept.", "Crafting the story.", "Building the world.", "Finding the angle."],
+  scenes: ["Breaking it into scenes.", "Blocking the shots.", "Mapping the sequence.", "Setting up each scene."],
+  reviewing: ["Your scenes are ready.", "Review and edit.", "Make it yours.", "Check the shots."],
+  'veo3-prompter': ["Optimizing for camera.", "Dialing in the details.", "Locking the look.", "Final prompt pass."],
+  video: ["Generating video", "Rendering scene", "Camera is rolling", "Bringing it to life"],
+  complete: ["That's a wrap.", "All done.", "Picture's up.", "And... cut."],
+};
 
-// Cycling headlines that fade in/out during generation
-const GENERATING_PHASES = [
-  "Concept agent is writing your story.",
-  "Finding the right angle.",
-  "Choosing the camera.",
-  "Setting the scene.",
-  "Casting your characters.",
-  "Picking the lighting.",
-  "Building the world.",
-  "Writing the dialogue.",
-  "Blocking the shots.",
-  "Scene agent is breaking it down.",
-  "Mapping out the scenes.",
-  "Working out the pacing.",
-  "Dialing in the mood.",
-  "Getting the tone right.",
-  "Framing every shot.",
-  "Locking the color palette.",
-  "Crafting the opening shot.",
-  "Working on the transitions.",
-  "Checking continuity.",
-  "Making it feel real.",
-  "Adding the details that matter.",
-  "Almost picture-ready.",
-  "Final touches.",
-];
+function pickRandom(arr: string[]): string {
+  return arr[Math.floor(Math.random() * arr.length)];
+}
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ProgressTracker } from './progress-tracker';
@@ -88,35 +68,50 @@ export function VideoGenerator() {
   const [settingsTab, setSettingsTab] = useState('amplify');
   const [generatingHeadline, setGeneratingHeadline] = useState('');
   const [headlineFade, setHeadlineFade] = useState(true);
-  const cycleRef = useRef<NodeJS.Timeout | null>(null);
+  const lastPhaseRef = useRef('');
   const headline = useMemo(() => HEADLINES[Math.floor(Math.random() * HEADLINES.length)], []);
 
   const settingsMode = getModeById(settingsTab);
   const isActive = state.status !== 'idle';
 
-  // Cycle through generating headlines with fade
+  // Derive headline from current agent phase
   useEffect(() => {
     if (!isActive) {
-      if (cycleRef.current) clearInterval(cycleRef.current);
+      lastPhaseRef.current = '';
       return;
     }
 
-    let index = 0;
-    const shuffled = [...GENERATING_PHASES].sort(() => Math.random() - 0.5);
+    // Determine current phase from progress events and status
+    let phase = 'opener';
+    let videoNum = 0;
 
-    cycleRef.current = setInterval(() => {
-      setHeadlineFade(false);
-      setTimeout(() => {
-        setGeneratingHeadline(shuffled[index % shuffled.length]);
-        setHeadlineFade(true);
-        index++;
-      }, 400);
-    }, 4000);
+    if (state.status === 'reviewing') {
+      phase = 'reviewing';
+    } else if (state.status === 'complete') {
+      phase = 'complete';
+    } else {
+      for (const event of state.progress) {
+        if (event.type === 'agent-start' && event.agent === 'idea') phase = 'idea';
+        if (event.type === 'agent-start' && event.agent === 'scenes') phase = 'scenes';
+        if (event.type === 'agent-start' && event.agent === 'veo3-prompter') phase = 'veo3-prompter';
+        if (event.type === 'video-start') { phase = 'video'; videoNum = (event.sceneIndex ?? 0) + 1; }
+      }
+    }
 
-    return () => {
-      if (cycleRef.current) clearInterval(cycleRef.current);
-    };
-  }, [isActive]);
+    const phaseKey = `${phase}-${videoNum}`;
+    if (phaseKey === lastPhaseRef.current) return;
+    lastPhaseRef.current = phaseKey;
+
+    // Fade out, swap, fade in
+    setHeadlineFade(false);
+    setTimeout(() => {
+      const headlines = PHASE_HEADLINES[phase] || PHASE_HEADLINES.opener;
+      let text = pickRandom(headlines);
+      if (phase === 'video' && videoNum > 0) text = `${text} ${videoNum}.`;
+      setGeneratingHeadline(text);
+      setHeadlineFade(true);
+    }, 600);
+  }, [isActive, state.progress, state.status]);
 
   // Get effective values (custom or default) for the settings tab
   const custom = customPrompts[settingsTab] || {};
@@ -212,7 +207,7 @@ export function VideoGenerator() {
         {/* Hero + Input */}
         <div className="max-w-3xl mx-auto space-y-8 text-center">
           {!wizardActive && (
-            <h1 className={`text-[40px] font-bold tracking-tight leading-tight transition-opacity duration-400 ${isActive ? (headlineFade ? 'opacity-100' : 'opacity-0') : 'animate-fade-in'}`}>{isActive && generatingHeadline ? generatingHeadline : headline}</h1>
+            <h1 className={`text-[40px] font-bold tracking-tight leading-tight transition-opacity duration-700 ease-in-out ${isActive ? (headlineFade ? 'opacity-100' : 'opacity-0') : 'animate-fade-in'}`}>{isActive && generatingHeadline ? generatingHeadline : headline}</h1>
           )}
 
           {/* Input & mode buttons — hidden when generating/reviewing/complete */}
@@ -276,7 +271,7 @@ export function VideoGenerator() {
                   return (
                     <div key={mode.id} className="relative group">
                       <button
-                        onClick={() => { if (!noIdea) { setGeneratingHeadline(GENERATING_OPENERS[Math.floor(Math.random() * GENERATING_OPENERS.length)]); setHeadlineFade(true); startModeGeneration(mode.id); } }}
+                        onClick={() => { if (!noIdea) { setGeneratingHeadline(pickRandom(PHASE_HEADLINES.opener)); setHeadlineFade(true); lastPhaseRef.current = ''; startModeGeneration(mode.id); } }}
                         className={`flex items-center gap-2 h-11 px-5 rounded-full border border-[#333] bg-[#0a0a0a] transition-all ${noIdea ? 'opacity-30' : 'hover:border-[#555] hover:bg-[#111] cursor-pointer'}`}
                       >
                         <span className="text-base">{mode.icon}</span>
