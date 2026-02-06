@@ -23,6 +23,17 @@ export async function GET(
       );
     }
 
+    // Generate a readable filename from the prompt
+    const slug = (video.prompt || '')
+      .toLowerCase()
+      .replace(/[^a-z0-9\s]/g, '')
+      .trim()
+      .split(/\s+/)
+      .slice(0, 6)
+      .join('-');
+    const timestamp = Date.now();
+    const filename = `gigapapaya--${slug || 'video'}-${timestamp}.mp4`;
+
     // Fetch from Blob Storage and stream as download
     const blobResponse = await fetch(video.blob_url);
     if (!blobResponse.ok) {
@@ -32,7 +43,7 @@ export async function GET(
     return new Response(blobResponse.body, {
       headers: {
         'Content-Type': 'video/mp4',
-        'Content-Disposition': `attachment; filename="${videoId}.mp4"`,
+        'Content-Disposition': `attachment; filename="${filename}"`,
       },
     });
   } catch (error) {
