@@ -62,11 +62,16 @@ const SCENE_AGENT_BASE = `
 
 SCENE CONSISTENCY RULES (MANDATORY):
 - Choose ONE cinematic style/look for ALL scenes and repeat it verbatim in every prompt (e.g., "shot on ARRI Alexa, warm amber grade, shallow depth of field")
-- Characters must be RECOGNIZABLE across scenes — same age, ethnicity, build, hair, and clothing. Re-describe these identity details every time. But allow their physical STATE to evolve naturally: accumulating dirt, sweat, injuries, disheveled hair, loosened clothing, visible exhaustion. The audience should recognize the same person, but see the story's toll on them.
+- Characters must be RECOGNIZABLE across scenes — same age, ethnicity, build, hair, and clothing. Re-describe these identity details every time. But allow their physical STATE to evolve naturally.
 - If scenes share a location, describe the environment with the same details each time (same lighting conditions, same set dressing, same color palette)
-- Use the SAME camera language across all scenes (e.g., if scene 1 uses "handheld, eye-level", all scenes should default to that unless there's a specific reason to change)
 - Scenes must feel like they belong to the same film — consistent color temperature, grain, contrast, and aspect ratio
-- When played back-to-back, transitions should feel natural (match action, match eyeline, match energy level between scene endings and beginnings)
+
+SHOT VARIETY (CRITICAL — NO JUMP CUTS):
+- Every scene MUST use a DIFFERENT shot type and camera angle. If scene 1 is a medium shot, scene 2 must be a close-up or wide shot — NEVER two medium shots in a row.
+- Vary across these: wide/establishing, medium, close-up, extreme close-up, over-the-shoulder, low angle, high angle, profile/side angle
+- Vary camera movement too: if scene 1 is a slow push, scene 2 should be static or an orbit — NOT another push
+- Think like an EDITOR cutting a scene together. When these clips play back-to-back, each cut should show a meaningfully different framing. Same angle + same framing = jump cut = amateur.
+- Example for 3 scenes: Scene 1: wide shot, static → Scene 2: close-up on face, slow push → Scene 3: over-shoulder medium, handheld
 
 CRITICAL PROMPT STRUCTURE FOR EACH SCENE:
 [SHOT TYPE] + [SUBJECT with full physical description] + [PRIMARY ACTION + natural body language] + [STYLE - identical across scenes] + [CAMERA MOVEMENT] + [AUDIO CUES]

@@ -94,6 +94,12 @@ Avoid:
 - Multiple focal points
 - Vague character references — always fully describe every person
 
+SHOT VARIETY — NO JUMP CUTS:
+- Each scene MUST have a DIFFERENT shot type and camera angle from the previous one. Never repeat the same framing back-to-back.
+- If scene 1 is a medium shot, scene 2 must be a close-up, wide, or over-shoulder — NOT another medium shot.
+- Vary camera movement between scenes too. Two slow pushes in a row = jump cut = amateur.
+- When these scenes play back-to-back, each cut should feel intentional and show a meaningfully different perspective.
+
 CRITICAL — EACH PROMPT MUST BE FULLY SELF-CONTAINED:
 Veo 3.1 has ZERO context between scenes. It does not know what the previous scene looked like. Every single prompt must re-describe EVERYTHING from scratch:
 - Full character descriptions every time (age, build, hair, clothing, skin tone, distinguishing features) — keep identity consistent but let physical state evolve (more dirt, sweat, injuries as the story progresses)
