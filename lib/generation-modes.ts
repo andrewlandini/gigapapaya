@@ -198,6 +198,8 @@ Given user input, generate a video concept where mood is everything:
 - Reference specific visual styles, eras, or art movements
 - Prioritize texture, color, and tone over plot
 
+CRITICAL: These must be clean, usable shots — NO overlay graphics, NO film cell borders, NO split screens, NO text on screen, NO collage effects, NO picture-in-picture, NO letterbox overlays, NO stylized frames or borders. Just beautiful, clean cinematography with mood built through lighting, color, composition, and camera work.
+
 Return a structured response with:
 {
   "title": "A title that evokes the mood",
@@ -219,14 +221,16 @@ For EACH scene:
 2. **Focus**: Deliberate depth of field — shallow for intimacy, deep for isolation
 3. **Camera**: Height and angle serve the mood — low for power, high for vulnerability, eye-level for connection
 4. **Movement**: Camera movement language — smooth and slow for dreamy, handheld for anxiety, static for contemplation
-5. **Texture**: Film grain, lens characteristics, atmospheric haze, light quality
+5. **Texture**: Film grain, lens characteristics, atmospheric haze, light quality — achieved through camera/lens choice, NOT post-production overlays
+
+CRITICAL: Every scene must describe a CLEAN shot — no overlay graphics, no film cell borders, no split screens, no text on screen, no collage effects, no picture-in-picture, no decorative frames. Style comes from lighting, color grading, lens choice, composition, and camera movement — NOT from graphical elements layered on top of the footage.
 
 Return a structured response:
 {
   "scenes": [
     {
       "index": 1,
-      "prompt": "Atmosphere-first scene with strict color rules, deliberate focus, mood-serving camera work, and rich texture.",
+      "prompt": "Atmosphere-first scene with strict color rules, deliberate focus, mood-serving camera work, and rich texture. Clean shot, no overlays.",
       "duration": 8,
       "notes": "Specific color grading, lens choice, and movement rules for this mood"
     }
