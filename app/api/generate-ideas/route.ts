@@ -16,6 +16,10 @@ const nextStepSchema = z.object({
   options: z.array(z.string()).min(3).max(3).describe('3 unique, creative answer options'),
 });
 
+const reactionSchema = z.object({
+  reaction: z.string().describe('A short, enthusiastic 2-5 word reaction'),
+});
+
 export async function POST(request: NextRequest) {
   const user = await getSession();
   if (!user) {
@@ -24,6 +28,17 @@ export async function POST(request: NextRequest) {
 
   const body = await request.json();
   const { action } = body;
+
+  // Quick reaction to user's answer (uses fast model)
+  if (action === 'react') {
+    const { answer } = body as { answer: string };
+    const result = await generateObject({
+      model: getTextModel('google/gemini-3-flash'),
+      schema: reactionSchema,
+      prompt: `Someone is brainstorming a video idea and just picked: "${answer}". Give a short, enthusiastic, casual reaction (2-5 words). Like a creative friend who's excited about the direction. Examples of the vibe: "Oh that's sick", "Yes, love that", "Ooh interesting choice", "Now we're talking", "OK I see you". Be natural and varied — don't always start with "Oh" or "Ooh". Never use exclamation marks.`,
+    });
+    return Response.json(result.object);
+  }
 
   // Generate the first question (no prior context)
   if (action === 'first-step') {
@@ -45,7 +60,8 @@ Generate 3 answer options. Rules:
 - Example energy: "A chef cooking dinner on the surface of Mars", "Robots learning to dance in a neon junkyard", "A tiny civilization living inside a vending machine", "Dinosaurs commuting to office jobs in Tokyo", "An underwater jazz club run by octopuses"
 - Each option should be a completely different creative universe — something sci-fi, something absurd/funny, something beautiful/epic, something surreal, something grounded-but-twisted
 - They should make someone go "oh that would be sick to watch"
-- Keep the energy fun, playful, epic, or mind-bending. Not personal or emotional.`,
+- Keep the energy fun, playful, epic, or mind-bending. Not personal or emotional.
+- NOTHING morbid, dark, violent, depressing, or disturbing.`,
     });
     return Response.json(result.object);
   }
@@ -66,7 +82,7 @@ Generate 3 answer options. Rules:
 
 ${qaPairs}
 
-This is question ${stepNumber} of 4. Build on what they chose — zoom into their world and add more detail, a twist, or a new dimension to the concept.
+This is question ${stepNumber} of 3. Build on what they chose — zoom into their world and add more detail, a twist, or a new dimension to the concept.
 
 Question rules:
 - Riff on their previous choices. Take the concept further, don't start over.
@@ -82,7 +98,8 @@ Answer options rules:
 - Each option takes the video in a completely different direction
 - Make them imaginative, unexpected, cinematic — the kind of ideas that make someone excited
 - At least one option should be absurd or hilarious
-- Keep the energy fun, epic, playful, or mind-bending. Not personal or emotional.`,
+- Keep the energy fun, epic, playful, or mind-bending. Not personal or emotional.
+- NOTHING morbid, dark, violent, depressing, or disturbing.`,
     });
     return Response.json(result.object);
   }
@@ -97,12 +114,28 @@ Answer options rules:
   const result = await generateObject({
     model: getTextModel('anthropic/claude-sonnet-4.5'),
     schema: ideasSchema,
-    prompt: `You are a creative video idea generator. Based on the user's choices below, generate 10 diverse, specific, and visually compelling video ideas. Each idea should be 1-2 sentences that someone could use as a prompt for AI video generation. Make them vivid, concrete, and varied — don't repeat the same structure. Surprise the user.
+    prompt: `You are a creative video prompt writer. Based on the user's choices below, generate 10 diverse video prompts.
+
+Each prompt MUST be a single sentence that answers: WHO is doing WHAT, WHERE, WHEN, and HOW it looks. It should read like a direct instruction to a video generation AI.
+
+Good examples:
+- "A golden retriever in a tiny chef hat flips pancakes in a sunlit cabin kitchen at dawn, shot on 35mm film"
+- "Two astronauts slow-dance on the surface of Mars while Earth rises behind them, cinematic wide shot"
+- "A street musician plays saxophone on a rainy Tokyo rooftop at night, neon signs reflecting in the puddles around him"
+
+Bad examples (too vague, not a prompt):
+- "The feeling of discovery" ← no who/what/where
+- "An exploration of urban loneliness" ← abstract, not filmable
+- "Something magical happens" ← not specific enough
 
 User's choices:
 ${choicesSummary}
 
-Generate 10 video ideas that match these preferences. Each idea should be a complete scene description, not just a concept. Be specific about subjects, actions, and visual details.`,
+Generate 10 video prompts. Each one must be:
+- ONE concrete sentence — a filmable scene, not a concept
+- Specific about the subject, action, location, and visual style
+- Diverse from each other — different subjects, settings, and vibes
+- NOTHING morbid, dark, violent, depressing, or disturbing — keep the energy fun and exciting`,
   });
 
   return Response.json({ ideas: result.object.ideas });

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Lightbulb, Loader2, RotateCcw } from 'lucide-react';
 
 interface IdeaWizardProps {
@@ -8,7 +8,40 @@ interface IdeaWizardProps {
   onActiveChange?: (active: boolean) => void;
 }
 
-const TOTAL_STEPS = 4;
+const TOTAL_STEPS = 3;
+
+const PICK_HEADLINES = [
+  "Any of these good?",
+  "How'd we do?",
+  "Pick your favorite.",
+  "Something click?",
+  "See anything you like?",
+  "Which one's the one?",
+  "Anything jumping out?",
+  "We nailed it, right?",
+  "One of these, yeah?",
+  "What are we going with?",
+  "Take your pick.",
+  "Anything spark joy?",
+  "Which one speaks to you?",
+  "These any good?",
+  "Found your winner?",
+  "Let's narrow it down.",
+  "What catches your eye?",
+  "Any of these hit?",
+  "Pick your poison.",
+  "Which one's calling you?",
+  "See the one?",
+  "Spot something good?",
+  "What do we think?",
+  "Ready to pick?",
+  "These feel right?",
+  "Any winners here?",
+  "What's it gonna be?",
+  "One of these work?",
+  "Which one are we running with?",
+  "Anything here worth making?",
+];
 
 export function IdeaWizard({ onSelectIdea, onActiveChange }: IdeaWizardProps) {
   const [active, setActive] = useState(false);
@@ -22,6 +55,8 @@ export function IdeaWizard({ onSelectIdea, onActiveChange }: IdeaWizardProps) {
   const [loading, setLoading] = useState(false);
   const [loadingStep, setLoadingStep] = useState(false);
   const [optionsKey, setOptionsKey] = useState(0); // forces re-render for animations
+  const [reaction, setReaction] = useState<string | null>(null);
+  const pickHeadline = useMemo(() => PICK_HEADLINES[Math.floor(Math.random() * PICK_HEADLINES.length)], []);
 
   const fetchFirstStep = async () => {
     setLoadingStep(true);
@@ -67,15 +102,34 @@ export function IdeaWizard({ onSelectIdea, onActiveChange }: IdeaWizardProps) {
     fetchFirstStep();
   };
 
+  const fetchReaction = async (answer: string) => {
+    try {
+      const res = await fetch('/api/generate-ideas', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'react', answer }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setReaction(data.reaction);
+      }
+    } catch {}
+  };
+
   const handleAnswer = async (answer: string) => {
     const newQuestions = [...questions, currentQuestion!];
     const newAnswers = [...answers, answer];
     setQuestions(newQuestions);
     setAnswers(newAnswers);
+    setReaction(null);
 
     if (newAnswers.length < TOTAL_STEPS) {
       setStep(step + 1);
-      await fetchNextStep(newQuestions, newAnswers);
+      // Fetch reaction and next question in parallel
+      await Promise.all([
+        fetchReaction(answer),
+        fetchNextStep(newQuestions, newAnswers),
+      ]);
     } else {
       // All questions answered — generate ideas
       setLoading(true);
@@ -105,6 +159,9 @@ export function IdeaWizard({ onSelectIdea, onActiveChange }: IdeaWizardProps) {
     setLoading(false);
     setLoadingStep(false);
     setOptionsKey(0);
+    setReaction(null);
+    // Re-fetch the first question to start over
+    fetchFirstStep();
   };
 
   const handleClose = () => {
@@ -117,7 +174,7 @@ export function IdeaWizard({ onSelectIdea, onActiveChange }: IdeaWizardProps) {
     return (
       <button
         onClick={handleActivate}
-        className="flex items-center gap-2 text-[#666] hover:text-[#ededed] transition-colors"
+        className="flex items-center gap-2 text-[#666] hover:text-[#ededed] transition-colors mx-auto"
       >
         <Lightbulb className="h-4 w-4" />
         <span className="text-[15px]">Help me think of an idea</span>
@@ -138,23 +195,18 @@ export function IdeaWizard({ onSelectIdea, onActiveChange }: IdeaWizardProps) {
   // Show generated ideas
   if (ideas.length > 0) {
     return (
-      <div className="space-y-6 max-w-md mx-auto w-full">
-        <div className="space-y-4">
-          {progressBar}
-          <div className="flex items-center justify-center gap-4">
-            <span className="text-xs font-mono text-[#555]">Pick an idea</span>
-            <button onClick={handleReset} className="flex items-center gap-1 text-xs text-[#555] hover:text-[#888] transition-colors">
-              <RotateCcw className="h-3 w-3" />
-              Start over
-            </button>
-          </div>
-        </div>
-        <div className="flex flex-wrap justify-center gap-2">
+      <div className="w-full pb-24">
+        <h2 className="text-[32px] font-bold tracking-tight leading-tight animate-fade-in text-center max-w-2xl mx-auto">
+          {pickHeadline}
+        </h2>
+
+        <div className="flex flex-col gap-3 max-w-lg mx-auto w-full mt-8">
           {ideas.slice(0, visibleCount).map((idea, i) => (
             <button
               key={i}
               onClick={() => { onSelectIdea(idea); handleClose(); }}
-              className="text-left px-3 py-2 rounded-xl border border-[#333] bg-[#0a0a0a] hover:border-[#555] hover:bg-[#111] transition-all text-sm text-[#ccc] leading-relaxed"
+              className="w-full text-left px-5 py-3.5 rounded-xl border border-[#333] bg-[#0a0a0a] hover:border-[#555] hover:bg-[#111] transition-all text-sm text-[#ccc] leading-relaxed opacity-0 animate-fade-in"
+              style={{ animationDelay: `${i * 150}ms`, animationFillMode: 'forwards' }}
             >
               {idea}
             </button>
@@ -163,11 +215,20 @@ export function IdeaWizard({ onSelectIdea, onActiveChange }: IdeaWizardProps) {
         {visibleCount < ideas.length && (
           <button
             onClick={() => setVisibleCount(prev => prev + 3)}
-            className="text-xs text-[#555] hover:text-[#888] transition-colors mx-auto block"
+            className="text-xs text-[#555] hover:text-[#888] transition-colors mx-auto block mt-4"
           >
             Show more
           </button>
         )}
+
+        <div className="fixed bottom-0 left-0 right-0 z-30 pb-8 pt-4 bg-gradient-to-t from-black via-black/90 to-transparent pointer-events-none">
+          <button
+            onClick={handleClose}
+            className="pointer-events-auto text-xs text-[#555] hover:text-[#888] transition-colors mx-auto block"
+          >
+            Cancel
+          </button>
+        </div>
       </div>
     );
   }
@@ -185,31 +246,43 @@ export function IdeaWizard({ onSelectIdea, onActiveChange }: IdeaWizardProps) {
     );
   }
 
+  // Bottom bar (progress + cancel) — fixed to bottom of page
+  const bottomBar = (
+    <div className="fixed bottom-0 left-0 right-0 z-30 pb-8 pt-4 bg-gradient-to-t from-black via-black/90 to-transparent pointer-events-none">
+      <div className="pointer-events-auto max-w-md mx-auto w-full px-6 space-y-4">
+        {progressBar}
+        <button onClick={handleClose} className="text-xs text-[#555] hover:text-[#888] transition-colors mx-auto block">
+          Cancel
+        </button>
+      </div>
+    </div>
+  );
+
   // Loading next question
   if (loadingStep || !currentQuestion) {
     return (
-      <div className="max-w-md mx-auto w-full">
-        <div className="flex items-center justify-center gap-3 py-8">
+      <div className="w-full pb-24">
+        <div className="flex flex-col items-center justify-center gap-3 py-8">
+          {reaction && (
+            <p className="text-sm text-[#888] animate-fade-in">{reaction}</p>
+          )}
           <Loader2 className="h-4 w-4 text-[#555] animate-spin" />
         </div>
-        <div className="mt-10">{progressBar}</div>
-        <button onClick={handleClose} className="text-xs text-[#555] hover:text-[#888] transition-colors mx-auto block mt-5">
-          Cancel
-        </button>
+        {bottomBar}
       </div>
     );
   }
 
   // Question step — question replaces the page title
   return (
-    <div className="max-w-md mx-auto w-full">
-      {/* Question as title */}
-      <h2 className="text-[32px] font-bold tracking-tight leading-tight animate-fade-in text-center">
+    <div className="w-full pb-24">
+      {/* Question as title — wider, adapts to screen */}
+      <h2 className="text-[32px] font-bold tracking-tight leading-tight animate-fade-in text-center max-w-2xl mx-auto">
         {currentQuestion}
       </h2>
 
       {/* Options with staggered fade-in */}
-      <div className="flex flex-col gap-3 w-full mt-8" key={optionsKey}>
+      <div className="flex flex-col gap-3 max-w-md mx-auto w-full mt-8" key={optionsKey}>
         {currentOptions.map((option, i) => (
           <button
             key={option}
@@ -222,12 +295,7 @@ export function IdeaWizard({ onSelectIdea, onActiveChange }: IdeaWizardProps) {
         ))}
       </div>
 
-      {/* Progress bar */}
-      <div className="mt-10">{progressBar}</div>
-
-      <button onClick={handleClose} className="text-xs text-[#555] hover:text-[#888] transition-colors mx-auto block mt-5">
-        Cancel
-      </button>
+      {bottomBar}
     </div>
   );
 }
