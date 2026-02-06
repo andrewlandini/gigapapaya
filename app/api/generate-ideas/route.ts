@@ -123,10 +123,11 @@ Bad examples (too vague, not a prompt):
 User's choices:
 ${choicesSummary}
 
-Generate 10 video prompts. Each one must be:
-- ONE concrete sentence — a filmable scene, not a concept
-- Specific about the subject, action, location, and visual style
-- Diverse from each other — different subjects, settings, and vibes
+Generate 10 video prompts. CRITICAL RULES:
+- The FIRST 3 prompts must be VERY closely tied to the user's exact answers — use the same world, characters, scenarios, and details they picked. These should feel like a direct translation of their choices into a filmable scene.
+- The next 4 can riff on the theme and explore nearby creative territory — still connected to the choices but with more creative freedom.
+- The last 3 can go further out — inspired by the vibe of their choices but more surprising.
+- Each one must be ONE concrete sentence — a filmable scene with who/what/where/when/how
 - NOTHING morbid, dark, violent, depressing, or disturbing — keep the energy fun and exciting`,
   });
 

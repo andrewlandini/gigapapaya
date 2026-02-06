@@ -152,10 +152,6 @@ export function VideoGenerator() {
             <h1 className="text-[40px] font-bold tracking-tight leading-tight animate-fade-in">{headline}</h1>
           )}
 
-          {wizardActive && (
-            <IdeaWizard onSelectIdea={(idea) => setIdea(idea)} onActiveChange={(active) => { setWizardActive(active); if (active) clearGeneration(); }} />
-          )}
-
           {!wizardActive && (
             <div className="space-y-5">
               {/* Unified input box */}
@@ -234,9 +230,12 @@ export function VideoGenerator() {
                 )}
               </div>
 
-              <IdeaWizard onSelectIdea={(idea) => setIdea(idea)} onActiveChange={(active) => { setWizardActive(active); if (active) clearGeneration(); }} />
             </div>
           )}
+
+          <div className={wizardActive ? '' : 'pt-4'}>
+            <IdeaWizard onSelectIdea={(idea) => setIdea(idea)} onActiveChange={(active) => { setWizardActive(active); if (active) clearGeneration(); }} />
+          </div>
 
           {/* Agent settings modal */}
           {showAgentSettings && (
@@ -388,8 +387,8 @@ export function VideoGenerator() {
                   <textarea
                     value={scene.prompt}
                     onChange={(e) => updateScenePrompt(i, e.target.value)}
-                    rows={3}
-                    className="w-full bg-[#0a0a0a] border border-[#333] rounded-lg px-3 py-2 text-sm text-[#ccc] placeholder:text-[#555] focus:outline-none focus:border-[#555] focus:ring-1 focus:ring-white/10 resize-none leading-relaxed"
+                    className="w-full bg-[#0a0a0a] border border-[#333] rounded-lg px-3 py-2 text-sm text-[#ccc] placeholder:text-[#555] focus:outline-none focus:border-[#555] focus:ring-1 focus:ring-white/10 resize-y leading-relaxed"
+                    style={{ fieldSizing: 'content' as any, minHeight: '4rem' }}
                   />
                 </div>
               ))}

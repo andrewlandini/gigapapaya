@@ -164,16 +164,6 @@ export function IdeaWizard({ onSelectIdea, onActiveChange }: IdeaWizardProps) {
     );
   }
 
-  // Progress bar
-  const progressBar = (
-    <div className="w-full max-w-md mx-auto h-1 rounded-full bg-[#222] overflow-hidden">
-      <div
-        className="h-full rounded-full bg-white/40 transition-all duration-500"
-        style={{ width: `${((step + (loading || ideas.length > 0 ? 1 : 0)) / TOTAL_STEPS) * 100}%` }}
-      />
-    </div>
-  );
-
   // Show generated ideas
   if (ideas.length > 0) {
     return (
@@ -182,7 +172,7 @@ export function IdeaWizard({ onSelectIdea, onActiveChange }: IdeaWizardProps) {
           {pickHeadline}
         </h2>
 
-        <div className="flex flex-col gap-3 max-w-lg mx-auto w-full mt-8">
+        <div className="flex flex-col gap-4 max-w-lg mx-auto w-full mt-8">
           {ideas.slice(0, visibleCount).map((idea, i) => (
             <div
               key={i}
@@ -223,7 +213,7 @@ export function IdeaWizard({ onSelectIdea, onActiveChange }: IdeaWizardProps) {
   if (loading) {
     return (
       <div className="space-y-6 max-w-md mx-auto w-full">
-        {progressBar}
+
         <div className="flex items-center justify-center gap-3 py-2">
           <Loader2 className="h-6 w-6 text-[#777] animate-spin" />
           <span className="text-sm text-[#666]">Generating ideas from your choices...</span>
@@ -236,7 +226,7 @@ export function IdeaWizard({ onSelectIdea, onActiveChange }: IdeaWizardProps) {
   const bottomBar = (
     <div className="fixed bottom-0 left-0 right-0 z-30 pb-8 pt-4 bg-gradient-to-t from-black via-black/90 to-transparent pointer-events-none">
       <div className="pointer-events-auto max-w-md mx-auto w-full px-6 space-y-4">
-        {progressBar}
+
         <button onClick={handleClose} className="text-xs text-[#555] hover:text-[#888] transition-colors mx-auto block">
           Cancel
         </button>
