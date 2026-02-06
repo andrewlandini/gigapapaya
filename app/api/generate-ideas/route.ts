@@ -100,33 +100,37 @@ For each option, also write a short reaction (2-5 words) that would show if the 
   const { answers, steps } = body;
 
   const choicesSummary = steps
-    .map((q: string, i: number) => `${q} ${answers[i]}`)
-    .join('\n');
+    .map((q: string, i: number) => `Q: ${q}\nA: ${answers[i]}`)
+    .join('\n\n');
 
   const result = await generateObject({
     model: getTextModel('anthropic/claude-sonnet-4.5'),
     schema: ideasSchema,
-    prompt: `You are a creative video prompt writer. Based on the user's choices below, generate 10 diverse video prompts.
+    prompt: `You are a creative video prompt writer. The user just built a story through a series of creative choices. Your job is to turn THEIR story into 10 filmable video prompts.
+
+IMPORTANT: The user's answers below form a COHERENT NARRATIVE — a world, characters, and a storyline. Every prompt you generate must be rooted in THIS story. Do not drift into unrelated territory.
+
+User's story choices:
+${choicesSummary}
+
+Read those answers carefully. Together they describe a specific world, specific characters, and a specific scenario. ALL 10 prompts must live inside that story.
 
 Each prompt MUST be a single sentence that answers: WHO is doing WHAT, WHERE, WHEN, and HOW it looks. It should read like a direct instruction to a video generation AI.
 
 Good examples:
 - "A golden retriever in a tiny chef hat flips pancakes in a sunlit cabin kitchen at dawn, shot on 35mm film"
 - "Two astronauts slow-dance on the surface of Mars while Earth rises behind them, cinematic wide shot"
-- "A street musician plays saxophone on a rainy Tokyo rooftop at night, neon signs reflecting in the puddles around him"
 
 Bad examples (too vague, not a prompt):
 - "The feeling of discovery" ← no who/what/where
-- "An exploration of urban loneliness" ← abstract, not filmable
 - "Something magical happens" ← not specific enough
 
-User's choices:
-${choicesSummary}
-
 Generate 10 video prompts. CRITICAL RULES:
-- The FIRST 3 prompts must be VERY closely tied to the user's exact answers — use the same world, characters, scenarios, and details they picked. These should feel like a direct translation of their choices into a filmable scene.
-- The next 4 can riff on the theme and explore nearby creative territory — still connected to the choices but with more creative freedom.
-- The last 3 can go further out — inspired by the vibe of their choices but more surprising.
+- ALL 10 prompts must feature the same world, characters, and story the user described
+- The FIRST 3 should be direct translations of the user's exact answers into filmable scenes — use their specific characters, setting, and scenario
+- The next 4 should explore different MOMENTS or ANGLES within the same story — different scenes, camera angles, or beats from the same narrative
+- The last 3 can be the most creative — unexpected moments, dramatic reveals, or cinematic set pieces — but still starring the same characters in the same world
+- NEVER introduce unrelated characters, worlds, or concepts that the user didn't describe
 - Each one must be ONE concrete sentence — a filmable scene with who/what/where/when/how
 - NOTHING morbid, dark, violent, depressing, or disturbing — keep the energy fun and exciting`,
   });
