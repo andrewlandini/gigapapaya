@@ -13,11 +13,10 @@ const ideasSchema = z.object({
 
 const nextStepSchema = z.object({
   question: z.string().describe('A short, creative question (3-6 words) to ask the user'),
-  options: z.array(z.string()).min(3).max(3).describe('3 unique, creative answer options'),
-});
-
-const reactionSchema = z.object({
-  reaction: z.string().describe('A short, enthusiastic 2-5 word reaction'),
+  options: z.array(z.object({
+    text: z.string().describe('The answer option text'),
+    reaction: z.string().describe('A short 2-5 word enthusiastic reaction if the user picks this option, like "Oh that\'s sick" or "Now we\'re talking"'),
+  })).min(3).max(3).describe('3 unique, creative answer options with pre-generated reactions'),
 });
 
 export async function POST(request: NextRequest) {
@@ -28,17 +27,6 @@ export async function POST(request: NextRequest) {
 
   const body = await request.json();
   const { action } = body;
-
-  // Quick reaction to user's answer (uses fast model)
-  if (action === 'react') {
-    const { answer } = body as { answer: string };
-    const result = await generateObject({
-      model: getTextModel('google/gemini-3-flash'),
-      schema: reactionSchema,
-      prompt: `Someone is brainstorming a video idea and just picked: "${answer}". Give a short, enthusiastic, casual reaction (2-5 words). Like a creative friend who's excited about the direction. Examples of the vibe: "Oh that's sick", "Yes, love that", "Ooh interesting choice", "Now we're talking", "OK I see you". Be natural and varied — don't always start with "Oh" or "Ooh". Never use exclamation marks.`,
-    });
-    return Response.json(result.object);
-  }
 
   // Generate the first question (no prior context)
   if (action === 'first-step') {
@@ -61,7 +49,9 @@ Generate 3 answer options. Rules:
 - Each option should be a completely different creative universe — something sci-fi, something absurd/funny, something beautiful/epic, something surreal, something grounded-but-twisted
 - They should make someone go "oh that would be sick to watch"
 - Keep the energy fun, playful, epic, or mind-bending. Not personal or emotional.
-- NOTHING morbid, dark, violent, depressing, or disturbing.`,
+- NOTHING morbid, dark, violent, depressing, or disturbing.
+
+For each option, also write a short reaction (2-5 words) that would show if the user picks it — like a creative friend reacting. Examples: "Oh that's sick", "Now we're talking", "Yes love that", "OK I see you", "Wild choice let's go". Be natural and varied. No exclamation marks.`,
     });
     return Response.json(result.object);
   }
@@ -99,7 +89,9 @@ Answer options rules:
 - Make them imaginative, unexpected, cinematic — the kind of ideas that make someone excited
 - At least one option should be absurd or hilarious
 - Keep the energy fun, epic, playful, or mind-bending. Not personal or emotional.
-- NOTHING morbid, dark, violent, depressing, or disturbing.`,
+- NOTHING morbid, dark, violent, depressing, or disturbing.
+
+For each option, also write a short reaction (2-5 words) that would show if the user picks it — like a creative friend reacting. Examples: "Oh that's sick", "Now we're talking", "Yes love that", "OK I see you", "Wild choice let's go". Be natural and varied. No exclamation marks.`,
     });
     return Response.json(result.object);
   }

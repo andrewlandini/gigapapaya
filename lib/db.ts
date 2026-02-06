@@ -166,6 +166,32 @@ export async function getGenerationVideos(generationId: string) {
   return sql`SELECT * FROM videos WHERE generation_id = ${generationId} ORDER BY scene_index ASC`;
 }
 
+export async function getGenerationWithVideos(generationId: string) {
+  const sql = getDb();
+  const generations = await sql`SELECT * FROM generations WHERE id = ${generationId}`;
+  const generation = generations[0] || null;
+  if (!generation) return null;
+  const videos = await sql`
+    SELECT v.*, u.username, u.name as user_name, u.avatar_url
+    FROM videos v
+    LEFT JOIN users u ON v.user_id = u.id
+    WHERE v.generation_id = ${generationId}
+    ORDER BY v.scene_index ASC
+  `;
+  return { generation, videos };
+}
+
+export async function updateVideoSceneIndex(videoId: string, userId: string, newIndex: number) {
+  const sql = getDb();
+  await sql`UPDATE videos SET scene_index = ${newIndex} WHERE id = ${videoId} AND user_id = ${userId}`;
+}
+
+export async function removeVideoFromGeneration(videoId: string, userId: string) {
+  const sql = getDb();
+  await sql`DELETE FROM hearts WHERE video_id = ${videoId}`;
+  await sql`DELETE FROM videos WHERE id = ${videoId} AND user_id = ${userId}`;
+}
+
 // ── Feed ────────────────────────────────────────────────
 
 export async function getPublicVideos(limit: number = 30, offset: number = 0) {

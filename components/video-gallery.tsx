@@ -1,14 +1,16 @@
 'use client';
 
-import { Download, Play } from 'lucide-react';
+import { Download, Play, ExternalLink } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import type { Video } from '@/lib/types';
+import Link from 'next/link';
 
 interface VideoGalleryProps {
   videos: Video[];
+  sessionId?: string;
 }
 
-export function VideoGallery({ videos }: VideoGalleryProps) {
+export function VideoGallery({ videos, sessionId }: VideoGalleryProps) {
   if (videos.length === 0) return null;
 
   return (
@@ -18,6 +20,15 @@ export function VideoGallery({ videos }: VideoGalleryProps) {
           <h2 className="text-sm font-medium text-[#ededed]">Generated Videos</h2>
           <Badge variant="success">{videos.length} ready</Badge>
         </div>
+        {sessionId && videos.length > 1 && (
+          <Link
+            href={`/s/${sessionId}`}
+            className="flex items-center gap-1.5 text-xs font-mono text-[#555] hover:text-[#ededed] transition-colors"
+          >
+            <ExternalLink className="h-3.5 w-3.5" />
+            View as scene
+          </Link>
+        )}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">

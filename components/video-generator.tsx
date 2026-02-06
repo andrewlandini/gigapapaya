@@ -40,8 +40,8 @@ import { GENERATION_MODES, getModeById } from '@/lib/generation-modes';
 
 export function VideoGenerator() {
   const {
-    state, options, setIdea, setOptions,
-    updateScenePrompt, startModeGeneration, handleGenerateVideos, handleReset,
+    state, options, sessionId, setIdea, setOptions,
+    updateScenePrompt, startModeGeneration, handleGenerateVideos, handleReset, clearGeneration,
     isGenerating,
     customPrompts, updateModeCustomization, restoreModeDefault,
     history, deleteHistoryEntry, loadFromHistory,
@@ -151,7 +151,10 @@ export function VideoGenerator() {
           {!wizardActive && (
             <h1 className="text-[40px] font-bold tracking-tight leading-tight animate-fade-in">{headline}</h1>
           )}
-          <IdeaWizard onSelectIdea={(idea) => setIdea(idea)} onActiveChange={setWizardActive} />
+
+          {wizardActive && (
+            <IdeaWizard onSelectIdea={(idea) => setIdea(idea)} onActiveChange={(active) => { setWizardActive(active); if (active) clearGeneration(); }} />
+          )}
 
           {!wizardActive && (
             <div className="space-y-5">
@@ -217,6 +220,7 @@ export function VideoGenerator() {
                     key={mode.id}
                     onClick={() => startModeGeneration(mode.id)}
                     disabled={isGenerating || state.status === 'reviewing' || !state.idea.trim()}
+                    title={mode.description}
                     className="group flex items-center gap-2 h-11 px-5 rounded-full border border-[#333] bg-[#0a0a0a] hover:border-[#555] hover:bg-[#111] disabled:opacity-30 disabled:cursor-not-allowed transition-all"
                   >
                     <span className="text-base">{mode.icon}</span>
@@ -229,6 +233,8 @@ export function VideoGenerator() {
                   </Button>
                 )}
               </div>
+
+              <IdeaWizard onSelectIdea={(idea) => setIdea(idea)} onActiveChange={(active) => { setWizardActive(active); if (active) clearGeneration(); }} />
             </div>
           )}
 
@@ -346,31 +352,8 @@ export function VideoGenerator() {
 
         </div>
 
-        {/* Concept + Progress */}
-        {state.generatedIdea && state.progress.length > 0 && (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <div className="space-y-3 animate-fade-in">
-              <h2 className="text-sm font-medium text-[#ededed]">Concept</h2>
-              <div className="border border-[#222] rounded-xl p-5 space-y-3">
-                <h3 className="text-lg font-semibold tracking-tight">{state.generatedIdea.title}</h3>
-                <p className="text-sm text-[#888] leading-relaxed">{state.generatedIdea.description}</p>
-                <div className="flex flex-wrap gap-2 pt-1">
-                  <Badge>{state.generatedIdea.style}</Badge>
-                  <Badge>{state.generatedIdea.mood}</Badge>
-                  {state.generatedIdea.keyElements.map((el, i) => (
-                    <Badge key={i}>{el}</Badge>
-                  ))}
-                </div>
-              </div>
-            </div>
-            <div>
-              <ProgressTracker events={state.progress} />
-            </div>
-          </div>
-        )}
-
-        {/* Progress only (no concept yet) */}
-        {!state.generatedIdea && state.progress.length > 0 && (
+        {/* Progress */}
+        {state.progress.length > 0 && (
           <div className="max-w-3xl">
             <ProgressTracker events={state.progress} />
           </div>
@@ -425,7 +408,7 @@ export function VideoGenerator() {
 
         {/* Videos */}
         {state.videos.length > 0 && (
-          <VideoGallery videos={state.videos} />
+          <VideoGallery videos={state.videos} sessionId={sessionId} />
         )}
 
         {/* Error */}

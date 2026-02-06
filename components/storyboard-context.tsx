@@ -34,6 +34,7 @@ interface StoryboardContextValue {
   startModeGeneration: (modeId: string) => void;
   handleGenerateVideos: () => void;
   handleReset: () => void;
+  clearGeneration: () => void;
   isGenerating: boolean;
   // Per-mode custom prompts
   customPrompts: CustomPrompts;
@@ -326,8 +327,13 @@ export function StoryboardProvider({ children }: { children: ReactNode }) {
               setState(p => ({ ...p, progress: [...p.progress, progressEvent] }));
 
               switch (data.type) {
+                case 'video-complete':
+                  if (data.video) {
+                    setState(p => ({ ...p, videos: [...p.videos, data.video!] }));
+                  }
+                  break;
                 case 'complete':
-                  setState(p => ({ ...p, status: 'complete', videos: data.videos || [] }));
+                  setState(p => ({ ...p, status: 'complete' }));
                   break;
                 case 'error':
                   if (!data.sceneIndex && data.sceneIndex !== 0) {
@@ -350,6 +356,19 @@ export function StoryboardProvider({ children }: { children: ReactNode }) {
     });
   }, [options]);
 
+  const clearGeneration = useCallback(() => {
+    setState(prev => ({
+      ...prev,
+      generatedIdea: null,
+      scenes: null,
+      editableScenes: null,
+      videos: [],
+      progress: [],
+      error: null,
+      status: 'idle',
+    }));
+  }, []);
+
   const handleReset = useCallback(() => {
     sessionIdRef.current = '';
     setState({
@@ -364,7 +383,7 @@ export function StoryboardProvider({ children }: { children: ReactNode }) {
     <StoryboardContext.Provider value={{
       state, options, sessionId: sessionIdRef.current,
       setIdea, setOptions, updateScenePrompt,
-      startModeGeneration, handleGenerateVideos, handleReset,
+      startModeGeneration, handleGenerateVideos, handleReset, clearGeneration,
       isGenerating,
       customPrompts, updateModeCustomization, restoreModeDefault,
       history, deleteHistoryEntry, clearHistory, loadFromHistory,

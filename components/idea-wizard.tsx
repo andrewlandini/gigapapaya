@@ -49,7 +49,7 @@ export function IdeaWizard({ onSelectIdea, onActiveChange }: IdeaWizardProps) {
   const [questions, setQuestions] = useState<string[]>([]);
   const [answers, setAnswers] = useState<string[]>([]);
   const [currentQuestion, setCurrentQuestion] = useState<string | null>(null);
-  const [currentOptions, setCurrentOptions] = useState<string[]>([]);
+  const [currentOptions, setCurrentOptions] = useState<{ text: string; reaction: string }[]>([]);
   const [ideas, setIdeas] = useState<string[]>([]);
   const [visibleCount, setVisibleCount] = useState(3);
   const [loading, setLoading] = useState(false);
@@ -102,34 +102,16 @@ export function IdeaWizard({ onSelectIdea, onActiveChange }: IdeaWizardProps) {
     fetchFirstStep();
   };
 
-  const fetchReaction = async (answer: string) => {
-    try {
-      const res = await fetch('/api/generate-ideas', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'react', answer }),
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setReaction(data.reaction);
-      }
-    } catch {}
-  };
-
-  const handleAnswer = async (answer: string) => {
+  const handleAnswer = async (answer: string, reactionText: string) => {
     const newQuestions = [...questions, currentQuestion!];
     const newAnswers = [...answers, answer];
     setQuestions(newQuestions);
     setAnswers(newAnswers);
-    setReaction(null);
+    setReaction(reactionText);
 
     if (newAnswers.length < TOTAL_STEPS) {
       setStep(step + 1);
-      // Fetch reaction and next question in parallel
-      await Promise.all([
-        fetchReaction(answer),
-        fetchNextStep(newQuestions, newAnswers),
-      ]);
+      await fetchNextStep(newQuestions, newAnswers);
     } else {
       // All questions answered — generate ideas
       setLoading(true);
@@ -202,14 +184,18 @@ export function IdeaWizard({ onSelectIdea, onActiveChange }: IdeaWizardProps) {
 
         <div className="flex flex-col gap-3 max-w-lg mx-auto w-full mt-8">
           {ideas.slice(0, visibleCount).map((idea, i) => (
-            <button
+            <div
               key={i}
-              onClick={() => { onSelectIdea(idea); handleClose(); }}
-              className="w-full text-left px-5 py-3.5 rounded-xl border border-[#333] bg-[#0a0a0a] hover:border-[#555] hover:bg-[#111] transition-all text-sm text-[#ccc] leading-relaxed opacity-0 animate-fade-in"
+              className="rounded-xl p-[1px] bg-gradient-to-r from-purple-500/40 via-violet-500/40 to-fuchsia-500/40 hover:from-purple-500/70 hover:via-violet-500/70 hover:to-fuchsia-500/70 transition-all opacity-0 animate-fade-in"
               style={{ animationDelay: `${i * 150}ms`, animationFillMode: 'forwards' }}
             >
-              {idea}
-            </button>
+              <button
+                onClick={() => { onSelectIdea(idea); handleClose(); }}
+                className="w-full text-left px-5 py-3.5 rounded-[11px] bg-[#0a0a0a] hover:bg-[#111] transition-colors text-sm text-[#ccc] leading-relaxed"
+              >
+                {idea}
+              </button>
+            </div>
           ))}
         </div>
         {visibleCount < ideas.length && (
@@ -239,8 +225,8 @@ export function IdeaWizard({ onSelectIdea, onActiveChange }: IdeaWizardProps) {
       <div className="space-y-6 max-w-md mx-auto w-full">
         {progressBar}
         <div className="flex items-center justify-center gap-3 py-2">
-          <Loader2 className="h-4 w-4 text-[#555] animate-spin" />
-          <span className="text-sm text-[#555]">Generating ideas from your choices...</span>
+          <Loader2 className="h-6 w-6 text-[#777] animate-spin" />
+          <span className="text-sm text-[#666]">Generating ideas from your choices...</span>
         </div>
       </div>
     );
@@ -262,11 +248,11 @@ export function IdeaWizard({ onSelectIdea, onActiveChange }: IdeaWizardProps) {
   if (loadingStep || !currentQuestion) {
     return (
       <div className="w-full pb-24">
-        <div className="flex flex-col items-center justify-center gap-3 py-8">
+        <div className="flex flex-col items-center justify-center gap-4 py-8">
           {reaction && (
             <p className="text-sm text-[#888] animate-fade-in">{reaction}</p>
           )}
-          <Loader2 className="h-4 w-4 text-[#555] animate-spin" />
+          <Loader2 className="h-6 w-6 text-[#777] animate-spin" />
         </div>
         {bottomBar}
       </div>
@@ -282,15 +268,15 @@ export function IdeaWizard({ onSelectIdea, onActiveChange }: IdeaWizardProps) {
       </h2>
 
       {/* Options with staggered fade-in */}
-      <div className="flex flex-col gap-3 max-w-md mx-auto w-full mt-8" key={optionsKey}>
+      <div className="flex flex-col gap-3 max-w-xl mx-auto w-full mt-8" key={optionsKey}>
         {currentOptions.map((option, i) => (
           <button
-            key={option}
-            onClick={() => handleAnswer(option)}
+            key={option.text}
+            onClick={() => handleAnswer(option.text, option.reaction)}
             className="w-full h-11 px-5 rounded-xl border border-[#333] bg-[#0a0a0a] hover:border-[#555] hover:bg-[#111] transition-all text-sm text-[#ededed] text-left opacity-0 animate-fade-in"
             style={{ animationDelay: `${i * 200}ms`, animationFillMode: 'forwards' }}
           >
-            {option}
+            {option.text}
           </button>
         ))}
       </div>

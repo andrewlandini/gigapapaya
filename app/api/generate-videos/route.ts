@@ -95,7 +95,7 @@ export async function POST(request: NextRequest) {
 
               videos.push(video);
               sendEvent({ type: 'agent-log', agent: 'videos', status: `Scene ${i + 1} complete — ${(video.size / (1024 * 1024)).toFixed(1)} MB uploaded` });
-              sendEvent({ type: 'video-complete', sceneIndex: i, videoId: video.id });
+              sendEvent({ type: 'video-complete', sceneIndex: i, videoId: video.id, video });
             } catch (error) {
               console.error(`❌ Failed to generate video ${i + 1}:`, error);
               sendEvent({ type: 'agent-log', agent: 'videos', status: `Scene ${i + 1} failed: ${error instanceof Error ? error.message : 'Unknown error'}` });

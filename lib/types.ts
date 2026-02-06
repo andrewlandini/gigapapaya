@@ -99,6 +99,7 @@ export interface SSEMessage {
   result?: any;
   sceneIndex?: number;
   videoId?: string;
+  video?: Video;
   prompt?: string;
   message?: string;
   sessionId?: string;
