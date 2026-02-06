@@ -71,7 +71,8 @@ export function VideoCard({
     <Link
       ref={containerRef}
       href={`/v/${id}`}
-      className="block relative rounded-xl overflow-hidden border border-[#222] hover:border-[#444] transition-all group cursor-pointer"
+      className="block relative rounded-xl overflow-hidden border border-[#222] hover:border-[#444] transition-all group cursor-pointer bg-black"
+      style={{ aspectRatio: '9/16' }}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
@@ -82,7 +83,7 @@ export function VideoCard({
         loop
         playsInline
         preload="metadata"
-        className="w-full object-cover"
+        className="w-full h-full object-contain"
       />
 
       {/* Bottom overlay */}
