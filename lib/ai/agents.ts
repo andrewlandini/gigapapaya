@@ -102,10 +102,10 @@ Style references that consistently deliver:
 DIALOGUE RULES (MANDATORY):
 - Almost ALL videos should feature talking unless the concept genuinely has no speaking characters (pure nature, abstract, etc.)
 - Include natural spoken dialogue in quotes within each scene prompt
-- Write dialogue as SPOKEN WORDS — conversational, not literary. Use contractions always, natural pauses, filler words where they fit. Real people don't speak in complete, grammatically perfect sentences. They trail off, interrupt themselves, repeat words, and leave thoughts unfinished.
-- Match dialogue to the mood: tense scenes = clipped, urgent, overlapping. Calm scenes = wandering, trailing off, casual. Comedy = matter-of-fact about absurd things.
-- Dialogue across scenes should feel like one continuous conversation — each scene picks up roughly where the last left off. But don't force awkward bridges between scenes. Some coherence is needed, but natural breaks at scene cuts are fine.
-- TEST: Read the dialogue out loud. If it sounds like a novel, a press release, or a corporate presentation, rewrite it.
+- Write dialogue as SPOKEN WORDS — conversational, not literary. Use contractions always, natural pauses, filler words where they fit. Real people don't speak in complete, grammatically perfect sentences.
+- Match dialogue to the mood: tense scenes = clipped, urgent. Calm scenes = wandering, trailing off. Comedy = matter-of-fact about absurd things.
+- Dialogue across scenes should feel like one continuous conversation — each scene picks up roughly where the last left off.
+- HARD WORD COUNT LIMIT: A person speaks ~2.5 words per second. For the scene duration, count the words in your dialogue and MAKE SURE they fit. An 8-second scene = MAX 15-18 words of dialogue (leave room for pauses and breathing). A 6-second scene = MAX 12 words. A 4-second scene = MAX 8 words. If your dialogue is longer than this, CUT IT DOWN. The video will literally cut off mid-sentence if you write too much. Shorter is always better — one punchy line beats a paragraph that gets cut off.
 - BANNED WORDS: NEVER use "subtitle", "subtitles", "subtitled", "caption", "captions", or "text overlay" in any prompt. Veo 3.1 will render literal subtitle text on screen if these words appear. Write dialogue directly in quotes instead.`;
 
 /**
@@ -133,14 +133,23 @@ Mood: ${idea.mood}
 Key Elements: ${idea.keyElements.join(', ')}
 `;
 
+  const maxWords = duration <= 4 ? 8 : duration <= 6 ? 12 : 18;
   const durationGuidance = `
 
-SCENE DURATION: Each scene is ${duration} seconds long. This is critical for pacing:
-- At ${duration}s, a person can speak roughly ${Math.floor(duration * 2.5)} words at normal pace, or ${Math.floor(duration * 3.5)} words if speaking fast
-- ${duration <= 4 ? 'This is VERY short — one quick action, one short line of dialogue max. Think: a single reaction, a glance, a 5-word sentence.' : duration <= 6 ? 'This is short — one clear action with a brief exchange. Max 2 short sentences of dialogue.' : 'This gives room for one full action with natural dialogue. Characters can speak 1-3 sentences comfortably.'}
-- MOVEMENT SPEED: Specify if characters move slowly, at normal pace, or quickly. A person walking normally covers about ${Math.round(duration * 1.4)} meters in ${duration}s. A person running covers about ${Math.round(duration * 3)} meters. Factor this into how much ground they cover in frame.
-- CAMERA MOVEMENT: Slow dolly/push moves about ${Math.round(duration * 0.3)}m in ${duration}s. Plan camera speed accordingly.
-- Everything in the prompt must be PHYSICALLY ACHIEVABLE in ${duration} seconds of real time. Don't describe more action than fits.`;
+SCENE DURATION: Each scene is EXACTLY ${duration} seconds long. This is a HARD constraint:
+
+DIALOGUE WORD LIMIT (NON-NEGOTIABLE):
+- People speak ~2.5 words per second
+- ${duration}s = MAXIMUM ${maxWords} words of dialogue per scene
+- COUNT EVERY WORD. If dialogue exceeds ${maxWords} words, the video WILL cut off mid-sentence
+- ${duration <= 4 ? 'At 4s you get ONE short sentence. Example: "Wait, did you hear that?" (5 words)' : duration <= 6 ? 'At 6s you get ONE medium sentence. Example: "I don\'t think we should be here right now" (9 words)' : 'At 8s you get 1-2 short sentences. Example: "So picture this, we line the hallway with lawyers\' cards. Greg, thoughts?" (12 words)'}
+- When in doubt, SHORTER. A 10-word line that lands is better than an 18-word line that gets cut off
+
+PHYSICAL PACING:
+- Walking: ~${Math.round(duration * 1.4)}m in ${duration}s. Running: ~${Math.round(duration * 3)}m
+- Slow camera push: ~${Math.round(duration * 0.3)}m in ${duration}s
+- Specify movement speed explicitly (slow walk, brisk pace, sprinting)
+- Everything described must be PHYSICALLY ACHIEVABLE in ${duration} real seconds`;
 
   const result = await generateObject({
     model: getTextModel(modelId),
@@ -184,7 +193,8 @@ export async function executeVeo3PrompterAgent(
     .map((p, i) => `Scene ${i + 1}: ${p}`)
     .join('\n\n');
 
-  const durationNote = `\n\nDURATION CONSTRAINT: Each scene is ${duration} seconds. Dialogue must fit within ${duration}s at natural speaking pace (~${Math.floor(duration * 2.5)} words normal, ${Math.floor(duration * 3.5)} words fast). Specify movement speed (slow walk, brisk pace, running) so the action is physically achievable in ${duration}s. Don't describe more than can happen in ${duration} seconds of real time.`;
+  const veoMaxWords = duration <= 4 ? 8 : duration <= 6 ? 12 : 18;
+  const durationNote = `\n\nDURATION CONSTRAINT (CRITICAL): Each scene is ${duration} seconds. DIALOGUE HARD LIMIT: MAX ${veoMaxWords} words per scene. Count every word. At 2.5 words/second, ${veoMaxWords} words = ${(veoMaxWords / 2.5).toFixed(1)}s of speaking, which leaves breathing room in a ${duration}s clip. If dialogue exceeds ${veoMaxWords} words, the video WILL cut off mid-sentence. One punchy line beats a monologue that gets truncated. Also specify movement speed explicitly.`;
 
   const result = await generateObject({
     model: getTextModel('anthropic/claude-sonnet-4.5'),
