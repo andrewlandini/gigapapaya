@@ -102,10 +102,17 @@ Style references that consistently deliver:
 DIALOGUE RULES (MANDATORY):
 - Almost ALL videos should feature talking unless the concept genuinely has no speaking characters (pure nature, abstract, etc.)
 - Include natural spoken dialogue in quotes within each scene prompt
-- Write dialogue like people ACTUALLY TALK in real life — not how they write. Use contractions ("I'm", "don't", "can't"), false starts ("I was gonna— actually"), filler words where natural ("like", "you know", "I mean"), trailing off ("so I thought maybe...")
-- Dialogue across scenes MUST be a continuation — when scenes are played back-to-back, it should sound like one coherent conversation or monologue. Each scene picks up where the last one left off.
-- The dialogue should match the mood and vibe of the concept — a tense scene has clipped, urgent speech; a dreamy scene has soft, wandering words
-- NEVER write stiff, formal, or "written" dialogue. Real people don't speak in complete, grammatically perfect sentences.
+- Write dialogue as SPOKEN WORDS, not written language. How humans actually talk out loud:
+  - ALWAYS use contractions: "I'm", "don't", "can't", "we're", "that's", "it's", "wouldn't"
+  - Include filler words: "like", "you know", "I mean", "um", "so", "yeah", "honestly", "basically"
+  - Use false starts: "I was gonna— actually, never mind", "so the thing is— wait no"
+  - Include interruptions and overlapping: "wait wait wait—", "no but—", "hold on—"
+  - Let people trail off: "so I thought maybe...", "I don't know it's just...", "whatever it's fine"
+  - Use repetition under stress: "go go go", "ok ok ok", "no no no"
+  - Incomplete sentences: "the thing is— yeah. exactly.", "I just— I can't even—"
+- Dialogue across scenes MUST be a continuation — one coherent conversation or monologue. Each scene picks up where the last one left off.
+- Match the mood: tense = clipped, urgent, overlapping. Calm = wandering, trailing off, casual.
+- TEST: Read the dialogue out loud. If it sounds like a novel or a press release, it's WRONG. Rewrite until it sounds like an actual human talking to another human.
 - BANNED WORDS: NEVER use "subtitle", "subtitles", "subtitled", "caption", "captions", or "text overlay" in any prompt. Veo 3.1 will render literal subtitle text on screen if these words appear. Write dialogue directly in quotes instead.`;
 
 /**
