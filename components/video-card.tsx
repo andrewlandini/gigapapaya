@@ -2,7 +2,7 @@
 
 import { useRef, useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Globe, Lock, Heart } from 'lucide-react';
+import { Globe, Lock, Heart, Volume2, VolumeX } from 'lucide-react';
 
 interface VideoCardProps {
   id: string;
@@ -34,6 +34,7 @@ export function VideoCard({
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLAnchorElement>(null);
   const [hovering, setHovering] = useState(false);
+  const [muted, setMuted] = useState(true);
   const [visible, setVisible] = useState(false);
 
   // Only load video src when card enters viewport
@@ -57,7 +58,7 @@ export function VideoCard({
   const handleMouseEnter = () => {
     setHovering(true);
     if (videoRef.current) {
-      videoRef.current.muted = false;
+      videoRef.current.muted = muted;
       videoRef.current.play().catch(() => {});
     }
   };
@@ -69,6 +70,14 @@ export function VideoCard({
       videoRef.current.pause();
       videoRef.current.currentTime = 0;
     }
+  };
+
+  const toggleMute = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const next = !muted;
+    setMuted(next);
+    if (videoRef.current) videoRef.current.muted = next;
   };
 
   return (
@@ -89,6 +98,16 @@ export function VideoCard({
         preload="metadata"
         className="w-full h-full object-contain"
       />
+
+      {/* Mute toggle — top right, visible on hover */}
+      {hovering && (
+        <button
+          onClick={toggleMute}
+          className="absolute top-2 right-2 z-10 p-1.5 rounded-full bg-black/60 backdrop-blur-sm text-white/80 hover:text-white hover:bg-black/80 transition-colors"
+        >
+          {muted ? <VolumeX className="h-3.5 w-3.5" /> : <Volume2 className="h-3.5 w-3.5" />}
+        </button>
+      )}
 
       {/* Bottom overlay */}
       <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black/80 to-transparent">
