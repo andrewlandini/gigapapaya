@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { RotateCcw, Play, X, Clock, ChevronDown, Settings2, RotateCw } from 'lucide-react';
 
 const HEADLINES = [
@@ -29,27 +29,39 @@ const HEADLINES = [
   "Give me the pitch.",
 ];
 
-const GENERATING_HEADLINES = [
-  "This is gonna be good.",
-  "Oh we're cooking now.",
-  "Buckle up.",
-  "Here we go.",
-  "The machine is thinking.",
-  "Something's brewing.",
-  "Hold tight.",
-  "This one's gonna hit.",
-  "Let the agents cook.",
-  "Magic in progress.",
-  "Working on something special.",
-  "Trust the process.",
-  "Almost there... probably.",
-  "The vibes are immaculate.",
-  "You're gonna love this.",
-  "Manifesting greatness.",
-  "Big things loading.",
-  "The gears are turning.",
-  "Patience, masterpiece incoming.",
-  "Sit back and enjoy the show.",
+// First headline shown immediately (director-style)
+const GENERATING_OPENERS = [
+  "Rolling.",
+  "And... action.",
+  "Cameras up.",
+  "Quiet on set.",
+];
+
+// Cycling headlines that fade in/out during generation
+const GENERATING_PHASES = [
+  "Concept agent is writing your story.",
+  "Finding the right angle.",
+  "Choosing the camera.",
+  "Setting the scene.",
+  "Casting your characters.",
+  "Picking the lighting.",
+  "Building the world.",
+  "Writing the dialogue.",
+  "Blocking the shots.",
+  "Scene agent is breaking it down.",
+  "Mapping out the scenes.",
+  "Working out the pacing.",
+  "Dialing in the mood.",
+  "Getting the tone right.",
+  "Framing every shot.",
+  "Locking the color palette.",
+  "Crafting the opening shot.",
+  "Working on the transitions.",
+  "Checking continuity.",
+  "Making it feel real.",
+  "Adding the details that matter.",
+  "Almost picture-ready.",
+  "Final touches.",
 ];
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -75,10 +87,36 @@ export function VideoGenerator() {
   const [showHistory, setShowHistory] = useState(false);
   const [settingsTab, setSettingsTab] = useState('amplify');
   const [generatingHeadline, setGeneratingHeadline] = useState('');
+  const [headlineFade, setHeadlineFade] = useState(true);
+  const cycleRef = useRef<NodeJS.Timeout | null>(null);
   const headline = useMemo(() => HEADLINES[Math.floor(Math.random() * HEADLINES.length)], []);
 
   const settingsMode = getModeById(settingsTab);
   const isActive = state.status !== 'idle';
+
+  // Cycle through generating headlines with fade
+  useEffect(() => {
+    if (!isActive) {
+      if (cycleRef.current) clearInterval(cycleRef.current);
+      return;
+    }
+
+    let index = 0;
+    const shuffled = [...GENERATING_PHASES].sort(() => Math.random() - 0.5);
+
+    cycleRef.current = setInterval(() => {
+      setHeadlineFade(false);
+      setTimeout(() => {
+        setGeneratingHeadline(shuffled[index % shuffled.length]);
+        setHeadlineFade(true);
+        index++;
+      }, 400);
+    }, 4000);
+
+    return () => {
+      if (cycleRef.current) clearInterval(cycleRef.current);
+    };
+  }, [isActive]);
 
   // Get effective values (custom or default) for the settings tab
   const custom = customPrompts[settingsTab] || {};
@@ -174,7 +212,7 @@ export function VideoGenerator() {
         {/* Hero + Input */}
         <div className="max-w-3xl mx-auto space-y-8 text-center">
           {!wizardActive && (
-            <h1 className="text-[40px] font-bold tracking-tight leading-tight animate-fade-in">{isActive && generatingHeadline ? generatingHeadline : headline}</h1>
+            <h1 className={`text-[40px] font-bold tracking-tight leading-tight transition-opacity duration-400 ${isActive ? (headlineFade ? 'opacity-100' : 'opacity-0') : 'animate-fade-in'}`}>{isActive && generatingHeadline ? generatingHeadline : headline}</h1>
           )}
 
           {/* Input & mode buttons — hidden when generating/reviewing/complete */}
@@ -238,7 +276,7 @@ export function VideoGenerator() {
                   return (
                     <div key={mode.id} className="relative group">
                       <button
-                        onClick={() => { if (!noIdea) { setGeneratingHeadline(GENERATING_HEADLINES[Math.floor(Math.random() * GENERATING_HEADLINES.length)]); startModeGeneration(mode.id); } }}
+                        onClick={() => { if (!noIdea) { setGeneratingHeadline(GENERATING_OPENERS[Math.floor(Math.random() * GENERATING_OPENERS.length)]); setHeadlineFade(true); startModeGeneration(mode.id); } }}
                         className={`flex items-center gap-2 h-11 px-5 rounded-full border border-[#333] bg-[#0a0a0a] transition-all ${noIdea ? 'opacity-30' : 'hover:border-[#555] hover:bg-[#111] cursor-pointer'}`}
                       >
                         <span className="text-base">{mode.icon}</span>
