@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Sparkles, Loader2 } from 'lucide-react';
+import { Sparkles, Loader2, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { VideoCard } from '@/components/video-card';
 import { PromptBar } from '@/components/prompt-bar';
@@ -141,21 +141,42 @@ export default function ProfilePage() {
                 {iconError && (
                   <p className="text-xs text-[#ff4444]">{iconError}</p>
                 )}
-                <Button
-                  onClick={generateIcon}
-                  disabled={generatingIcon || !iconPrompt.trim()}
-                  size="sm"
-                  className="w-full"
-                >
-                  {generatingIcon ? (
-                    <>
-                      <Loader2 className="h-3.5 w-3.5 mr-2 animate-spin" />
-                      Generating...
-                    </>
-                  ) : (
-                    'Generate avatar'
+                <div className="flex gap-2">
+                  <Button
+                    onClick={generateIcon}
+                    disabled={generatingIcon || !iconPrompt.trim()}
+                    size="sm"
+                    className="flex-1"
+                  >
+                    {generatingIcon ? (
+                      <>
+                        <Loader2 className="h-3.5 w-3.5 mr-2 animate-spin" />
+                        Generating...
+                      </>
+                    ) : (
+                      'Generate avatar'
+                    )}
+                  </Button>
+                  {user.avatarUrl && (
+                    <Button
+                      onClick={async () => {
+                        await fetch('/api/generate-icon', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ action: 'delete' }),
+                        });
+                        load();
+                        setShowIconGen(false);
+                      }}
+                      disabled={generatingIcon}
+                      size="sm"
+                      variant="ghost"
+                      title="Delete avatar"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
                   )}
-                </Button>
+                </div>
               </div>
             </div>
           )}
