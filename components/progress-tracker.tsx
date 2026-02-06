@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect, useRef } from 'react';
 import { CheckCircle2, Loader2, AlertCircle, ChevronDown } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import type { ProgressEvent } from '@/lib/types';
@@ -23,6 +23,8 @@ interface AgentGroup {
 
 export function ProgressTracker({ events }: ProgressTrackerProps) {
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  const [manualToggle, setManualToggle] = useState<Set<string>>(new Set());
+  const collapsedByTimer = useRef<Set<string>>(new Set());
 
   const groups = useMemo(() => {
     const result: AgentGroup[] = [];
@@ -69,7 +71,6 @@ export function ProgressTracker({ events }: ProgressTrackerProps) {
         if (currentGroup) {
           currentGroup.logs.push({ key: `log-${result.length}-${currentGroup.logs.length}`, message: msg });
         } else {
-          // Orphan log — attach to last group or create standalone
           const lastGroup = result[result.length - 1];
           if (lastGroup) {
             lastGroup.logs.push({ key: `log-${result.length}-${lastGroup.logs.length}`, message: msg });
@@ -146,11 +147,38 @@ export function ProgressTracker({ events }: ProgressTrackerProps) {
     return result;
   }, [events]);
 
+  // Auto-collapse completed agents after 3 seconds
+  useEffect(() => {
+    const doneGroups = groups.filter(g => g.status === 'done' && g.logs.length > 0);
+    const timers: NodeJS.Timeout[] = [];
+
+    for (const group of doneGroups) {
+      if (!collapsedByTimer.current.has(group.key) && !manualToggle.has(group.key)) {
+        collapsedByTimer.current.add(group.key);
+        const timer = setTimeout(() => {
+          setExpanded(prev => {
+            const next = new Set(prev);
+            if (!manualToggle.has(group.key)) {
+              next.delete(group.key);
+            }
+            return next;
+          });
+        }, 3000);
+        timers.push(timer);
+      }
+    }
+
+    return () => timers.forEach(t => clearTimeout(t));
+  }, [groups, manualToggle]);
+
   if (groups.length === 0) return null;
 
-  const hasRunning = groups.some(g => g.status === 'running');
-
   const toggleExpand = (key: string) => {
+    setManualToggle(prev => {
+      const next = new Set(prev);
+      next.add(key);
+      return next;
+    });
     setExpanded(prev => {
       const next = new Set(prev);
       if (next.has(key)) next.delete(key);
@@ -160,10 +188,11 @@ export function ProgressTracker({ events }: ProgressTrackerProps) {
   };
 
   return (
-    <div className="space-y-0">
+    <div className="space-y-0 text-left">
       <div className="border border-[#222] rounded-xl overflow-hidden">
         {groups.map((group) => {
-          const isExpanded = expanded.has(group.key) || group.status === 'running';
+          const isRunning = group.status === 'running';
+          const isExpanded = isRunning || expanded.has(group.key);
           const hasLogs = group.logs.length > 0;
 
           return (
@@ -192,13 +221,13 @@ export function ProgressTracker({ events }: ProgressTrackerProps) {
                   )}
                 </div>
                 {hasLogs && group.status === 'done' && (
-                  <ChevronDown className={`h-3.5 w-3.5 text-[#555] transition-transform flex-shrink-0 ${isExpanded ? 'rotate-180' : ''}`} />
+                  <ChevronDown className={`h-3.5 w-3.5 text-[#555] transition-transform duration-300 flex-shrink-0 ${isExpanded ? 'rotate-180' : ''}`} />
                 )}
               </div>
 
               {/* Collapsible logs */}
               <div
-                className="overflow-hidden transition-all duration-300 ease-in-out"
+                className="overflow-hidden transition-all duration-500 ease-in-out"
                 style={{
                   maxHeight: isExpanded ? '2000px' : '0px',
                   opacity: isExpanded ? 1 : 0,
@@ -207,9 +236,9 @@ export function ProgressTracker({ events }: ProgressTrackerProps) {
                 {group.logs.map((log) => (
                   <div
                     key={log.key}
-                    className="flex items-center gap-2 px-4 py-1.5 border-t border-[#181818]"
+                    className="flex items-start gap-2 px-4 py-1.5 border-t border-[#181818]"
                   >
-                    <span className="text-[#333] font-mono text-[10px] flex-shrink-0">&gt;</span>
+                    <span className="text-[#333] font-mono text-[10px] flex-shrink-0 mt-0.5">&gt;</span>
                     <p className="text-xs font-mono text-[#555]">{log.message}</p>
                   </div>
                 ))}
