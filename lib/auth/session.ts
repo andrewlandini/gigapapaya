@@ -12,6 +12,7 @@ export interface SessionUser {
   username: string;
   name: string;
   avatarUrl: string | null;
+  isAdmin?: boolean;
 }
 
 export async function createSession(user: SessionUser): Promise<string> {

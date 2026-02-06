@@ -63,6 +63,10 @@ export async function initDb() {
   try { await sql`ALTER TABLE videos ADD COLUMN IF NOT EXISTS visibility TEXT DEFAULT 'private'`; } catch {}
   try { await sql`ALTER TABLE videos ADD COLUMN IF NOT EXISTS title TEXT`; } catch {}
   try { await sql`ALTER TABLE videos ADD COLUMN IF NOT EXISTS description TEXT`; } catch {}
+  try { await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS is_admin BOOLEAN DEFAULT FALSE`; } catch {}
+
+  // Promote initial admin
+  try { await sql`UPDATE users SET is_admin = TRUE WHERE email = 'andrew.landini@vercel.com'`; } catch {}
 
   console.log('✅ Database tables initialized');
 }
@@ -299,4 +303,27 @@ export async function getPublicVideosSorted(
     ORDER BY heart_count DESC, v.created_at DESC
     LIMIT ${limit} OFFSET ${offset}
   `;
+}
+
+// ── Admin ──────────────────────────────────────────────
+
+export async function isUserAdmin(userId: string): Promise<boolean> {
+  const sql = getDb();
+  const rows = await sql`SELECT is_admin FROM users WHERE id = ${userId}`;
+  return rows[0]?.is_admin === true;
+}
+
+export async function getAllUsers() {
+  const sql = getDb();
+  return sql`
+    SELECT id, username, name, email, avatar_url, is_admin, created_at,
+      (SELECT COUNT(*) FROM videos WHERE user_id = users.id) as video_count
+    FROM users
+    ORDER BY created_at DESC
+  `;
+}
+
+export async function setUserAdmin(userId: string, isAdmin: boolean) {
+  const sql = getDb();
+  await sql`UPDATE users SET is_admin = ${isAdmin} WHERE id = ${userId}`;
 }

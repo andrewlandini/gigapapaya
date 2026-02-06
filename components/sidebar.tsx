@@ -2,12 +2,12 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Play, Zap, User, LogOut, FileVideo } from 'lucide-react';
+import { Play, Zap, User, LogOut, FileVideo, Shield } from 'lucide-react';
 import { useGeneration } from './generation-context';
 import { cn } from '@/lib/utils';
 
 interface SidebarProps {
-  user: { username: string; name: string } | null;
+  user: { username: string; name: string; isAdmin?: boolean } | null;
 }
 
 export function Sidebar({ user }: SidebarProps) {
@@ -68,6 +68,21 @@ export function Sidebar({ user }: SidebarProps) {
                 {activeDraftCount}
               </span>
             )}
+          </Link>
+        )}
+        {/* Admin — only visible to admins */}
+        {user?.isAdmin && (
+          <Link
+            href="/admin"
+            title="Admin"
+            className={cn(
+              'w-10 h-10 rounded-lg flex items-center justify-center transition-colors',
+              pathname === '/admin'
+                ? 'bg-[#222] text-white'
+                : 'text-[#555] hover:text-white hover:bg-[#111]'
+            )}
+          >
+            <Shield className="h-5 w-5" />
           </Link>
         )}
       </nav>

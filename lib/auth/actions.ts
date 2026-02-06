@@ -3,7 +3,7 @@
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
 import { redirect } from 'next/navigation';
-import { createUser, getUserByEmail, initDb } from '@/lib/db';
+import { createUser, getUserByEmail, isUserAdmin, initDb } from '@/lib/db';
 import { createSession, deleteSession } from './session';
 
 let dbReady = false;
@@ -72,11 +72,13 @@ export async function signIn(formData: FormData) {
     return { error: 'Invalid email or password' };
   }
 
+  const admin = await isUserAdmin(user.id);
   await createSession({
     id: user.id,
     username: user.username,
     name: user.name,
     avatarUrl: user.avatar_url,
+    isAdmin: admin,
   });
   redirect('/generate');
 }

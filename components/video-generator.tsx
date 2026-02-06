@@ -139,14 +139,6 @@ export function VideoGenerator() {
                 )}
               </div>
 
-              {/* Mode descriptions */}
-              <div className="flex flex-wrap gap-x-6 gap-y-1">
-                {GENERATION_MODES.map((mode) => (
-                  <span key={mode.id} className="text-[11px] text-[#444]">
-                    {mode.icon} {mode.description}
-                  </span>
-                ))}
-              </div>
             </div>
 
             {/* Options */}
