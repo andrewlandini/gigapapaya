@@ -29,6 +29,14 @@ export function getVideoModel(modelName: string = 'google/veo-3.1-generate-001')
 }
 
 
+/**
+ * Get an image model for avatar/icon generation
+ */
+export function getImageModel(modelName: string = 'google/gemini-3-pro-image') {
+  console.log(`🎨 Using image model: ${modelName}`);
+  return gateway.imageModel(modelName);
+}
+
 export const AVAILABLE_VIDEO_MODELS = [
   'google/veo-3.1-generate-001',
   'google/veo-3.1-generate-preview',
