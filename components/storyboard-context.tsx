@@ -74,7 +74,8 @@ export function StoryboardProvider({ children }: { children: ReactNode }) {
 
   const [options, setOptionsState] = useState<GenerationOptions>({
     aspectRatio: '16:9',
-    duration: 'auto',
+    duration: 8,
+    numScenes: 3,
     mode: 'agents',
   });
 
