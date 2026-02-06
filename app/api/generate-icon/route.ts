@@ -43,7 +43,7 @@ export async function POST(request: NextRequest) {
       providerOptions: {
         google: { responseModalities: ['TEXT', 'IMAGE'] },
       },
-      prompt: `Generate a single square profile avatar/icon image: ${prompt}. The image should be clean, centered, with a simple background. Make it suitable as a social media profile picture. Output only the image, no text.`,
+      prompt: `Generate a single square profile avatar image: ${prompt}. IMPORTANT: The subject must fill the ENTIRE frame edge-to-edge with NO margins, NO padding, NO borders, NO whitespace around the edges. Crop tightly like a professional headshot or icon that will be displayed in a small circle. No text. Output only the image.`,
     });
 
     // Find the image in response files
