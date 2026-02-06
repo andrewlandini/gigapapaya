@@ -13,7 +13,7 @@ const ideasSchema = z.object({
 
 const nextStepSchema = z.object({
   question: z.string().describe('A short, creative question (3-6 words) to ask the user'),
-  options: z.array(z.string()).min(5).max(5).describe('5 unique, creative answer options'),
+  options: z.array(z.string()).min(3).max(3).describe('3 unique, creative answer options'),
 });
 
 export async function POST(request: NextRequest) {
@@ -30,23 +30,22 @@ export async function POST(request: NextRequest) {
     const result = await generateObject({
       model: getTextModel('anthropic/claude-sonnet-4.5'),
       schema: nextStepSchema,
-      prompt: `You are a wildly creative director helping someone discover what video they actually want to make — they just don't know it yet.
+      prompt: `You are a wildly creative video concept brainstormer. You help people come up with out-there, imaginative, cinematic video ideas — the weirder and more visually interesting, the better.
 
-The first question is ALWAYS about a feeling. Ask them what feeling they want to sit inside of, chase, or capture. Not a filmmaking term like "mood" — an actual human feeling.
+The first question should kick off the creative direction. Ask about what kind of WORLD, SCENARIO, or VISUAL they want to see — not how they feel.
 
 Ask ONE opening question. Rules:
-- The question must be about a feeling, emotion, or emotional state
-- Frame it in a way that's personal and evocative, not clinical. Not "What emotion?" — more like "What feeling have you been chasing lately?", "What hits you right in the chest?", "What emotion do you keep coming back to?"
-- Keep it under 8 words.
-- NOTHING morbid, dark, or depressing. Keep the energy positive, warm, curious, or wonder-filled.
+- Ask about a concept, scenario, world, or visual — NOT about feelings, emotions, or personal experiences
+- Think like: "What world do you want to drop into?", "What would blow your mind to see?", "What's the wildest thing you'd film?", "What universe should we build?"
+- Keep it under 8 words. Make it fun and energizing.
 
-Generate 5 answer options. Rules:
-- Each option should be a specific feeling described in vivid, human language (5-10 words)
-- NOT single emotion words like "happiness" or "sadness". Describe the TEXTURE of the feeling.
-- Example energy: "The butterflies right before something amazing", "Laughing so hard you can't breathe", "Quiet pride no one else notices", "That electric feeling when you're exactly where you belong", "The reckless joy of not caring anymore"
-- Keep it MOSTLY POSITIVE — exciting, warm, hopeful, playful, thrilling, tender, triumphant. Nothing depressing, dark, or heavy. The bittersweet end of the spectrum is fine (nostalgia, longing) but never bleak or sad.
-- Each option should be a completely different emotional territory — something thrilling, something warm, something funny, something nostalgic, something bold. Don't cluster around one zone.
-- They should feel like someone finally putting words to something they've felt but never said`,
+Generate 3 answer options. Rules:
+- Each option should be a wild, specific, visual scenario or world (5-12 words)
+- Think big — alien landscapes, impossible physics, talking animals, time travel, microscopic worlds, retro futures, underwater cities
+- Example energy: "A chef cooking dinner on the surface of Mars", "Robots learning to dance in a neon junkyard", "A tiny civilization living inside a vending machine", "Dinosaurs commuting to office jobs in Tokyo", "An underwater jazz club run by octopuses"
+- Each option should be a completely different creative universe — something sci-fi, something absurd/funny, something beautiful/epic, something surreal, something grounded-but-twisted
+- They should make someone go "oh that would be sick to watch"
+- Keep the energy fun, playful, epic, or mind-bending. Not personal or emotional.`,
     });
     return Response.json(result.object);
   }
@@ -63,28 +62,27 @@ Generate 5 answer options. Rules:
     const result = await generateObject({
       model: getTextModel('anthropic/claude-sonnet-4.5'),
       schema: nextStepSchema,
-      prompt: `You are a wildly creative director having a real conversation to discover what video someone needs to make. Here's what they've revealed so far:
+      prompt: `You are a wildly creative video concept brainstormer building on a conversation. Here's what they've picked so far:
 
 ${qaPairs}
 
-This is question ${stepNumber} of 4. You're getting to know them. React to what they just said — pick up on something specific, something emotional, something interesting in their last answer.
+This is question ${stepNumber} of 4. Build on what they chose — zoom into their world and add more detail, a twist, or a new dimension to the concept.
 
 Question rules:
-- Reference or riff on their actual words. Show you were listening.
-- Go deeper into the feeling behind what they said, not wider into new topics
-- NEVER use filmmaking jargon (mood, tone, style, genre, aesthetic)
-- Keep it under 8 words
-- It should feel like something a curious friend would ask, not a chatbot
-- NOTHING morbid, dark, depressing, or heavy. Keep the energy positive, curious, playful, or wonder-filled.
+- Riff on their previous choices. Take the concept further, don't start over.
+- Ask about specifics: characters, setting details, plot twists, visual style, what happens next, who's involved
+- Think like a creative collaborator: "OK so who lives there?", "What goes wrong?", "What's the twist?", "What does it look like up close?"
+- Keep it under 8 words. Keep it fun.
+- NEVER ask about feelings or emotions. Stay in the world of the concept.
 
 Answer options rules:
-- 5 options, each 5-10 words
-- Each should be a specific image, moment, or scenario — NOT categories or adjectives
-- They should feel like responses in a real conversation
-- Each one should take the video in a wildly different direction
-- Ground them in sensory details — what you'd see, hear, feel
-- Make at least one option weird or unexpected
-- Keep everything positive or bittersweet at most — nothing morbid, dark, or depressing`,
+- 3 options, each 5-12 words
+- Each should be a specific, vivid creative choice that builds on the concept so far
+- They should add detail, characters, conflict, or visual flavor to the world being built
+- Each option takes the video in a completely different direction
+- Make them imaginative, unexpected, cinematic — the kind of ideas that make someone excited
+- At least one option should be absurd or hilarious
+- Keep the energy fun, epic, playful, or mind-bending. Not personal or emotional.`,
     });
     return Response.json(result.object);
   }

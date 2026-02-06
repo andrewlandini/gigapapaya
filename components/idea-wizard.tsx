@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Lightbulb, Loader2, RotateCcw, ArrowLeft } from 'lucide-react';
+import { Lightbulb, Loader2, RotateCcw } from 'lucide-react';
 
 interface IdeaWizardProps {
   onSelectIdea: (idea: string) => void;
@@ -21,9 +21,11 @@ export function IdeaWizard({ onSelectIdea, onActiveChange }: IdeaWizardProps) {
   const [visibleCount, setVisibleCount] = useState(3);
   const [loading, setLoading] = useState(false);
   const [loadingStep, setLoadingStep] = useState(false);
+  const [optionsKey, setOptionsKey] = useState(0); // forces re-render for animations
 
   const fetchFirstStep = async () => {
     setLoadingStep(true);
+    setCurrentOptions([]);
     try {
       const res = await fetch('/api/generate-ideas', {
         method: 'POST',
@@ -33,7 +35,8 @@ export function IdeaWizard({ onSelectIdea, onActiveChange }: IdeaWizardProps) {
       if (res.ok) {
         const data = await res.json();
         setCurrentQuestion(data.question);
-        setCurrentOptions(data.options);
+        setCurrentOptions(data.options?.slice(0, 3) || []);
+        setOptionsKey(prev => prev + 1);
       }
     } catch {}
     setLoadingStep(false);
@@ -41,6 +44,7 @@ export function IdeaWizard({ onSelectIdea, onActiveChange }: IdeaWizardProps) {
 
   const fetchNextStep = async (newQuestions: string[], newAnswers: string[]) => {
     setLoadingStep(true);
+    setCurrentOptions([]);
     try {
       const res = await fetch('/api/generate-ideas', {
         method: 'POST',
@@ -50,7 +54,8 @@ export function IdeaWizard({ onSelectIdea, onActiveChange }: IdeaWizardProps) {
       if (res.ok) {
         const data = await res.json();
         setCurrentQuestion(data.question);
-        setCurrentOptions(data.options);
+        setCurrentOptions(data.options?.slice(0, 3) || []);
+        setOptionsKey(prev => prev + 1);
       }
     } catch {}
     setLoadingStep(false);
@@ -89,24 +94,6 @@ export function IdeaWizard({ onSelectIdea, onActiveChange }: IdeaWizardProps) {
     }
   };
 
-  const handleBack = async () => {
-    if (step > 0) {
-      const prevQuestions = questions.slice(0, -1);
-      const prevAnswers = answers.slice(0, -1);
-      setStep(step - 1);
-      setQuestions(prevQuestions);
-      setAnswers(prevAnswers);
-      // Re-show the previous question
-      setCurrentQuestion(questions[questions.length - 1]);
-      // Refetch options for the previous state
-      if (prevQuestions.length === 0) {
-        await fetchFirstStep();
-      } else {
-        await fetchNextStep(prevQuestions, prevAnswers);
-      }
-    }
-  };
-
   const handleReset = () => {
     setStep(0);
     setQuestions([]);
@@ -117,6 +104,7 @@ export function IdeaWizard({ onSelectIdea, onActiveChange }: IdeaWizardProps) {
     setVisibleCount(3);
     setLoading(false);
     setLoadingStep(false);
+    setOptionsKey(0);
   };
 
   const handleClose = () => {
@@ -137,16 +125,29 @@ export function IdeaWizard({ onSelectIdea, onActiveChange }: IdeaWizardProps) {
     );
   }
 
+  // Progress bar
+  const progressBar = (
+    <div className="w-full max-w-md mx-auto h-1 rounded-full bg-[#222] overflow-hidden">
+      <div
+        className="h-full rounded-full bg-white/40 transition-all duration-500"
+        style={{ width: `${((step + (loading || ideas.length > 0 ? 1 : 0)) / TOTAL_STEPS) * 100}%` }}
+      />
+    </div>
+  );
+
   // Show generated ideas
   if (ideas.length > 0) {
     return (
-      <div className="space-y-3 animate-fade-in">
-        <div className="flex items-center justify-center gap-4">
-          <span className="text-xs font-mono text-[#555]">Pick an idea</span>
-          <button onClick={handleReset} className="flex items-center gap-1 text-xs text-[#555] hover:text-[#888] transition-colors">
-            <RotateCcw className="h-3 w-3" />
-            Start over
-          </button>
+      <div className="space-y-6 max-w-md mx-auto w-full">
+        <div className="space-y-4">
+          {progressBar}
+          <div className="flex items-center justify-center gap-4">
+            <span className="text-xs font-mono text-[#555]">Pick an idea</span>
+            <button onClick={handleReset} className="flex items-center gap-1 text-xs text-[#555] hover:text-[#888] transition-colors">
+              <RotateCcw className="h-3 w-3" />
+              Start over
+            </button>
+          </div>
         </div>
         <div className="flex flex-wrap justify-center gap-2">
           {ideas.slice(0, visibleCount).map((idea, i) => (
@@ -162,7 +163,7 @@ export function IdeaWizard({ onSelectIdea, onActiveChange }: IdeaWizardProps) {
         {visibleCount < ideas.length && (
           <button
             onClick={() => setVisibleCount(prev => prev + 3)}
-            className="text-xs text-[#555] hover:text-[#888] transition-colors"
+            className="text-xs text-[#555] hover:text-[#888] transition-colors mx-auto block"
           >
             Show more
           </button>
@@ -174,71 +175,57 @@ export function IdeaWizard({ onSelectIdea, onActiveChange }: IdeaWizardProps) {
   // Loading ideas
   if (loading) {
     return (
-      <div className="flex items-center justify-center gap-3 py-2 animate-fade-in">
-        <Loader2 className="h-4 w-4 text-[#555] animate-spin" />
-        <span className="text-sm text-[#555]">Generating ideas from your choices...</span>
+      <div className="space-y-6 max-w-md mx-auto w-full">
+        {progressBar}
+        <div className="flex items-center justify-center gap-3 py-2">
+          <Loader2 className="h-4 w-4 text-[#555] animate-spin" />
+          <span className="text-sm text-[#555]">Generating ideas from your choices...</span>
+        </div>
       </div>
     );
   }
 
-  // Progress bar component
-  const progressBar = (
-    <div className="w-full h-1 rounded-full bg-[#222] overflow-hidden">
-      <div
-        className="h-full rounded-full bg-white/40 transition-all duration-300"
-        style={{ width: `${((step + 1) / TOTAL_STEPS) * 100}%` }}
-      />
-    </div>
-  );
-
   // Loading next question
   if (loadingStep || !currentQuestion) {
     return (
-      <div className="space-y-5 animate-fade-in max-w-md mx-auto w-full">
-        {progressBar}
-        <div className="flex items-center justify-center gap-3">
-          {step > 0 && (
-            <button onClick={handleBack} className="text-[#555] hover:text-white transition-colors">
-              <ArrowLeft className="h-3.5 w-3.5" />
-            </button>
-          )}
-          <Loader2 className="h-3.5 w-3.5 text-[#555] animate-spin" />
+      <div className="max-w-md mx-auto w-full">
+        <div className="flex items-center justify-center gap-3 py-8">
+          <Loader2 className="h-4 w-4 text-[#555] animate-spin" />
         </div>
-        <button onClick={handleClose} className="text-xs text-[#555] hover:text-[#888] transition-colors mx-auto block">
+        <div className="mt-10">{progressBar}</div>
+        <button onClick={handleClose} className="text-xs text-[#555] hover:text-[#888] transition-colors mx-auto block mt-5">
           Cancel
         </button>
       </div>
     );
   }
 
-  // Question step
+  // Question step — question replaces the page title
   return (
-    <div className="space-y-5 animate-fade-in max-w-md mx-auto w-full">
-      {progressBar}
+    <div className="max-w-md mx-auto w-full">
+      {/* Question as title */}
+      <h2 className="text-[32px] font-bold tracking-tight leading-tight animate-fade-in text-center">
+        {currentQuestion}
+      </h2>
 
-      <div className="flex items-center justify-center gap-2.5">
-        {step > 0 && (
-          <button onClick={handleBack} className="text-[#555] hover:text-white transition-colors">
-            <ArrowLeft className="h-3.5 w-3.5" />
-          </button>
-        )}
-        <span className="text-sm text-[#ededed]">{currentQuestion}</span>
-      </div>
-
-      {/* Current options */}
-      <div className="flex flex-col gap-3 w-full">
-        {currentOptions.map((option) => (
+      {/* Options with staggered fade-in */}
+      <div className="flex flex-col gap-3 w-full mt-8" key={optionsKey}>
+        {currentOptions.map((option, i) => (
           <button
             key={option}
             onClick={() => handleAnswer(option)}
-            className="w-full h-11 px-5 rounded-xl border border-[#333] bg-[#0a0a0a] hover:border-[#555] hover:bg-[#111] transition-all text-sm text-[#ededed] text-left"
+            className="w-full h-11 px-5 rounded-xl border border-[#333] bg-[#0a0a0a] hover:border-[#555] hover:bg-[#111] transition-all text-sm text-[#ededed] text-left opacity-0 animate-fade-in"
+            style={{ animationDelay: `${i * 200}ms`, animationFillMode: 'forwards' }}
           >
             {option}
           </button>
         ))}
       </div>
 
-      <button onClick={handleClose} className="text-xs text-[#555] hover:text-[#888] transition-colors mx-auto block">
+      {/* Progress bar */}
+      <div className="mt-10">{progressBar}</div>
+
+      <button onClick={handleClose} className="text-xs text-[#555] hover:text-[#888] transition-colors mx-auto block mt-5">
         Cancel
       </button>
     </div>
