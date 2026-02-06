@@ -1,7 +1,33 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { RotateCcw, Play, X, Trash2, Clock, ChevronDown, Settings2, RotateCw } from 'lucide-react';
+
+const HEADLINES = [
+  "What should we cook, chef?",
+  "Let's make movie magic.",
+  "You got something good?",
+  "What's the vision?",
+  "Paint me a picture.",
+  "Show me what you see.",
+  "Let's build a world.",
+  "What story are we telling?",
+  "Ready to roll?",
+  "Hit me with your best shot.",
+  "What are we dreaming up?",
+  "Let's make something weird.",
+  "Lights, camera...",
+  "The stage is yours.",
+  "What's on your mind?",
+  "Bring the chaos.",
+  "Time to create.",
+  "What's the vibe today?",
+  "Drop the concept.",
+  "Let's get cinematic.",
+  "Surprise me.",
+  "What world do we enter?",
+  "Give me the pitch.",
+];
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ProgressTracker } from './progress-tracker';
@@ -23,6 +49,7 @@ export function VideoGenerator() {
 
   const [showAgentSettings, setShowAgentSettings] = useState(false);
   const [settingsTab, setSettingsTab] = useState('amplify');
+  const headline = useMemo(() => HEADLINES[Math.floor(Math.random() * HEADLINES.length)], []);
 
   const settingsMode = getModeById(settingsTab);
 
@@ -62,13 +89,13 @@ export function VideoGenerator() {
 
       <main className="max-w-6xl mx-auto px-6 py-10 space-y-10 flex-1">
         {/* Hero + Input */}
-        <div className="max-w-3xl space-y-6">
+        <div className="max-w-3xl mx-auto space-y-6 text-center">
           <div className="space-y-3">
-            <h1 className="text-[32px] font-semibold tracking-tight">Generate videos</h1>
+            <h1 className="text-[32px] font-semibold tracking-tight">{headline}</h1>
             <IdeaWizard onSelectIdea={(idea) => setIdea(idea)} />
           </div>
 
-          <div className="space-y-4">
+          <div className="space-y-4 text-left">
             <div className="space-y-3">
               <textarea
                 placeholder="A frog drinking a cocktail at Martha's Vineyard..."
@@ -80,7 +107,7 @@ export function VideoGenerator() {
               />
 
               {/* Mode buttons */}
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-2 justify-center">
                 {GENERATION_MODES.map((mode) => (
                   <button
                     key={mode.id}
@@ -101,7 +128,7 @@ export function VideoGenerator() {
             </div>
 
             {/* Options */}
-            <div className="flex items-center gap-6 flex-wrap">
+            <div className="flex items-center gap-6 flex-wrap justify-center">
               <div className="flex items-center gap-2">
                 <label className="text-xs font-mono text-[#555]">ratio</label>
                 <select
