@@ -56,12 +56,16 @@ export function VideoCard({
 
   const handleMouseEnter = () => {
     setHovering(true);
-    videoRef.current?.play().catch(() => {});
+    if (videoRef.current) {
+      videoRef.current.muted = false;
+      videoRef.current.play().catch(() => {});
+    }
   };
 
   const handleMouseLeave = () => {
     setHovering(false);
     if (videoRef.current) {
+      videoRef.current.muted = true;
       videoRef.current.pause();
       videoRef.current.currentTime = 0;
     }
