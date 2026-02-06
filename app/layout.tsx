@@ -6,8 +6,33 @@ import { getSession } from '@/lib/auth/session';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'gigapapaya',
-  description: 'Multi-agent video generation powered by Google Veo 3.1. Idea to scenes to video.',
+  title: {
+    default: 'gigapapaya — AI Video Generation',
+    template: '%s — gigapapaya',
+  },
+  description: 'Generate videos with AI agents. Describe an idea, craft scenes, produce video variations with Google Veo 3.1. Share to the community or keep them private.',
+  keywords: ['AI video generation', 'Veo 3.1', 'multi-agent', 'video creator', 'AI video', 'gigapapaya'],
+  authors: [{ name: 'gigapapaya' }],
+  creator: 'gigapapaya',
+  metadataBase: new URL(process.env.NEXT_PUBLIC_URL || 'https://gigapapaya.vercel.app'),
+  openGraph: {
+    type: 'website',
+    siteName: 'gigapapaya',
+    title: 'gigapapaya — AI Video Generation',
+    description: 'Generate videos with AI agents. Describe an idea, craft scenes, produce video variations with Google Veo 3.1.',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'gigapapaya — AI Video Generation',
+    description: 'Generate videos with AI agents. Describe an idea, craft scenes, produce video variations with Google Veo 3.1.',
+  },
+  icons: {
+    icon: '/icon.svg',
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
 };
 
 export default async function RootLayout({

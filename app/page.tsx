@@ -1,8 +1,14 @@
+import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Zap } from 'lucide-react';
 import { getPublicVideos, initDb } from '@/lib/db';
 import { getSession } from '@/lib/auth/session';
 import { FeedGrid } from '@/components/feed-grid';
+
+export const metadata: Metadata = {
+  title: 'Feed',
+  description: 'Browse AI-generated videos from the gigapapaya community. Powered by Google Veo 3.1.',
+};
 
 export const dynamic = 'force-dynamic';
 

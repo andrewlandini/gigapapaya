@@ -1,8 +1,28 @@
+import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { getUserByUsername, getUserPublicVideos, getUserStats } from '@/lib/db';
 import { VideoCard } from '@/components/video-card';
 
 export const dynamic = 'force-dynamic';
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ username: string }>;
+}): Promise<Metadata> {
+  const { username } = await params;
+  const user = await getUserByUsername(username);
+  if (!user) return { title: 'User not found' };
+
+  return {
+    title: `@${user.username}`,
+    description: `${user.name}'s AI-generated videos on gigapapaya.`,
+    openGraph: {
+      title: `@${user.username} — gigapapaya`,
+      description: `${user.name}'s AI-generated videos on gigapapaya.`,
+    },
+  };
+}
 
 export default async function UserProfilePage({
   params,
