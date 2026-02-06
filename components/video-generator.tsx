@@ -186,7 +186,7 @@ export function VideoGenerator() {
                   placeholder="A frog drinking a cocktail at Martha's Vineyard..."
                   value={state.idea}
                   onChange={(e) => setIdea(e.target.value)}
-                  rows={3}
+                  rows={6}
                   className="w-full bg-transparent px-5 pt-4 pb-2 text-[15px] text-[#ededed] placeholder:text-[#555] focus:outline-none resize-none leading-relaxed"
                 />
                 <div className="flex items-center gap-4 px-4 pb-3">
