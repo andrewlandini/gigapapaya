@@ -45,6 +45,7 @@ export async function executeIdeaAgent(
 
   const result = await generateObject({
     model: getTextModel(modelId),
+    temperature: 1,
     schema: videoIdeaSchema,
     prompt: `${systemPrompt}\n\nUser Input: ${userInput}`,
   });
@@ -133,6 +134,7 @@ Key Elements: ${idea.keyElements.join(', ')}
 
   const result = await generateObject({
     model: getTextModel(modelId),
+    temperature: 1,
     schema: scenesResultSchema,
     prompt: `${systemPrompt}${SCENE_AGENT_BASE}\n\nVideo Idea:\n${ideaSummary}\n\nGenerate ${numScenes} scenes that follow this concept.`,
   });
