@@ -1,8 +1,23 @@
 'use client';
 
-import { useRef, useState, useEffect } from 'react';
+import { useRef, useState, useEffect, useSyncExternalStore } from 'react';
 import Link from 'next/link';
 import { Globe, Lock, Heart, Volume2, VolumeX } from 'lucide-react';
+
+// ── Global mute state shared across all VideoCard instances ──
+let _globalMuted = false;
+const _listeners = new Set<() => void>();
+
+function getGlobalMuted() { return _globalMuted; }
+function setGlobalMuted(v: boolean) {
+  _globalMuted = v;
+  _listeners.forEach(l => l());
+}
+function subscribeGlobalMuted(listener: () => void) {
+  _listeners.add(listener);
+  return () => { _listeners.delete(listener); };
+}
+function getServerMuted() { return false; }
 
 interface VideoCardProps {
   id: string;
@@ -36,7 +51,7 @@ export function VideoCard({
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLAnchorElement>(null);
   const [hovering, setHovering] = useState(false);
-  const [muted, setMuted] = useState(true);
+  const muted = useSyncExternalStore(subscribeGlobalMuted, getGlobalMuted, getServerMuted);
   const [visible, setVisible] = useState(false);
 
   // Only load video src when card enters viewport
@@ -78,7 +93,7 @@ export function VideoCard({
     e.preventDefault();
     e.stopPropagation();
     const next = !muted;
-    setMuted(next);
+    setGlobalMuted(next);
     if (videoRef.current) videoRef.current.muted = next;
   };
 
