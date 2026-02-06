@@ -36,7 +36,7 @@ const PHASE_HEADLINES: Record<string, string[]> = {
   scenes: ["Breaking it into scenes.", "Blocking the shots.", "Mapping the sequence.", "Setting up each scene."],
   reviewing: ["Your scenes are ready.", "Review and edit.", "Make it yours.", "Check the shots."],
   'veo3-prompter': ["Optimizing for camera.", "Dialing in the details.", "Locking the look.", "Final prompt pass."],
-  video: ["Generating video", "Rendering scene", "Camera is rolling", "Bringing it to life"],
+  video: ["Generating video", "Rendering scene", "Camera is rolling", "Bringing it to life", "Processing scene", "Building the shot", "Rendering the take", "Assembling the clip"],
   complete: ["That's a wrap.", "All done.", "Picture's up.", "And... cut."],
 };
 
@@ -260,6 +260,15 @@ export function VideoGenerator() {
                       <option value={4}>4</option>
                       <option value={5}>5</option>
                     </select>
+                  </div>
+                  <div className="flex items-center gap-1.5 ml-auto">
+                    <label className="text-[11px] font-mono text-[#444]">music</label>
+                    <button
+                      onClick={() => setOptions(prev => ({ ...prev, noMusic: !prev.noMusic }))}
+                      className={`h-7 px-2 rounded-md text-xs font-mono transition-colors ${options.noMusic ? 'text-[#ff4444]' : 'text-[#888] hover:text-[#ededed]'}`}
+                    >
+                      {options.noMusic ? 'off' : 'on'}
+                    </button>
                   </div>
                 </div>
               </div>

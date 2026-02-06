@@ -62,7 +62,8 @@ export async function POST(request: NextRequest) {
             style,
             mood,
             '', // consistencyNotes passed as empty — the prompter handles consistency itself
-            options?.duration || 8
+            options?.duration || 8,
+            options?.noMusic || false
           );
 
           optimizedPrompts.forEach((p, i) => {

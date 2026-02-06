@@ -74,6 +74,7 @@ export interface GenerationOptions {
   aspectRatio: '16:9' | '9:16' | '4:3' | '1:1';
   duration: number;
   numScenes?: number;
+  noMusic?: boolean;
   mode: 'agents' | 'direct';
   ideaAgent?: AgentConfig;
   sceneAgent?: AgentConfig;

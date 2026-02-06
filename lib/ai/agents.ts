@@ -120,7 +120,8 @@ export async function executeScenesAgent(
   idea: VideoIdea,
   numScenes: number = 3,
   config?: { model?: string; prompt?: string },
-  duration: number = 8
+  duration: number = 8,
+  noMusic: boolean = false
 ): Promise<ScenesResult> {
   const modelId = config?.model || 'anthropic/claude-sonnet-4.5';
   const systemPrompt = config?.prompt || SCENES_AGENT_PROMPT;
@@ -156,11 +157,13 @@ PHYSICAL PACING:
 - Specify movement speed explicitly (slow walk, brisk pace, sprinting)
 - Everything described must be PHYSICALLY ACHIEVABLE in ${duration} real seconds`;
 
+  const musicNote = noMusic ? `\n\nNO MUSIC: The user has disabled music. Do NOT include any background music, soundtrack, or musical score in audio cues. Only include diegetic sounds — ambient noise, dialogue, footsteps, environmental sounds, etc. The user will add music in post-production.` : '';
+
   const result = await generateObject({
     model: getTextModel(modelId),
     temperature: 1,
     schema: scenesResultSchema,
-    prompt: `${systemPrompt}${SCENE_AGENT_BASE}${durationGuidance}\n\nVideo Idea:\n${ideaSummary}\n\nGenerate ${numScenes} scenes, each ${duration} seconds long. Everything described must fit within ${duration} seconds of real time.`,
+    prompt: `${systemPrompt}${SCENE_AGENT_BASE}${durationGuidance}${musicNote}\n\nVideo Idea:\n${ideaSummary}\n\nGenerate ${numScenes} scenes, each ${duration} seconds long. Everything described must fit within ${duration} seconds of real time.`,
   });
 
   console.log('✅ SCENES AGENT: Complete');
@@ -188,7 +191,8 @@ export async function executeVeo3PrompterAgent(
   style: string,
   mood: string,
   consistencyNotes: string,
-  duration: number = 8
+  duration: number = 8,
+  noMusic: boolean = false
 ): Promise<string[]> {
   console.log('\n🎬 VEO3 PROMPTER: Starting...');
   console.log(`📹 Optimizing ${scenePrompts.length} scene prompts for Veo 3.1 (${duration}s each)`);
@@ -199,7 +203,8 @@ export async function executeVeo3PrompterAgent(
     .join('\n\n');
 
   const veoMaxWords = duration <= 4 ? 8 : duration <= 6 ? 12 : 18;
-  const durationNote = `\n\nDURATION CONSTRAINT (CRITICAL): Each scene is ${duration} seconds. DIALOGUE HARD LIMIT: MAX ${veoMaxWords} words per scene. Count every word. At 2.5 words/second, ${veoMaxWords} words = ${(veoMaxWords / 2.5).toFixed(1)}s of speaking, which leaves breathing room in a ${duration}s clip. If dialogue exceeds ${veoMaxWords} words, the video WILL cut off mid-sentence. One punchy line beats a monologue that gets truncated. Also specify movement speed explicitly.`;
+  const veoMusicNote = noMusic ? ' NO MUSIC in audio cues — only diegetic/ambient sounds, dialogue, and environmental audio. No soundtrack, no score, no background music.' : '';
+  const durationNote = `\n\nDURATION CONSTRAINT (CRITICAL): Each scene is ${duration} seconds. DIALOGUE HARD LIMIT: MAX ${veoMaxWords} words per scene. Count every word. At 2.5 words/second, ${veoMaxWords} words = ${(veoMaxWords / 2.5).toFixed(1)}s of speaking, which leaves breathing room in a ${duration}s clip. If dialogue exceeds ${veoMaxWords} words, the video WILL cut off mid-sentence. One punchy line beats a monologue that gets truncated. Also specify movement speed explicitly.${veoMusicNote}`;
 
   const result = await generateObject({
     model: getTextModel('anthropic/claude-sonnet-4.5'),
@@ -296,7 +301,7 @@ export async function executeFullWorkflow(
   const idea = await executeIdeaAgent(userInput);
 
   // Agent 2: Generate scenes
-  const scenesResult = await executeScenesAgent(idea, options.numScenes || 3, undefined, options.duration || 8);
+  const scenesResult = await executeScenesAgent(idea, options.numScenes || 3, undefined, options.duration || 8, options.noMusic || false);
 
   // Agent 3: Generate videos for each scene
   const videos: Video[] = [];

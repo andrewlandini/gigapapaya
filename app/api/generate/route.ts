@@ -108,7 +108,7 @@ export async function POST(request: NextRequest) {
             sendEvent({ type: 'agent-log', agent: 'scenes', status: 'Crafting camera angles, lighting, composition for each scene...' });
             sendEvent({ type: 'agent-start', agent: 'scenes', status: 'Crafting scene variations...' });
 
-            const scenesResult = await executeScenesAgent(ideaResult, options.numScenes || 3, options.sceneAgent, options.duration || 8);
+            const scenesResult = await executeScenesAgent(ideaResult, options.numScenes || 3, options.sceneAgent, options.duration || 8, options.noMusic || false);
             await updateGenerationScenes(sessionId, scenesResult);
 
             sendEvent({ type: 'agent-log', agent: 'scenes', status: `Generated ${scenesResult.scenes.length} scenes` });
