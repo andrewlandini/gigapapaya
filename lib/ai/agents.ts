@@ -114,14 +114,15 @@ DIALOGUE RULES (MANDATORY):
 export async function executeScenesAgent(
   idea: VideoIdea,
   numScenes: number = 3,
-  config?: { model?: string; prompt?: string }
+  config?: { model?: string; prompt?: string },
+  duration: number = 8
 ): Promise<ScenesResult> {
   const modelId = config?.model || 'anthropic/claude-sonnet-4.5';
   const systemPrompt = config?.prompt || SCENES_AGENT_PROMPT;
 
   console.log('\n🎬 SCENES AGENT: Starting...');
   console.log(`📋 Idea: ${idea.title}`);
-  console.log(`🎯 Target: ${numScenes} scenes`);
+  console.log(`🎯 Target: ${numScenes} scenes, ${duration}s each`);
   console.log(`🤖 Model: ${modelId}\n`);
 
   const ideaSummary = `
@@ -132,11 +133,20 @@ Mood: ${idea.mood}
 Key Elements: ${idea.keyElements.join(', ')}
 `;
 
+  const durationGuidance = `
+
+SCENE DURATION: Each scene is ${duration} seconds long. This is critical for pacing:
+- At ${duration}s, a person can speak roughly ${Math.floor(duration * 2.5)} words at normal pace, or ${Math.floor(duration * 3.5)} words if speaking fast
+- ${duration <= 4 ? 'This is VERY short — one quick action, one short line of dialogue max. Think: a single reaction, a glance, a 5-word sentence.' : duration <= 6 ? 'This is short — one clear action with a brief exchange. Max 2 short sentences of dialogue.' : 'This gives room for one full action with natural dialogue. Characters can speak 1-3 sentences comfortably.'}
+- MOVEMENT SPEED: Specify if characters move slowly, at normal pace, or quickly. A person walking normally covers about ${Math.round(duration * 1.4)} meters in ${duration}s. A person running covers about ${Math.round(duration * 3)} meters. Factor this into how much ground they cover in frame.
+- CAMERA MOVEMENT: Slow dolly/push moves about ${Math.round(duration * 0.3)}m in ${duration}s. Plan camera speed accordingly.
+- Everything in the prompt must be PHYSICALLY ACHIEVABLE in ${duration} seconds of real time. Don't describe more action than fits.`;
+
   const result = await generateObject({
     model: getTextModel(modelId),
     temperature: 1,
     schema: scenesResultSchema,
-    prompt: `${systemPrompt}${SCENE_AGENT_BASE}\n\nVideo Idea:\n${ideaSummary}\n\nGenerate ${numScenes} scenes that follow this concept.`,
+    prompt: `${systemPrompt}${SCENE_AGENT_BASE}${durationGuidance}\n\nVideo Idea:\n${ideaSummary}\n\nGenerate ${numScenes} scenes, each ${duration} seconds long. Everything described must fit within ${duration} seconds of real time.`,
   });
 
   console.log('✅ SCENES AGENT: Complete');
@@ -163,20 +173,23 @@ export async function executeVeo3PrompterAgent(
   scenePrompts: string[],
   style: string,
   mood: string,
-  consistencyNotes: string
+  consistencyNotes: string,
+  duration: number = 8
 ): Promise<string[]> {
   console.log('\n🎬 VEO3 PROMPTER: Starting...');
-  console.log(`📹 Optimizing ${scenePrompts.length} scene prompts for Veo 3.1`);
+  console.log(`📹 Optimizing ${scenePrompts.length} scene prompts for Veo 3.1 (${duration}s each)`);
   console.log(`🎨 Style: ${style}, Mood: ${mood}\n`);
 
   const scenesText = scenePrompts
     .map((p, i) => `Scene ${i + 1}: ${p}`)
     .join('\n\n');
 
+  const durationNote = `\n\nDURATION CONSTRAINT: Each scene is ${duration} seconds. Dialogue must fit within ${duration}s at natural speaking pace (~${Math.floor(duration * 2.5)} words normal, ${Math.floor(duration * 3.5)} words fast). Specify movement speed (slow walk, brisk pace, running) so the action is physically achievable in ${duration}s. Don't describe more than can happen in ${duration} seconds of real time.`;
+
   const result = await generateObject({
     model: getTextModel('anthropic/claude-sonnet-4.5'),
     schema: veo3OptimizedSchema,
-    prompt: `${VEO3_PROMPTER_PROMPT}\n\nVisual Style: ${style}\nMood: ${mood}\nConsistency Notes: ${consistencyNotes}\n\nScene prompts to optimize:\n\n${scenesText}\n\nOptimize each prompt for Veo 3.1. Return exactly ${scenePrompts.length} optimized prompts in the same order.`,
+    prompt: `${VEO3_PROMPTER_PROMPT}${durationNote}\n\nVisual Style: ${style}\nMood: ${mood}\nConsistency Notes: ${consistencyNotes}\n\nScene prompts to optimize:\n\n${scenesText}\n\nOptimize each prompt for Veo 3.1. Return exactly ${scenePrompts.length} optimized prompts in the same order. Each scene is ${duration}s — everything must fit.`,
   });
 
   console.log('✅ VEO3 PROMPTER: Complete');
@@ -268,7 +281,7 @@ export async function executeFullWorkflow(
   const idea = await executeIdeaAgent(userInput);
 
   // Agent 2: Generate scenes
-  const scenesResult = await executeScenesAgent(idea, options.numScenes || 3);
+  const scenesResult = await executeScenesAgent(idea, options.numScenes || 3, undefined, options.duration || 8);
 
   // Agent 3: Generate videos for each scene
   const videos: Video[] = [];

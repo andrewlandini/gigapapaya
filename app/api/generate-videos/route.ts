@@ -61,7 +61,8 @@ export async function POST(request: NextRequest) {
             scenes.map(s => s.prompt),
             style,
             mood,
-            '' // consistencyNotes passed as empty — the prompter handles consistency itself
+            '', // consistencyNotes passed as empty — the prompter handles consistency itself
+            options?.duration || 8
           );
 
           optimizedPrompts.forEach((p, i) => {

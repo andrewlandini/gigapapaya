@@ -103,7 +103,12 @@ If you say "the same woman" or "continues walking" without re-describing her com
 
 You receive all scenes at once so you can ensure dialogue flows continuously and descriptions stay identical across them. Return the optimized prompts in the same order.
 
-BANNED WORDS — NEVER use any of these words in any prompt: "subtitle", "subtitles", "subtitled", "caption", "captions", "text overlay", "on-screen text". Veo 3.1 will literally render subtitle text on screen if you include these words. Instead of "subtitled meow" write the dialogue directly in quotes.`;
+BANNED WORDS — NEVER use any of these words in any prompt: "subtitle", "subtitles", "subtitled", "caption", "captions", "text overlay", "on-screen text". Veo 3.1 will literally render subtitle text on screen if you include these words. Instead of "subtitled meow" write the dialogue directly in quotes.
+
+DIALOGUE FORMATTING RULES:
+- NEVER write dialogue in ALL CAPS — Veo 3.1's speech model will try to yell everything. Use normal sentence case for all dialogue, even if the character is shouting. Convey intensity through word choice and stage direction ("shouting", "voice cracking"), not capitalization.
+- NEVER use unusual spellings or phonetic spellings to indicate accents or pronunciation (e.g. "gonna" is fine, but "watcha doin'" or "git outta here" will confuse the speech model). Write words the AI can pronounce correctly — standard English spelling with natural contractions.
+- Keep dialogue in normal sentence case with standard punctuation. The speech model needs clean text to sound natural.`;
 
 export const VIDEO_GENERATION_PARAMS = {
   aspectRatio: '16:9',
