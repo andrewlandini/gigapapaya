@@ -1,10 +1,10 @@
 'use client';
 
 import { useState } from 'react';
-import { Sparkles } from 'lucide-react';
+import { Zap, RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { ProgressTracker } from './progress-tracker';
 import { ScenePreview } from './scene-preview';
 import { VideoGallery } from './video-gallery';
@@ -28,14 +28,9 @@ export function VideoGenerator() {
   });
 
   const handleGenerate = async () => {
-    if (!state.idea.trim()) {
-      alert('Please enter a video idea');
-      return;
-    }
+    if (!state.idea.trim()) return;
 
     console.log('🚀 Starting video generation...');
-    console.log('Idea:', state.idea);
-    console.log('Options:', options);
 
     setState(prev => ({
       ...prev,
@@ -50,23 +45,14 @@ export function VideoGenerator() {
     try {
       const response = await fetch('/api/generate', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          idea: state.idea,
-          options,
-        }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ idea: state.idea, options }),
       });
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
       const reader = response.body?.getReader();
-      if (!reader) {
-        throw new Error('No response body');
-      }
+      if (!reader) throw new Error('No response body');
 
       const decoder = new TextDecoder();
       let buffer = '';
@@ -82,8 +68,7 @@ export function VideoGenerator() {
         for (const line of lines) {
           if (line.startsWith('data: ')) {
             const data = JSON.parse(line.slice(6)) as SSEMessage;
-            console.log('📡 SSE Event:', data.type, data);
-
+            console.log('📡 SSE:', data.type, data);
             handleSSEEvent(data);
           }
         }
@@ -96,11 +81,7 @@ export function VideoGenerator() {
         error: error instanceof Error ? error.message : 'Unknown error',
         progress: [
           ...prev.progress,
-          {
-            type: 'error',
-            timestamp: new Date(),
-            message: error instanceof Error ? error.message : 'Unknown error',
-          },
+          { type: 'error', timestamp: new Date(), message: error instanceof Error ? error.message : 'Unknown error' },
         ],
       }));
     }
@@ -127,170 +108,166 @@ export function VideoGenerator() {
     switch (data.type) {
       case 'agent-complete':
         if (data.agent === 'idea') {
-          setState(prev => ({
-            ...prev,
-            generatedIdea: data.result,
-          }));
+          setState(prev => ({ ...prev, generatedIdea: data.result }));
         } else if (data.agent === 'scenes') {
-          setState(prev => ({
-            ...prev,
-            scenes: data.result.scenes,
-          }));
+          setState(prev => ({ ...prev, scenes: data.result.scenes }));
         }
         break;
-
-      case 'video-complete':
-        // Video will be added when complete event fires
-        break;
-
       case 'complete':
-        setState(prev => ({
-          ...prev,
-          status: 'complete',
-          videos: data.videos || [],
-        }));
+        setState(prev => ({ ...prev, status: 'complete', videos: data.videos || [] }));
         break;
-
       case 'error':
-        setState(prev => ({
-          ...prev,
-          status: 'error',
-          error: data.message || 'Unknown error',
-        }));
+        setState(prev => ({ ...prev, status: 'error', error: data.message || 'Unknown error' }));
         break;
     }
   };
 
   const handleReset = () => {
     setState({
-      status: 'idle',
-      idea: '',
-      generatedIdea: null,
-      scenes: null,
-      videos: [],
-      progress: [],
-      error: null,
+      status: 'idle', idea: '', generatedIdea: null,
+      scenes: null, videos: [], progress: [], error: null,
     });
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="container mx-auto p-8 max-w-7xl space-y-8">
-        {/* Header */}
-        <div className="text-center space-y-4">
-          <div className="inline-flex items-center gap-2 text-4xl font-bold tracking-tight">
-            <Sparkles className="h-10 w-10" />
-            <h1>gigapapaya</h1>
+    <div className="min-h-screen bg-black">
+      {/* Header */}
+      <header className="border-b border-[#222]">
+        <div className="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <span className="text-[15px] font-semibold tracking-tight">gigapapaya</span>
+            <span className="text-[#333]">/</span>
+            <span className="text-sm text-[#666]">generate</span>
           </div>
-          <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-            Idea in, videos out. Multi-agent generation powered by Veo 3.1.
-          </p>
+          <div className="flex items-center gap-3">
+            {state.status === 'generating' && (
+              <div className="flex items-center gap-2">
+                <div className="h-2 w-2 rounded-full bg-[#0070f3] animate-pulse-dot" />
+                <span className="text-xs font-mono text-[#666]">generating</span>
+              </div>
+            )}
+            {state.status === 'complete' && (
+              <Badge variant="success">complete</Badge>
+            )}
+          </div>
         </div>
+      </header>
 
-        {/* Main Content */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Left Column: Input & Options */}
-          <div className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Video Idea</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <Input
-                  placeholder="Describe your video idea... (e.g., 'A sunrise over mountains')"
-                  value={state.idea}
-                  onChange={(e) => setState(prev => ({ ...prev, idea: e.target.value }))}
+      <main className="max-w-6xl mx-auto px-6 py-10 space-y-10">
+        {/* Hero + Input */}
+        <div className="max-w-2xl space-y-6">
+          <div className="space-y-2">
+            <h1 className="text-[32px] font-semibold tracking-tight">Generate videos</h1>
+            <p className="text-[#666] text-[15px] leading-relaxed">
+              Describe an idea. Three AI agents will generate a concept, craft scenes, and produce video variations.
+            </p>
+          </div>
+
+          <div className="space-y-4">
+            <div className="flex gap-3">
+              <Input
+                placeholder="A frog drinking a cocktail at Martha's Vineyard..."
+                value={state.idea}
+                onChange={(e) => setState(prev => ({ ...prev, idea: e.target.value }))}
+                onKeyDown={(e) => e.key === 'Enter' && handleGenerate()}
+                disabled={state.status === 'generating'}
+                className="h-12 text-[15px] bg-black"
+              />
+              <Button
+                onClick={handleGenerate}
+                disabled={state.status === 'generating' || !state.idea.trim()}
+                className="h-12 px-6"
+              >
+                <Zap className="h-4 w-4 mr-2" />
+                Generate
+              </Button>
+              {state.status !== 'idle' && (
+                <Button onClick={handleReset} variant="ghost" className="h-12" title="Reset">
+                  <RotateCcw className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
+
+            {/* Options */}
+            <div className="flex items-center gap-6">
+              <div className="flex items-center gap-2">
+                <label className="text-xs font-mono text-[#555]">ratio</label>
+                <select
+                  value={options.aspectRatio}
+                  onChange={(e) => setOptions(prev => ({ ...prev, aspectRatio: e.target.value as any }))}
                   disabled={state.status === 'generating'}
-                  className="text-base"
-                />
+                  className="h-8 px-2 rounded-md border border-[#333] bg-black text-xs text-[#888] font-mono"
+                >
+                  <option value="16:9">16:9</option>
+                  <option value="9:16">9:16</option>
+                  <option value="4:3">4:3</option>
+                  <option value="1:1">1:1</option>
+                </select>
+              </div>
 
-                <div className="grid grid-cols-3 gap-4">
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Aspect Ratio</label>
-                    <select
-                      value={options.aspectRatio}
-                      onChange={(e) => setOptions(prev => ({ ...prev, aspectRatio: e.target.value as any }))}
-                      disabled={state.status === 'generating'}
-                      className="w-full h-10 px-3 rounded-md border border-gray-300 bg-white text-sm"
-                    >
-                      <option value="16:9">16:9</option>
-                      <option value="9:16">9:16</option>
-                      <option value="4:3">4:3</option>
-                      <option value="1:1">1:1</option>
-                    </select>
-                  </div>
+              <div className="flex items-center gap-2">
+                <label className="text-xs font-mono text-[#555]">duration</label>
+                <select
+                  value={options.duration}
+                  onChange={(e) => setOptions(prev => ({ ...prev, duration: parseInt(e.target.value) }))}
+                  disabled={state.status === 'generating'}
+                  className="h-8 px-2 rounded-md border border-[#333] bg-black text-xs text-[#888] font-mono"
+                >
+                  <option value={4}>4s</option>
+                  <option value={6}>6s</option>
+                  <option value={8}>8s</option>
+                </select>
+              </div>
 
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Duration (s)</label>
-                    <Input
-                      type="number"
-                      min="4"
-                      max="8"
-                      value={options.duration}
-                      onChange={(e) => setOptions(prev => ({ ...prev, duration: parseInt(e.target.value) }))}
-                      disabled={state.status === 'generating'}
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Scenes</label>
-                    <Input
-                      type="number"
-                      min="1"
-                      max="5"
-                      value={options.numScenes}
-                      onChange={(e) => setOptions(prev => ({ ...prev, numScenes: parseInt(e.target.value) }))}
-                      disabled={state.status === 'generating'}
-                    />
-                  </div>
-                </div>
-
-                <div className="flex gap-2">
-                  <Button
-                    onClick={handleGenerate}
-                    disabled={state.status === 'generating' || !state.idea.trim()}
-                    className="flex-1"
-                  >
-                    {state.status === 'generating' ? 'Generating...' : 'Generate Videos'}
-                  </Button>
-                  {state.status !== 'idle' && (
-                    <Button onClick={handleReset} variant="outline">
-                      Reset
-                    </Button>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Generated Idea */}
-            {state.generatedIdea && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">Video Concept</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <div>
-                    <h3 className="font-semibold text-lg">{state.generatedIdea.title}</h3>
-                    <p className="text-sm text-gray-600 mt-1">{state.generatedIdea.description}</p>
-                  </div>
-                  <div className="flex gap-2 text-xs">
-                    <span className="bg-gray-100 px-2 py-1 rounded">{state.generatedIdea.style}</span>
-                    <span className="bg-gray-100 px-2 py-1 rounded">{state.generatedIdea.mood}</span>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-          </div>
-
-          {/* Right Column: Progress */}
-          <div className="space-y-6">
-            {state.progress.length > 0 && (
-              <ProgressTracker events={state.progress} />
-            )}
+              <div className="flex items-center gap-2">
+                <label className="text-xs font-mono text-[#555]">scenes</label>
+                <select
+                  value={options.numScenes}
+                  onChange={(e) => setOptions(prev => ({ ...prev, numScenes: parseInt(e.target.value) }))}
+                  disabled={state.status === 'generating'}
+                  className="h-8 px-2 rounded-md border border-[#333] bg-black text-xs text-[#888] font-mono"
+                >
+                  <option value={2}>2</option>
+                  <option value={3}>3</option>
+                  <option value={4}>4</option>
+                  <option value={5}>5</option>
+                </select>
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* Scene Preview */}
+        {/* Two Column: Concept + Progress */}
+        {(state.generatedIdea || state.progress.length > 0) && (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            {/* Left: Concept */}
+            <div className="space-y-6">
+              {state.generatedIdea && (
+                <div className="space-y-3 animate-fade-in">
+                  <h2 className="text-sm font-medium text-[#ededed]">Concept</h2>
+                  <div className="border border-[#222] rounded-xl p-5 space-y-3">
+                    <h3 className="text-lg font-semibold tracking-tight">{state.generatedIdea.title}</h3>
+                    <p className="text-sm text-[#888] leading-relaxed">{state.generatedIdea.description}</p>
+                    <div className="flex flex-wrap gap-2 pt-1">
+                      <Badge>{state.generatedIdea.style}</Badge>
+                      <Badge>{state.generatedIdea.mood}</Badge>
+                      {state.generatedIdea.keyElements.map((el, i) => (
+                        <Badge key={i}>{el}</Badge>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Right: Progress */}
+            <div>
+              <ProgressTracker events={state.progress} />
+            </div>
+          </div>
+        )}
+
+        {/* Scenes */}
         {state.scenes && state.scenes.length > 0 && (
           <ScenePreview
             scenes={state.scenes}
@@ -299,20 +276,26 @@ export function VideoGenerator() {
           />
         )}
 
-        {/* Video Gallery */}
+        {/* Videos */}
         {state.videos.length > 0 && (
           <VideoGallery videos={state.videos} />
         )}
 
-        {/* Error State */}
-        {state.error && (
-          <Card className="border-red-200 bg-red-50">
-            <CardContent className="p-6">
-              <p className="text-red-900 font-medium">Error: {state.error}</p>
-            </CardContent>
-          </Card>
+        {/* Error */}
+        {state.error && state.status === 'error' && (
+          <div className="border border-[#ff4444]/20 rounded-xl p-5 bg-[#ff4444]/5 animate-fade-in">
+            <p className="text-sm text-[#ff4444] font-mono">{state.error}</p>
+          </div>
         )}
-      </div>
+      </main>
+
+      {/* Footer */}
+      <footer className="border-t border-[#222] mt-20">
+        <div className="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
+          <span className="text-xs font-mono text-[#333]">gigapapaya</span>
+          <span className="text-xs font-mono text-[#333]">veo 3.1 / ai gateway</span>
+        </div>
+      </footer>
     </div>
   );
 }

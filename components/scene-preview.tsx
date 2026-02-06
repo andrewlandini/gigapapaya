@@ -1,6 +1,6 @@
 'use client';
 
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { ChevronDown } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import type { Scene } from '@/lib/types';
 
@@ -12,48 +12,50 @@ interface ScenePreviewProps {
 
 export function ScenePreview({ scenes, style, mood }: ScenePreviewProps) {
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-lg">Generated Scenes</CardTitle>
-          <div className="flex gap-2">
-            {style && <Badge variant="secondary">{style}</Badge>}
-            {mood && <Badge variant="secondary">{mood}</Badge>}
-          </div>
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <h2 className="text-sm font-medium text-[#ededed]">Scenes</h2>
+          <span className="text-xs font-mono text-[#444]">{scenes.length} scenes</span>
         </div>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-4">
-          {scenes.map((scene, i) => (
-            <div
-              key={i}
-              className="border border-gray-200 rounded-lg p-4 hover:border-gray-300 transition-colors"
-            >
-              <div className="flex items-start gap-3">
-                <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gray-900 text-white flex items-center justify-center text-sm font-semibold">
-                  {i + 1}
-                </div>
-                <div className="flex-1 space-y-2">
-                  <p className="text-sm text-gray-900">{scene.prompt}</p>
-                  <div className="flex items-center gap-4 text-xs text-gray-500">
-                    <span>Duration: {scene.duration}s</span>
-                    {scene.notes && (
-                      <details className="inline">
-                        <summary className="cursor-pointer hover:text-gray-700">
-                          Technical notes
-                        </summary>
-                        <p className="mt-2 text-gray-600 bg-gray-50 p-2 rounded">
-                          {scene.notes}
-                        </p>
-                      </details>
-                    )}
-                  </div>
+        <div className="flex gap-2">
+          {style && <Badge>{style}</Badge>}
+          {mood && <Badge>{mood}</Badge>}
+        </div>
+      </div>
+
+      <div className="grid gap-2">
+        {scenes.map((scene, i) => (
+          <div
+            key={i}
+            className="border border-[#222] rounded-xl p-4 hover:border-[#333] transition-colors animate-fade-in"
+            style={{ animationDelay: `${i * 100}ms` }}
+          >
+            <div className="flex items-start gap-3">
+              <div className="flex-shrink-0 w-6 h-6 rounded-md bg-[#1a1a1a] border border-[#333] text-[#888] flex items-center justify-center text-xs font-mono">
+                {i + 1}
+              </div>
+              <div className="flex-1 min-w-0 space-y-2">
+                <p className="text-sm text-[#ccc] leading-relaxed">{scene.prompt}</p>
+                <div className="flex items-center gap-3">
+                  <span className="text-xs font-mono text-[#444]">{scene.duration}s</span>
+                  {scene.notes && (
+                    <details className="group">
+                      <summary className="text-xs text-[#444] cursor-pointer hover:text-[#888] flex items-center gap-1">
+                        <ChevronDown className="h-3 w-3 group-open:rotate-180 transition-transform" />
+                        notes
+                      </summary>
+                      <p className="mt-2 text-xs font-mono text-[#555] bg-[#111] p-3 rounded-lg border border-[#222]">
+                        {scene.notes}
+                      </p>
+                    </details>
+                  )}
                 </div>
               </div>
             </div>
-          ))}
-        </div>
-      </CardContent>
-    </Card>
+          </div>
+        ))}
+      </div>
+    </div>
   );
 }
