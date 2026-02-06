@@ -8,7 +8,7 @@ export const metadata: Metadata = {
   description: 'Browse AI-generated videos from the gigapapaya community. Powered by Google Veo 3.1.',
 };
 
-export const dynamic = 'force-dynamic';
+export const revalidate = 30; // ISR: rebuild every 30s instead of every request
 
 export default async function HomePage() {
   try { await initDb(); } catch {}

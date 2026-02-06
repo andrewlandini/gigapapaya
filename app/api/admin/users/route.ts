@@ -2,10 +2,8 @@ import { NextRequest } from 'next/server';
 import { getSession } from '@/lib/auth/session';
 import { initDb, isUserAdmin, getAllUsers, setUserAdmin } from '@/lib/db';
 
-let dbInitialized = false;
-
 export async function GET() {
-  if (!dbInitialized) { await initDb(); dbInitialized = true; }
+  await initDb();
 
   const user = await getSession();
   if (!user || !(await isUserAdmin(user.id))) {
@@ -17,7 +15,7 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
-  if (!dbInitialized) { await initDb(); dbInitialized = true; }
+  await initDb();
 
   const user = await getSession();
   if (!user || !(await isUserAdmin(user.id))) {

@@ -2,13 +2,11 @@ import { NextRequest } from 'next/server';
 import { getSession } from '@/lib/auth/session';
 import { getGenerationWithVideos, updateVideoSceneIndex, removeVideoFromGeneration, initDb } from '@/lib/db';
 
-let dbInitialized = false;
-
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ generationId: string }> }
 ) {
-  if (!dbInitialized) { await initDb(); dbInitialized = true; }
+  await initDb();
 
   const { generationId } = await params;
   const user = await getSession();
@@ -46,7 +44,7 @@ export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ generationId: string }> }
 ) {
-  if (!dbInitialized) { await initDb(); dbInitialized = true; }
+  await initDb();
 
   const { generationId } = await params;
   const user = await getSession();

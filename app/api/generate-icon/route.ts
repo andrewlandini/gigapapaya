@@ -8,10 +8,8 @@ import { initDb, updateUserAvatar, getUserById } from '@/lib/db';
 export const runtime = 'nodejs';
 export const maxDuration = 60;
 
-let dbInitialized = false;
-
 export async function POST(request: NextRequest) {
-  if (!dbInitialized) { await initDb(); dbInitialized = true; }
+  await initDb();
 
   const user = await getSession();
   if (!user) {

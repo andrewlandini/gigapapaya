@@ -1,10 +1,8 @@
 import { getSession } from '@/lib/auth/session';
 import { getUserById, getUserVideos, getUserStats, initDb } from '@/lib/db';
 
-let dbInitialized = false;
-
 export async function GET() {
-  if (!dbInitialized) { await initDb(); dbInitialized = true; }
+  await initDb();
 
   const session = await getSession();
   if (!session) {

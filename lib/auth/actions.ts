@@ -6,9 +6,8 @@ import { redirect } from 'next/navigation';
 import { createUser, getUserByEmail, isUserAdmin, initDb } from '@/lib/db';
 import { createSession, deleteSession } from './session';
 
-let dbReady = false;
 async function ensureDb() {
-  if (!dbReady) { await initDb(); dbReady = true; }
+  await initDb();
 }
 
 export async function signUp(formData: FormData) {

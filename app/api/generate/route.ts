@@ -15,15 +15,10 @@ import type { GenerationOptions, SSEMessage } from '@/lib/types';
 export const runtime = 'nodejs';
 export const maxDuration = 600;
 
-let dbInitialized = false;
-
 export async function POST(request: NextRequest) {
   console.log('\n🚀 API: Generate endpoint called');
 
-  if (!dbInitialized) {
-    await initDb();
-    dbInitialized = true;
-  }
+  await initDb();
 
   try {
     const body = await request.json();

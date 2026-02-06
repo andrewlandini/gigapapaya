@@ -2,13 +2,11 @@ import { NextRequest } from 'next/server';
 import { getSession } from '@/lib/auth/session';
 import { initDb, getVideoDetail, hasUserHearted } from '@/lib/db';
 
-let dbInitialized = false;
-
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ videoId: string }> }
 ) {
-  if (!dbInitialized) { await initDb(); dbInitialized = true; }
+  await initDb();
 
   const { videoId } = await params;
   const video = await getVideoDetail(videoId);
@@ -22,5 +20,7 @@ export async function GET(
   const isOwner = user ? user.id === video.user_id : false;
   const isAdmin = user?.isAdmin || false;
 
-  return Response.json({ video, hearted, isOwner, isAdmin });
+  return Response.json({ video, hearted, isOwner, isAdmin }, {
+    headers: { 'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=120' },
+  });
 }

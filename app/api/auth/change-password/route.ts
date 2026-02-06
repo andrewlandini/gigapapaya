@@ -1,13 +1,10 @@
 import { NextRequest } from 'next/server';
 import bcrypt from 'bcryptjs';
 import { getSession } from '@/lib/auth/session';
-import { initDb, getUserByEmail } from '@/lib/db';
-import { neon } from '@neondatabase/serverless';
-
-let dbInitialized = false;
+import { initDb, getDb } from '@/lib/db';
 
 export async function POST(request: NextRequest) {
-  if (!dbInitialized) { await initDb(); dbInitialized = true; }
+  await initDb();
 
   const user = await getSession();
   if (!user) {
@@ -25,7 +22,7 @@ export async function POST(request: NextRequest) {
   }
 
   // Verify current password
-  const sql = neon(process.env.DATABASE_URL!);
+  const sql = getDb();
   const rows = await sql`SELECT password_hash FROM users WHERE id = ${user.id}`;
   if (!rows[0]) {
     return Response.json({ error: 'User not found' }, { status: 404 });

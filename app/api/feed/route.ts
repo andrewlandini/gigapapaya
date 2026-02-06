@@ -1,13 +1,8 @@
 import { NextRequest } from 'next/server';
 import { getPublicVideosSorted, initDb } from '@/lib/db';
 
-let dbInitialized = false;
-
 export async function GET(request: NextRequest) {
-  if (!dbInitialized) {
-    await initDb();
-    dbInitialized = true;
-  }
+  await initDb();
 
   const { searchParams } = new URL(request.url);
   const limit = parseInt(searchParams.get('limit') || '30');
@@ -16,5 +11,7 @@ export async function GET(request: NextRequest) {
 
   const videos = await getPublicVideosSorted(limit, offset, period);
 
-  return Response.json(videos);
+  return Response.json(videos, {
+    headers: { 'Cache-Control': 'public, s-maxage=30, stale-while-revalidate=60' },
+  });
 }

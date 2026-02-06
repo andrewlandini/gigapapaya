@@ -1,12 +1,17 @@
-import { neon } from '@neondatabase/serverless';
+import { neon, type NeonQueryFunction } from '@neondatabase/serverless';
 
-function getDb() {
-  return neon(process.env.DATABASE_URL!);
+let _db: NeonQueryFunction<false, false> | null = null;
+
+export function getDb() {
+  if (!_db) _db = neon(process.env.DATABASE_URL!);
+  return _db;
 }
 
-// ── Schema ──────────────────────────────────────────────
+// Global init guard — runs once per process
+let _dbInitialized = false;
 
 export async function initDb() {
+  if (_dbInitialized) return;
   const sql = getDb();
 
   // Create tables
@@ -68,6 +73,7 @@ export async function initDb() {
   // Promote initial admin
   try { await sql`UPDATE users SET is_admin = TRUE WHERE email = 'andrew.landini@vercel.com'`; } catch {}
 
+  _dbInitialized = true;
   console.log('✅ Database tables initialized');
 }
 

@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation';
 import { getUserByUsername, getUserPublicVideos, getUserStats } from '@/lib/db';
 import { VideoCard } from '@/components/video-card';
 
-export const dynamic = 'force-dynamic';
+export const revalidate = 30;
 
 export async function generateMetadata({
   params,
