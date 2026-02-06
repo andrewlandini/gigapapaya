@@ -1,7 +1,6 @@
 'use client';
 
 import { Download, Play } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import type { Video } from '@/lib/types';
 
@@ -56,20 +55,14 @@ export function VideoGallery({ videos }: VideoGalleryProps) {
               <p className="text-xs text-[#666] line-clamp-2 leading-relaxed">
                 {video.prompt}
               </p>
-              <Button
-                size="sm"
-                variant="outline"
-                className="w-full"
-                asChild
+              <a
+                href={`/api/download/${video.id}`}
+                download={video.filename}
+                className="inline-flex items-center justify-center w-full h-8 px-3 text-xs font-medium rounded-lg border border-[#333] bg-transparent text-[#ededed] hover:bg-[#111] hover:border-[#555] transition-all"
               >
-                <a
-                  href={`/api/download/${video.id}`}
-                  download={video.filename}
-                >
-                  <Download className="h-3.5 w-3.5 mr-2" />
-                  Download
-                </a>
-              </Button>
+                <Download className="h-3.5 w-3.5 mr-2" />
+                Download
+              </a>
             </div>
           </div>
         ))}

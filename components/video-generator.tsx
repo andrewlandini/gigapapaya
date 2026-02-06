@@ -1,217 +1,20 @@
 'use client';
 
-import { useState, useRef } from 'react';
-import { Zap, RotateCcw, Play } from 'lucide-react';
+import { Zap, RotateCcw, Play, X, Trash2, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { ProgressTracker } from './progress-tracker';
 import { ScenePreview } from './scene-preview';
 import { VideoGallery } from './video-gallery';
-import type { GenerationState, GenerationOptions, SSEMessage, ProgressEvent } from '@/lib/types';
+import { useStoryboard } from './storyboard-context';
 
 export function VideoGenerator() {
-  const [state, setState] = useState<GenerationState>({
-    status: 'idle',
-    idea: '',
-    generatedIdea: null,
-    scenes: null,
-    editableScenes: null,
-    videos: [],
-    progress: [],
-    error: null,
-  });
-
-  const [options, setOptions] = useState<GenerationOptions>({
-    aspectRatio: '16:9',
-    duration: 8,
-    numScenes: 3,
-    mode: 'agents',
-  });
-
-  const sessionIdRef = useRef<string>('');
-
-  // Parse SSE stream helper
-  const readSSEStream = async (response: Response, onEvent: (data: SSEMessage) => void) => {
-    const reader = response.body?.getReader();
-    if (!reader) throw new Error('No response body');
-
-    const decoder = new TextDecoder();
-    let buffer = '';
-
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-
-      buffer += decoder.decode(value, { stream: true });
-      const lines = buffer.split('\n\n');
-      buffer = lines.pop() || '';
-
-      for (const line of lines) {
-        if (line.startsWith('data: ')) {
-          const data = JSON.parse(line.slice(6)) as SSEMessage;
-          console.log('📡 SSE:', data.type, data);
-          onEvent(data);
-        }
-      }
-    }
-  };
-
-  // Phase 1: Generate idea + scenes (agents mode) or direct video
-  const handleGenerate = async () => {
-    if (!state.idea.trim()) return;
-
-    setState(prev => ({
-      ...prev,
-      status: 'generating',
-      generatedIdea: null,
-      scenes: null,
-      editableScenes: null,
-      videos: [],
-      progress: [],
-      error: null,
-    }));
-
-    try {
-      const response = await fetch('/api/generate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ idea: state.idea, options }),
-      });
-
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
-
-      await readSSEStream(response, (data) => {
-        const progressEvent: ProgressEvent = {
-          type: data.type,
-          timestamp: new Date(),
-          agent: data.agent as any,
-          status: data.status,
-          result: data.result,
-          sceneIndex: data.sceneIndex,
-          videoId: data.videoId,
-          prompt: data.prompt,
-          message: data.message,
-        };
-
-        setState(prev => ({ ...prev, progress: [...prev.progress, progressEvent] }));
-
-        switch (data.type) {
-          case 'agent-complete':
-            if (data.agent === 'idea') {
-              setState(prev => ({ ...prev, generatedIdea: data.result }));
-            } else if (data.agent === 'scenes') {
-              setState(prev => ({ ...prev, scenes: data.result.scenes }));
-            }
-            break;
-          case 'scenes-ready':
-            // Pause for review
-            sessionIdRef.current = data.sessionId || '';
-            setState(prev => ({
-              ...prev,
-              status: 'reviewing',
-              editableScenes: prev.scenes ? prev.scenes.map(s => ({ ...s })) : null,
-            }));
-            break;
-          case 'complete':
-            setState(prev => ({ ...prev, status: 'complete', videos: data.videos || [] }));
-            break;
-          case 'error':
-            if (!data.sceneIndex && data.sceneIndex !== 0) {
-              setState(prev => ({ ...prev, status: 'error', error: data.message || 'Unknown error' }));
-            }
-            break;
-        }
-      });
-    } catch (error) {
-      console.error('❌ Generation failed:', error);
-      setState(prev => ({
-        ...prev,
-        status: 'error',
-        error: error instanceof Error ? error.message : 'Unknown error',
-        progress: [
-          ...prev.progress,
-          { type: 'error', timestamp: new Date(), message: error instanceof Error ? error.message : 'Unknown error' },
-        ],
-      }));
-    }
-  };
-
-  // Phase 2: Generate videos from approved/edited scenes
-  const handleGenerateVideos = async () => {
-    if (!state.editableScenes) return;
-
-    setState(prev => ({ ...prev, status: 'generating-videos' }));
-
-    try {
-      const response = await fetch('/api/generate-videos', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          sessionId: sessionIdRef.current,
-          scenes: state.editableScenes.map(s => ({ prompt: s.prompt, duration: s.duration })),
-          style: state.generatedIdea?.style || '',
-          mood: state.generatedIdea?.mood || '',
-          options,
-        }),
-      });
-
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
-
-      await readSSEStream(response, (data) => {
-        const progressEvent: ProgressEvent = {
-          type: data.type,
-          timestamp: new Date(),
-          agent: data.agent as any,
-          status: data.status,
-          result: data.result,
-          sceneIndex: data.sceneIndex,
-          videoId: data.videoId,
-          prompt: data.prompt,
-          message: data.message,
-        };
-
-        setState(prev => ({ ...prev, progress: [...prev.progress, progressEvent] }));
-
-        switch (data.type) {
-          case 'complete':
-            setState(prev => ({ ...prev, status: 'complete', videos: data.videos || [] }));
-            break;
-          case 'error':
-            if (!data.sceneIndex && data.sceneIndex !== 0) {
-              setState(prev => ({ ...prev, status: 'error', error: data.message || 'Unknown error' }));
-            }
-            break;
-        }
-      });
-    } catch (error) {
-      console.error('❌ Video generation failed:', error);
-      setState(prev => ({
-        ...prev,
-        status: 'error',
-        error: error instanceof Error ? error.message : 'Unknown error',
-      }));
-    }
-  };
-
-  const updateScenePrompt = (index: number, prompt: string) => {
-    setState(prev => ({
-      ...prev,
-      editableScenes: prev.editableScenes?.map((s, i) =>
-        i === index ? { ...s, prompt } : s
-      ) || null,
-    }));
-  };
-
-  const handleReset = () => {
-    sessionIdRef.current = '';
-    setState({
-      status: 'idle', idea: '', generatedIdea: null,
-      scenes: null, editableScenes: null, videos: [], progress: [], error: null,
-    });
-  };
-
-  const isGenerating = state.status === 'generating' || state.status === 'generating-videos';
+  const {
+    state, options, setIdea, setOptions,
+    updateScenePrompt, handleGenerate, handleGenerateVideos, handleReset,
+    isGenerating,
+    history, deleteHistoryEntry, clearHistory, loadFromHistory,
+  } = useStoryboard();
 
   return (
     <div className="min-h-screen bg-black flex flex-col">
@@ -257,7 +60,7 @@ export function VideoGenerator() {
               <textarea
                 placeholder="A frog drinking a cocktail at Martha's Vineyard..."
                 value={state.idea}
-                onChange={(e) => setState(prev => ({ ...prev, idea: e.target.value }))}
+                onChange={(e) => setIdea(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && state.status === 'idle' && (e.preventDefault(), handleGenerate())}
                 disabled={isGenerating || state.status === 'reviewing'}
                 rows={3}
@@ -342,6 +145,44 @@ export function VideoGenerator() {
               )}
             </div>
           </div>
+
+          {/* Prompt history */}
+          {state.status === 'idle' && history.length > 0 && (
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Clock className="h-3.5 w-3.5 text-[#444]" />
+                  <span className="text-xs font-mono text-[#444]">History</span>
+                </div>
+                <button
+                  onClick={clearHistory}
+                  className="flex items-center gap-1 text-xs text-[#444] hover:text-[#888] transition-colors"
+                >
+                  <Trash2 className="h-3 w-3" />
+                  Clear all
+                </button>
+              </div>
+              <div className="flex flex-col gap-1">
+                {history.slice(0, 8).map((entry) => (
+                  <div
+                    key={entry.id}
+                    className="group flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-[#111] transition-colors cursor-pointer"
+                    onClick={() => loadFromHistory(entry.prompt)}
+                  >
+                    <p className="text-sm text-[#666] truncate flex-1 group-hover:text-[#ededed] transition-colors">
+                      {entry.prompt}
+                    </p>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); deleteHistoryEntry(entry.id); }}
+                      className="flex-shrink-0 p-1 rounded text-[#333] hover:text-[#888] opacity-0 group-hover:opacity-100 transition-all"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Concept + Progress */}
