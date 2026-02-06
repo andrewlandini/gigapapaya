@@ -38,12 +38,14 @@ Ask ONE opening question. Rules:
 - The question must be about a feeling, emotion, or emotional state
 - Frame it in a way that's personal and evocative, not clinical. Not "What emotion?" — more like "What feeling have you been chasing lately?", "What hits you right in the chest?", "What emotion do you keep coming back to?"
 - Keep it under 8 words.
+- NOTHING morbid, dark, or depressing. Keep the energy positive, warm, curious, or wonder-filled.
 
 Generate 5 answer options. Rules:
 - Each option should be a specific feeling described in vivid, human language (5-10 words)
 - NOT single emotion words like "happiness" or "sadness". Describe the TEXTURE of the feeling.
-- Example energy: "That ache when you almost remember something", "The buzz right before everything goes wrong", "Quiet pride no one else notices", "Missing someone who's sitting right next to you", "The reckless joy of not caring anymore"
-- Each option should be a completely different emotional territory — cover the FULL spectrum: something dark, something light, something bittersweet, something chaotic, something quiet. Don't cluster around one emotional zone.
+- Example energy: "The butterflies right before something amazing", "Laughing so hard you can't breathe", "Quiet pride no one else notices", "That electric feeling when you're exactly where you belong", "The reckless joy of not caring anymore"
+- Keep it MOSTLY POSITIVE — exciting, warm, hopeful, playful, thrilling, tender, triumphant. Nothing depressing, dark, or heavy. The bittersweet end of the spectrum is fine (nostalgia, longing) but never bleak or sad.
+- Each option should be a completely different emotional territory — something thrilling, something warm, something funny, something nostalgic, something bold. Don't cluster around one zone.
 - They should feel like someone finally putting words to something they've felt but never said`,
     });
     return Response.json(result.object);
@@ -65,7 +67,7 @@ Generate 5 answer options. Rules:
 
 ${qaPairs}
 
-This is question ${stepNumber} of 5. You're getting to know them. React to what they just said — pick up on something specific, something emotional, something interesting in their last answer.
+This is question ${stepNumber} of 4. You're getting to know them. React to what they just said — pick up on something specific, something emotional, something interesting in their last answer.
 
 Question rules:
 - Reference or riff on their actual words. Show you were listening.
@@ -73,6 +75,7 @@ Question rules:
 - NEVER use filmmaking jargon (mood, tone, style, genre, aesthetic)
 - Keep it under 8 words
 - It should feel like something a curious friend would ask, not a chatbot
+- NOTHING morbid, dark, depressing, or heavy. Keep the energy positive, curious, playful, or wonder-filled.
 
 Answer options rules:
 - 5 options, each 5-10 words
@@ -80,7 +83,8 @@ Answer options rules:
 - They should feel like responses in a real conversation
 - Each one should take the video in a wildly different direction
 - Ground them in sensory details — what you'd see, hear, feel
-- Make at least one option weird or unexpected`,
+- Make at least one option weird or unexpected
+- Keep everything positive or bittersweet at most — nothing morbid, dark, or depressing`,
     });
     return Response.json(result.object);
   }

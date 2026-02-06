@@ -85,9 +85,65 @@ export function VideoGenerator() {
             {state.status === 'complete' && (
               <Badge variant="success">complete</Badge>
             )}
+            <button
+              onClick={() => setShowAgentSettings(true)}
+              className="flex items-center gap-1.5 text-xs font-mono text-[#555] hover:text-[#888] transition-colors"
+            >
+              <Settings2 className="h-3.5 w-3.5" />
+              Agents
+            </button>
+            {history.length > 0 && (
+              <button
+                onClick={() => setShowHistory(!showHistory)}
+                className="flex items-center gap-1.5 text-xs font-mono text-[#555] hover:text-[#888] transition-colors"
+              >
+                <Clock className="h-3.5 w-3.5" />
+                History
+              </button>
+            )}
           </div>
         </div>
       </header>
+
+      {/* History sidebar */}
+      {showHistory && (
+        <>
+          <div className="fixed inset-0 z-40 bg-black/50" onClick={() => setShowHistory(false)} />
+          <div className="fixed top-0 right-0 z-50 h-full w-80 bg-[#111] border-l border-[#222] shadow-2xl flex flex-col animate-fade-in">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-[#222]">
+              <div className="flex items-center gap-2">
+                <Clock className="h-4 w-4 text-[#888]" />
+                <span className="text-sm font-medium text-[#ededed]">History</span>
+              </div>
+              <button
+                onClick={() => setShowHistory(false)}
+                className="p-1 rounded-lg text-[#555] hover:text-white hover:bg-[#222] transition-colors"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto p-2">
+              {history.map((entry) => (
+                <div
+                  key={entry.id}
+                  className="group flex items-center gap-2 px-3 py-2.5 rounded-lg hover:bg-[#1a1a1a] transition-colors cursor-pointer"
+                  onClick={() => { loadFromHistory(entry.prompt); setShowHistory(false); }}
+                >
+                  <p className="text-sm text-[#666] truncate flex-1 group-hover:text-[#ededed] transition-colors">
+                    {entry.prompt}
+                  </p>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); deleteHistoryEntry(entry.id); }}
+                    className="flex-shrink-0 p-1 rounded text-[#333] hover:text-[#888] opacity-0 group-hover:opacity-100 transition-all"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        </>
+      )}
 
       <main className="max-w-6xl mx-auto px-6 pt-16 pb-10 space-y-10 flex-1">
         {/* Hero + Input */}
@@ -97,94 +153,82 @@ export function VideoGenerator() {
 
           {!wizardActive && (
             <div className="space-y-5">
-              <div className="space-y-4">
+              {/* Unified input box */}
+              <div className="border border-[#333] rounded-2xl bg-[#0a0a0a] focus-within:border-[#555] focus-within:ring-1 focus-within:ring-white/10 transition-all">
                 <textarea
                   placeholder="A frog drinking a cocktail at Martha's Vineyard..."
                   value={state.idea}
                   onChange={(e) => setIdea(e.target.value)}
                   disabled={isGenerating || state.status === 'reviewing'}
-                  rows={4}
-                  className="w-full bg-black border border-[#333] rounded-2xl px-5 py-4 text-[15px] text-[#ededed] placeholder:text-[#555] focus:outline-none focus:border-[#555] focus:ring-1 focus:ring-white/10 resize-none leading-relaxed"
+                  rows={3}
+                  className="w-full bg-transparent px-5 pt-4 pb-2 text-[15px] text-[#ededed] placeholder:text-[#555] focus:outline-none resize-none leading-relaxed"
                 />
-
-                {/* Mode buttons */}
-                <div className="flex flex-wrap gap-3 justify-center">
-                  {GENERATION_MODES.map((mode) => (
-                    <button
-                      key={mode.id}
-                      onClick={() => startModeGeneration(mode.id)}
-                      disabled={isGenerating || state.status === 'reviewing' || !state.idea.trim()}
-                      className="group flex items-center gap-2 h-11 px-5 rounded-full border border-[#333] bg-[#0a0a0a] hover:border-[#555] hover:bg-[#111] disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                <div className="flex items-center gap-4 px-4 pb-3">
+                  <div className="flex items-center gap-1.5">
+                    <label className="text-[11px] font-mono text-[#444]">ratio</label>
+                    <select
+                      value={options.aspectRatio}
+                      onChange={(e) => setOptions(prev => ({ ...prev, aspectRatio: e.target.value as any }))}
+                      disabled={isGenerating}
+                      className="h-7 px-1.5 rounded-md bg-transparent text-xs text-[#888] font-mono focus:outline-none cursor-pointer hover:text-[#ededed] transition-colors"
                     >
-                      <span className="text-base">{mode.icon}</span>
-                      <span className="text-sm text-[#ededed]">{mode.label}</span>
-                    </button>
-                  ))}
-                  {state.status !== 'idle' && (
-                    <Button onClick={handleReset} variant="ghost" className="h-10" title="Reset">
-                      <RotateCcw className="h-4 w-4" />
-                    </Button>
-                  )}
+                      <option value="16:9">16:9</option>
+                      <option value="9:16">9:16</option>
+                      <option value="4:3">4:3</option>
+                      <option value="1:1">1:1</option>
+                    </select>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <label className="text-[11px] font-mono text-[#444]">duration</label>
+                    <select
+                      value={options.duration}
+                      onChange={(e) => setOptions(prev => ({ ...prev, duration: parseInt(e.target.value) }))}
+                      disabled={isGenerating}
+                      className="h-7 px-1.5 rounded-md bg-transparent text-xs text-[#888] font-mono focus:outline-none cursor-pointer hover:text-[#ededed] transition-colors"
+                    >
+                      <option value={4}>4s</option>
+                      <option value={6}>6s</option>
+                      <option value={8}>8s</option>
+                    </select>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <label className="text-[11px] font-mono text-[#444]">scenes</label>
+                    <select
+                      value={options.numScenes}
+                      onChange={(e) => setOptions(prev => ({ ...prev, numScenes: parseInt(e.target.value) }))}
+                      disabled={isGenerating}
+                      className="h-7 px-1.5 rounded-md bg-transparent text-xs text-[#888] font-mono focus:outline-none cursor-pointer hover:text-[#ededed] transition-colors"
+                    >
+                      <option value={2}>2</option>
+                      <option value={3}>3</option>
+                      <option value={4}>4</option>
+                      <option value={5}>5</option>
+                    </select>
+                  </div>
                 </div>
               </div>
 
-              {/* Options */}
-              <div className="flex items-center gap-8 flex-wrap justify-center">
-                <div className="flex items-center gap-2">
-                  <label className="text-xs font-mono text-[#555]">ratio</label>
-                  <select
-                    value={options.aspectRatio}
-                    onChange={(e) => setOptions(prev => ({ ...prev, aspectRatio: e.target.value as any }))}
-                    disabled={isGenerating}
-                    className="h-8 px-2 rounded-md border border-[#333] bg-black text-xs text-[#888] font-mono"
+              {/* Mode buttons */}
+              <div className="flex flex-wrap gap-3 justify-center">
+                {GENERATION_MODES.map((mode) => (
+                  <button
+                    key={mode.id}
+                    onClick={() => startModeGeneration(mode.id)}
+                    disabled={isGenerating || state.status === 'reviewing' || !state.idea.trim()}
+                    className="group flex items-center gap-2 h-11 px-5 rounded-full border border-[#333] bg-[#0a0a0a] hover:border-[#555] hover:bg-[#111] disabled:opacity-30 disabled:cursor-not-allowed transition-all"
                   >
-                    <option value="16:9">16:9</option>
-                    <option value="9:16">9:16</option>
-                    <option value="4:3">4:3</option>
-                    <option value="1:1">1:1</option>
-                  </select>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <label className="text-xs font-mono text-[#555]">duration</label>
-                  <select
-                    value={options.duration}
-                    onChange={(e) => setOptions(prev => ({ ...prev, duration: parseInt(e.target.value) }))}
-                    disabled={isGenerating}
-                    className="h-8 px-2 rounded-md border border-[#333] bg-black text-xs text-[#888] font-mono"
-                  >
-                    <option value={4}>4s</option>
-                    <option value={6}>6s</option>
-                    <option value={8}>8s</option>
-                  </select>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <label className="text-xs font-mono text-[#555]">scenes</label>
-                  <select
-                    value={options.numScenes}
-                    onChange={(e) => setOptions(prev => ({ ...prev, numScenes: parseInt(e.target.value) }))}
-                    disabled={isGenerating}
-                    className="h-8 px-2 rounded-md border border-[#333] bg-black text-xs text-[#888] font-mono"
-                  >
-                    <option value={2}>2</option>
-                    <option value={3}>3</option>
-                    <option value={4}>4</option>
-                    <option value={5}>5</option>
-                  </select>
-                </div>
+                    <span className="text-base">{mode.icon}</span>
+                    <span className="text-sm text-[#ededed]">{mode.label}</span>
+                  </button>
+                ))}
+                {state.status !== 'idle' && (
+                  <Button onClick={handleReset} variant="ghost" className="h-10" title="Reset">
+                    <RotateCcw className="h-4 w-4" />
+                  </Button>
+                )}
               </div>
             </div>
           )}
-
-          {/* Agent settings trigger */}
-          <button
-            onClick={() => setShowAgentSettings(true)}
-            className="flex items-center gap-2 text-[#555] hover:text-[#888] transition-colors"
-          >
-            <Settings2 className="h-4 w-4" />
-            <span className="text-xs">Agent Settings</span>
-          </button>
 
           {/* Agent settings modal */}
           {showAgentSettings && (
@@ -298,47 +342,6 @@ export function VideoGenerator() {
             </div>
           )}
 
-          {/* Prompt history */}
-          {state.status === 'idle' && history.length > 0 && (
-            showHistory ? (
-              <div className="space-y-2 animate-fade-in">
-                <button
-                  onClick={() => setShowHistory(false)}
-                  className="flex items-center gap-2 text-xs font-mono text-[#444] hover:text-[#888] transition-colors"
-                >
-                  <Clock className="h-3.5 w-3.5" />
-                  History
-                </button>
-                <div className="flex flex-col gap-1">
-                  {history.slice(0, 8).map((entry) => (
-                    <div
-                      key={entry.id}
-                      className="group flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-[#111] transition-colors cursor-pointer"
-                      onClick={() => { loadFromHistory(entry.prompt); setShowHistory(false); }}
-                    >
-                      <p className="text-sm text-[#666] truncate flex-1 group-hover:text-[#ededed] transition-colors">
-                        {entry.prompt}
-                      </p>
-                      <button
-                        onClick={(e) => { e.stopPropagation(); deleteHistoryEntry(entry.id); }}
-                        className="flex-shrink-0 p-1 rounded text-[#333] hover:text-[#888] opacity-0 group-hover:opacity-100 transition-all"
-                      >
-                        <X className="h-3 w-3" />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ) : (
-              <button
-                onClick={() => setShowHistory(true)}
-                className="flex items-center gap-2 text-xs font-mono text-[#444] hover:text-[#888] transition-colors"
-              >
-                <Clock className="h-3.5 w-3.5" />
-                History
-              </button>
-            )
-          )}
         </div>
 
         {/* Concept + Progress */}

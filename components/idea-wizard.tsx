@@ -184,15 +184,17 @@ export function IdeaWizard({ onSelectIdea, onActiveChange }: IdeaWizardProps) {
   // Loading next question
   if (loadingStep || !currentQuestion) {
     return (
-      <div className="space-y-3 animate-fade-in">
-        <div className="flex items-center justify-center gap-3">
-          {step > 0 && (
-            <button onClick={handleBack} className="text-[#555] hover:text-white transition-colors">
-              <ArrowLeft className="h-3.5 w-3.5" />
-            </button>
-          )}
-          <span className="text-xs font-mono text-[#555]">{step + 1}/{TOTAL_STEPS}</span>
-          <Loader2 className="h-3.5 w-3.5 text-[#555] animate-spin" />
+      <div className="space-y-4 animate-fade-in max-w-md mx-auto w-full">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            {step > 0 && (
+              <button onClick={handleBack} className="text-[#555] hover:text-white transition-colors">
+                <ArrowLeft className="h-3.5 w-3.5" />
+              </button>
+            )}
+            <span className="text-xs font-mono text-[#555]">{step + 1}/{TOTAL_STEPS}</span>
+            <Loader2 className="h-3.5 w-3.5 text-[#555] animate-spin" />
+          </div>
           <button onClick={handleClose} className="text-xs text-[#555] hover:text-[#888] transition-colors">
             Cancel
           </button>
@@ -203,27 +205,29 @@ export function IdeaWizard({ onSelectIdea, onActiveChange }: IdeaWizardProps) {
 
   // Question step
   return (
-    <div className="space-y-3 animate-fade-in">
-      <div className="flex items-center justify-center gap-3">
-        {step > 0 && (
-          <button onClick={handleBack} className="text-[#555] hover:text-white transition-colors">
-            <ArrowLeft className="h-3.5 w-3.5" />
-          </button>
-        )}
-        <span className="text-xs font-mono text-[#555]">{step + 1}/{TOTAL_STEPS}</span>
-        <span className="text-sm text-[#ededed]">{currentQuestion}</span>
-        <button onClick={handleClose} className="text-xs text-[#555] hover:text-[#888] transition-colors">
+    <div className="space-y-4 animate-fade-in max-w-md mx-auto w-full">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2.5">
+          {step > 0 && (
+            <button onClick={handleBack} className="text-[#555] hover:text-white transition-colors">
+              <ArrowLeft className="h-3.5 w-3.5" />
+            </button>
+          )}
+          <span className="text-xs font-mono text-[#555]">{step + 1}/{TOTAL_STEPS}</span>
+          <span className="text-sm text-[#ededed]">{currentQuestion}</span>
+        </div>
+        <button onClick={handleClose} className="text-xs text-[#555] hover:text-[#888] transition-colors ml-4">
           Cancel
         </button>
       </div>
 
       {/* Current options */}
-      <div className="flex flex-wrap justify-center gap-2">
+      <div className="flex flex-col gap-2.5 w-full">
         {currentOptions.map((option) => (
           <button
             key={option}
             onClick={() => handleAnswer(option)}
-            className="h-10 px-4 rounded-xl border border-[#333] bg-[#0a0a0a] hover:border-[#555] hover:bg-[#111] transition-all text-sm text-[#ededed]"
+            className="w-full h-11 px-4 rounded-xl border border-[#333] bg-[#0a0a0a] hover:border-[#555] hover:bg-[#111] transition-all text-sm text-[#ededed]"
           >
             {option}
           </button>
