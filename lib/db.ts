@@ -248,7 +248,8 @@ export async function getUserStats(userId: string) {
     SELECT
       (SELECT COUNT(*) FROM videos WHERE user_id = ${userId}) as video_count,
       (SELECT COUNT(*) FROM videos WHERE user_id = ${userId} AND visibility = 'public') as public_count,
-      (SELECT COUNT(*) FROM generations WHERE user_id = ${userId}) as generation_count
+      (SELECT COUNT(*) FROM generations WHERE user_id = ${userId}) as generation_count,
+      (SELECT COUNT(*) FROM hearts WHERE video_id IN (SELECT id FROM videos WHERE user_id = ${userId})) as heart_count
   `;
   return rows[0];
 }

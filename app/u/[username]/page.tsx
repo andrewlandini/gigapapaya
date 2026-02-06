@@ -63,6 +63,10 @@ export default async function UserProfilePage({
               <p className="text-lg font-semibold">{stats.public_count}</p>
               <p className="text-xs text-[#555]">videos</p>
             </div>
+            <div className="text-center">
+              <p className="text-lg font-semibold">{stats.heart_count}</p>
+              <p className="text-xs text-[#555]">likes</p>
+            </div>
           </div>
         </div>
       </div>
