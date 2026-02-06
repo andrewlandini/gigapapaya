@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server';
 import crypto from 'crypto';
-import { executeIdeaAgent, executeScenesAgent, executeVideoAgent, executeMoodBoardAgent } from '@/lib/ai/agents';
+import { executeIdeaAgent, executeScenesAgent, executeVideoAgent, executeMoodBoardAgent, executeStoryboardAgent } from '@/lib/ai/agents';
 import { getSession } from '@/lib/auth/session';
 import {
   initDb,
@@ -130,9 +130,29 @@ export async function POST(request: NextRequest) {
             sendEvent({ type: 'agent-log', agent: 'scenes', status: `Consistency: ${scenesResult.consistencyNotes.substring(0, 100)}...` });
             sendEvent({ type: 'agent-complete', agent: 'scenes', result: scenesResult });
 
+            // Storyboard: Generate preview images per scene (beta)
+            let storyboardImages: string[] = [];
+            if (options.useMoodBoard) {
+              sendEvent({ type: 'storyboard-start' as any, status: 'Generating storyboard frames...' });
+              sendEvent({ type: 'agent-log', agent: 'mood-board', status: `Creating preview frame for each of ${scenesResult.scenes.length} shots` });
+
+              try {
+                storyboardImages = await executeStoryboardAgent(
+                  scenesResult.scenes,
+                  ideaResult.style,
+                  ideaResult.mood,
+                );
+                sendEvent({ type: 'agent-log', agent: 'mood-board', status: `Generated ${storyboardImages.filter(Boolean).length} storyboard frames` });
+                sendEvent({ type: 'storyboard-complete' as any, storyboardImages });
+              } catch (error) {
+                console.error('❌ Storyboard generation failed:', error);
+                sendEvent({ type: 'storyboard-complete' as any, storyboardImages: [] });
+              }
+            }
+
             // Pause for review — send scenes-ready event and stop
             sendEvent({ type: 'agent-log', agent: 'system', status: 'Scenes ready for review. Edit prompts and click Generate Videos to continue.' });
-            sendEvent({ type: 'scenes-ready' as any, sessionId, result: { idea: ideaResult, scenes: scenesResult }, moodBoard });
+            sendEvent({ type: 'scenes-ready' as any, sessionId, result: { idea: ideaResult, scenes: scenesResult }, moodBoard, storyboardImages });
           }
 
           console.log(`✅ API: Generation complete\n`);

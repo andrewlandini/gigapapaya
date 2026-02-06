@@ -11,6 +11,7 @@ export interface VideoIdea {
 export interface Scene {
   index: number;
   prompt: string;
+  dialogue: string;
   duration: number;
   notes: string;
 }
@@ -38,6 +39,8 @@ export type ProgressEventType =
   | 'agent-log'
   | 'mood-board-start'
   | 'mood-board-complete'
+  | 'storyboard-start'
+  | 'storyboard-complete'
   | 'scenes-ready'
   | 'video-start'
   | 'video-complete'
@@ -67,6 +70,7 @@ export interface GenerationState {
   error: string | null;
   failedShots: Set<number>;
   moodBoard: string[]; // generated mood board image data URLs
+  storyboardImages: string[]; // per-scene preview images
 }
 
 export interface AgentConfig {
@@ -113,4 +117,5 @@ export interface SSEMessage {
   sessionId?: string;
   videos?: Video[];
   moodBoard?: string[]; // mood board image data URLs
+  storyboardImages?: string[]; // per-scene preview images
 }

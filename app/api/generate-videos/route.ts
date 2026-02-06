@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
 
     const { sessionId, scenes, style, mood, options, moodBoard } = body as {
       sessionId: string;
-      scenes: { prompt: string; duration: number }[];
+      scenes: { prompt: string; dialogue?: string; duration: number }[];
       style: string;
       mood: string;
       options: GenerationOptions;
@@ -56,8 +56,11 @@ export async function POST(request: NextRequest) {
           sendEvent({ type: 'agent-log', agent: 'videos', status: `Config: ${options.aspectRatio} / ${options.duration === 'auto' ? 'auto' : options.duration + 's'} / model: veo-3.1-generate-001` });
 
           // Launch all shots in parallel
-          const shotPromises = scenes.map(async (scene: { prompt: string; duration: number }, i: number) => {
-            const finalPrompt = scene.prompt;
+          const shotPromises = scenes.map(async (scene: { prompt: string; dialogue?: string; duration: number }, i: number) => {
+            // Recombine visual prompt + dialogue for Veo 3.1
+            const finalPrompt = scene.dialogue
+              ? `${scene.prompt}, saying "${scene.dialogue}"`
+              : scene.prompt;
             const shotDuration = perShotDurations[i];
             const shotOptions = { ...options, duration: shotDuration };
 

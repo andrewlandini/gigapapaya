@@ -103,6 +103,30 @@ export function ProgressTracker({ events, status, shotCount }: ProgressTrackerPr
         continue;
       }
 
+      if (event.type === 'storyboard-start') {
+        currentGroup = {
+          key: 'storyboard',
+          label: 'Storyboard',
+          status: 'running',
+          message: event.status || 'Generating preview frames...',
+          timestamp: event.timestamp,
+          logs: [],
+          type: 'agent',
+        };
+        result.push(currentGroup);
+        continue;
+      }
+
+      if (event.type === 'storyboard-complete') {
+        const group = result.find(g => g.key === 'storyboard');
+        if (group) {
+          group.status = 'done';
+          group.message = `${(event as any).storyboardImages?.filter(Boolean).length || 0} frames generated`;
+        }
+        currentGroup = null;
+        continue;
+      }
+
       if (event.type === 'video-start') {
         const sceneIdx = event.sceneIndex ?? 0;
         let videoGroup = result.find(g => g.key === 'video-generation');

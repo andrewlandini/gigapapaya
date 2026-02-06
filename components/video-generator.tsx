@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
-import { RotateCcw, Play, X, Clock, ChevronDown, Settings2, RotateCw, AlertCircle, Loader2, ImagePlus } from 'lucide-react';
+import { RotateCcw, Play, X, Clock, ChevronDown, Settings2, RotateCw, AlertCircle, Loader2, ImagePlus, MessageSquare } from 'lucide-react';
 
 const HEADLINES = [
   "What should we cook, chef?",
@@ -34,6 +34,7 @@ const PHASE_HEADLINES: Record<string, string[]> = {
   idea: ["Writing your concept.", "Crafting the story.", "Building the world.", "Finding the angle."],
   'mood-board': ["Setting the vibe.", "Finding the look.", "Building the mood board.", "Locking the aesthetic."],
   scenes: ["Breaking it into shots.", "Blocking the shots.", "Mapping the sequence.", "Setting up each shot."],
+  storyboard: ["Drawing the storyboard.", "Framing each shot.", "Sketching the frames.", "Previewing the shots."],
   reviewing: ["Your scenes are ready.", "Review and edit.", "Make it yours.", "Check the shots."],
   video: ["Generating videos.", "Rendering scenes.", "Cameras rolling.", "Bringing it to life.", "Processing shots.", "Building the shots.", "Assembling the clips."],
   complete: ["That's a wrap.", "All done.", "Picture's up.", "And... cut."],
@@ -55,7 +56,7 @@ import { GENERATION_MODES, getModeById } from '@/lib/generation-modes';
 export function VideoGenerator() {
   const {
     state, options, sessionId, setIdea, setOptions,
-    updateScenePrompt, removeScene, startModeGeneration, handleGenerateVideos, handleReset, clearGeneration,
+    updateScenePrompt, updateSceneDialogue, removeScene, startModeGeneration, handleGenerateVideos, handleReset, clearGeneration,
     isGenerating,
     rerunShot, rerunningShots,
     addReferenceImage, removeReferenceImage,
@@ -94,6 +95,7 @@ export function VideoGenerator() {
         if (event.type === 'agent-start' && event.agent === 'idea') phase = 'idea';
         if (event.type === 'mood-board-start') phase = 'mood-board';
         if (event.type === 'agent-start' && event.agent === 'scenes') phase = 'scenes';
+        if (event.type === 'storyboard-start') phase = 'storyboard';
         if (event.type === 'video-start') phase = 'video';
       }
     }
@@ -549,32 +551,57 @@ export function VideoGenerator() {
               {state.editableScenes.map((scene, i) => (
                 <div
                   key={i}
-                  className="border border-[#222] rounded-xl p-4 space-y-3 hover:border-[#333] transition-colors"
+                  className="border border-[#222] rounded-xl overflow-hidden hover:border-[#333] transition-colors"
                 >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="flex-shrink-0 w-6 h-6 rounded-md bg-[#1a1a1a] border border-[#333] text-[#888] flex items-center justify-center text-xs font-mono">
-                        {i + 1}
+                  <div className="flex">
+                    {/* Storyboard thumbnail */}
+                    {state.storyboardImages[i] && (
+                      <div className="flex-shrink-0 w-40">
+                        <img src={state.storyboardImages[i]} alt={`Shot ${i + 1}`} className="w-full h-full object-cover" />
                       </div>
-                      <span className="text-xs font-mono text-[#555]">Shot {i + 1}</span>
-                      <span className="text-xs font-mono text-[#444]">{scene.duration}s</span>
-                    </div>
-                    {state.editableScenes!.length > 1 && (
-                      <button
-                        onClick={() => removeScene(i)}
-                        className="p-1 rounded-md text-[#444] hover:text-[#ff4444] hover:bg-[#1a1a1a] transition-colors"
-                        title="Remove shot"
-                      >
-                        <X className="h-3.5 w-3.5" />
-                      </button>
                     )}
+                    <div className="flex-1 p-4 space-y-3">
+                      {/* Header */}
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="flex-shrink-0 w-6 h-6 rounded-md bg-[#1a1a1a] border border-[#333] text-[#888] flex items-center justify-center text-xs font-mono">
+                            {i + 1}
+                          </div>
+                          <span className="text-xs font-mono text-[#555]">Shot {i + 1}</span>
+                          <span className="text-xs font-mono text-[#444]">{scene.duration}s</span>
+                        </div>
+                        {state.editableScenes!.length > 1 && (
+                          <button
+                            onClick={() => removeScene(i)}
+                            className="p-1 rounded-md text-[#444] hover:text-[#ff4444] hover:bg-[#1a1a1a] transition-colors"
+                            title="Remove shot"
+                          >
+                            <X className="h-3.5 w-3.5" />
+                          </button>
+                        )}
+                      </div>
+                      {/* Visual prompt */}
+                      <textarea
+                        value={scene.prompt}
+                        onChange={(e) => updateScenePrompt(i, e.target.value)}
+                        className="w-full bg-[#0a0a0a] border border-[#333] rounded-lg px-3 py-2 text-sm text-[#ccc] placeholder:text-[#555] focus:outline-none focus:border-[#555] focus:ring-1 focus:ring-white/10 resize-y leading-relaxed"
+                        style={{ fieldSizing: 'content' as any, minHeight: '3rem' }}
+                      />
+                      {/* Dialogue */}
+                      <div className="relative">
+                        <div className="absolute left-3 top-2.5">
+                          <MessageSquare className="h-3.5 w-3.5 text-[#444]" />
+                        </div>
+                        <input
+                          type="text"
+                          value={scene.dialogue || ''}
+                          onChange={(e) => updateSceneDialogue(i, e.target.value)}
+                          placeholder="No dialogue"
+                          className="w-full bg-[#0d0d0d] border border-[#2a2a2a] rounded-lg pl-9 pr-3 py-2 text-sm text-[#e0c866] placeholder:text-[#444] focus:outline-none focus:border-[#555] focus:ring-1 focus:ring-white/10 italic"
+                        />
+                      </div>
+                    </div>
                   </div>
-                  <textarea
-                    value={scene.prompt}
-                    onChange={(e) => updateScenePrompt(i, e.target.value)}
-                    className="w-full bg-[#0a0a0a] border border-[#333] rounded-lg px-3 py-2 text-sm text-[#ccc] placeholder:text-[#555] focus:outline-none focus:border-[#555] focus:ring-1 focus:ring-white/10 resize-y leading-relaxed"
-                    style={{ fieldSizing: 'content' as any, minHeight: '4rem' }}
-                  />
                 </div>
               ))}
             </div>

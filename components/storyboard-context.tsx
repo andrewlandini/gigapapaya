@@ -31,6 +31,7 @@ interface StoryboardContextValue {
   setIdea: (idea: string) => void;
   setOptions: (updater: (prev: GenerationOptions) => GenerationOptions) => void;
   updateScenePrompt: (index: number, prompt: string) => void;
+  updateSceneDialogue: (index: number, dialogue: string) => void;
   removeScene: (index: number) => void;
   startModeGeneration: (modeId: string) => void;
   handleGenerateVideos: () => void;
@@ -74,6 +75,7 @@ export function StoryboardProvider({ children }: { children: ReactNode }) {
     error: null,
     failedShots: new Set(),
     moodBoard: [],
+    storyboardImages: [],
   });
 
   const [options, setOptionsState] = useState<GenerationOptions>({
@@ -203,6 +205,15 @@ export function StoryboardProvider({ children }: { children: ReactNode }) {
     }));
   }, []);
 
+  const updateSceneDialogue = useCallback((index: number, dialogue: string) => {
+    setState(prev => ({
+      ...prev,
+      editableScenes: prev.editableScenes?.map((s, i) =>
+        i === index ? { ...s, dialogue } : s
+      ) || null,
+    }));
+  }, []);
+
   const removeScene = useCallback((index: number) => {
     setState(prev => ({
       ...prev,
@@ -252,6 +263,7 @@ export function StoryboardProvider({ children }: { children: ReactNode }) {
       error: null,
       failedShots: new Set(),
       moodBoard: [],
+      storyboardImages: [],
     }));
 
     const agentConfig = getAgentConfigForMode(modeId);
@@ -303,6 +315,11 @@ export function StoryboardProvider({ children }: { children: ReactNode }) {
                 setState(prev => ({ ...prev, moodBoard: data.moodBoard || [] }));
               }
               break;
+            case 'storyboard-complete':
+              if (data.storyboardImages) {
+                setState(prev => ({ ...prev, storyboardImages: data.storyboardImages || [] }));
+              }
+              break;
             case 'scenes-ready':
               sessionIdRef.current = data.sessionId || '';
               setState(prev => ({
@@ -310,6 +327,7 @@ export function StoryboardProvider({ children }: { children: ReactNode }) {
                 status: 'reviewing',
                 editableScenes: prev.scenes ? prev.scenes.map(s => ({ ...s })) : null,
                 moodBoard: data.moodBoard || prev.moodBoard,
+                storyboardImages: data.storyboardImages || prev.storyboardImages,
               }));
               break;
             case 'complete':
@@ -341,7 +359,7 @@ export function StoryboardProvider({ children }: { children: ReactNode }) {
     setState(prev => {
       if (!prev.editableScenes) return prev;
 
-      const scenes = prev.editableScenes.map(s => ({ prompt: s.prompt, duration: s.duration }));
+      const scenes = prev.editableScenes.map(s => ({ prompt: s.prompt, dialogue: s.dialogue, duration: s.duration }));
       const style = prev.generatedIdea?.style || '';
       const mood = prev.generatedIdea?.mood || '';
       const sid = sessionIdRef.current;
@@ -431,7 +449,7 @@ export function StoryboardProvider({ children }: { children: ReactNode }) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         sessionId: sid,
-        scenes: [{ prompt: scene.prompt, duration: scene.duration }],
+        scenes: [{ prompt: scene.prompt, dialogue: scene.dialogue, duration: scene.duration }],
         style,
         mood,
         options,
@@ -482,6 +500,7 @@ export function StoryboardProvider({ children }: { children: ReactNode }) {
       error: null,
       failedShots: new Set(),
       moodBoard: [],
+      storyboardImages: [],
       status: 'idle',
     }));
   }, []);
@@ -495,7 +514,7 @@ export function StoryboardProvider({ children }: { children: ReactNode }) {
     setState({
       status: 'idle', idea: '', generatedIdea: null,
       scenes: null, editableScenes: null, videos: [], progress: [], error: null,
-      failedShots: new Set(), moodBoard: [],
+      failedShots: new Set(), moodBoard: [], storyboardImages: [],
     });
   }, []);
 
@@ -504,7 +523,7 @@ export function StoryboardProvider({ children }: { children: ReactNode }) {
   return (
     <StoryboardContext.Provider value={{
       state, options, sessionId: sessionIdRef.current,
-      setIdea, setOptions, updateScenePrompt, removeScene,
+      setIdea, setOptions, updateScenePrompt, updateSceneDialogue, removeScene,
       startModeGeneration, handleGenerateVideos, handleReset, clearGeneration,
       isGenerating,
       rerunShot, rerunningShots,

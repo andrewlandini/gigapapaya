@@ -20,7 +20,8 @@ const videoIdeaSchema = z.object({
 
 const sceneSchema = z.object({
   index: z.number().describe('Shot number'),
-  prompt: z.string().describe('Veo 3.1-ready prompt: [SHOT TYPE] + [SUBJECT with full description] + [ACTION] + [DIALOGUE in quotes] + [STYLE/CAMERA/LENS] + [CAMERA MOVEMENT] + [AUDIO]. Must be fully self-contained — Veo 3.1 has zero context between shots.'),
+  prompt: z.string().describe('Veo 3.1-ready VISUAL prompt: [SHOT TYPE] + [SUBJECT with full description] + [ACTION] + [STYLE/CAMERA/LENS] + [CAMERA MOVEMENT] + [AUDIO]. Do NOT include dialogue here — dialogue goes in the separate dialogue field. Must be fully self-contained — Veo 3.1 has zero context between shots.'),
+  dialogue: z.string().describe('The exact spoken words for this shot, without surrounding quotes. Natural conversational speech. Empty string if no one speaks in this shot.'),
   duration: z.number().describe('Duration in seconds (2, 4, 6, or 8)'),
   notes: z.string().describe('What happens narratively in this shot and how it connects to the next'),
 });
@@ -107,7 +108,8 @@ Style references that consistently deliver:
 
 DIALOGUE RULES (MANDATORY):
 - Almost ALL videos should feature talking unless the concept genuinely has no speaking characters (pure nature, abstract, etc.)
-- Include natural spoken dialogue in quotes within each scene prompt
+- Put dialogue in the SEPARATE "dialogue" field — NOT in the "prompt" field. The prompt field is for visual/technical description only. The dialogue field is for the exact spoken words only, without surrounding quotes.
+- If a shot has no dialogue, set the dialogue field to an empty string.
 - Write dialogue as SPOKEN WORDS — conversational, not literary. Use contractions always, natural pauses, filler words where they fit. Real people don't speak in complete, grammatically perfect sentences.
 - Match dialogue to the mood: tense scenes = clipped, urgent. Calm scenes = wandering, trailing off. Comedy = matter-of-fact about absurd things.
 - Dialogue across scenes should feel like one continuous conversation — each scene picks up roughly where the last left off.
@@ -325,6 +327,55 @@ Create a photorealistic, cinematic reference image that captures the visual styl
   }
 
   console.log(`✅ MOOD BOARD AGENT: Complete — ${results.length}/3 images generated\n`);
+  return results;
+}
+
+/**
+ * Storyboard Agent: Generate one preview image per scene (parallel)
+ */
+export async function executeStoryboardAgent(
+  scenes: { prompt: string; dialogue: string; duration: number }[],
+  style: string,
+  mood: string,
+): Promise<string[]> {
+  console.log(`\n🖼️  STORYBOARD AGENT: Generating ${scenes.length} preview images...`);
+
+  const results = new Array<string>(scenes.length).fill('');
+
+  const promises = scenes.map(async (scene, i) => {
+    try {
+      const storyboardPrompt = `Generate a cinematic still frame for this shot:
+
+${scene.prompt}
+
+Visual Style: ${style}
+Mood: ${mood}
+
+Create a photorealistic, cinematic frame that looks like a production still from this exact shot. Match the camera angle, lighting, and composition described. This is a storyboard reference image.`;
+
+      console.log(`🖼️  Generating storyboard frame ${i + 1}/${scenes.length}...`);
+      const result = await generateImage({
+        model: getImageModel('google/gemini-3-pro-image'),
+        prompt: storyboardPrompt,
+        n: 1,
+        aspectRatio: '16:9',
+      });
+
+      if (result.images && result.images.length > 0) {
+        const img = result.images[0];
+        const base64 = Buffer.from(img.uint8Array).toString('base64');
+        const mediaType = (img as any).mimeType || (img as any).mediaType || 'image/png';
+        results[i] = `data:${mediaType};base64,${base64}`;
+        console.log(`✅ Storyboard frame ${i + 1} generated`);
+      }
+    } catch (error) {
+      console.error(`❌ Failed to generate storyboard frame ${i + 1}:`, error);
+    }
+  });
+
+  await Promise.allSettled(promises);
+
+  console.log(`✅ STORYBOARD AGENT: Complete — ${results.filter(Boolean).length}/${scenes.length} frames generated\n`);
   return results;
 }
 
