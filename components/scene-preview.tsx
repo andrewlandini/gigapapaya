@@ -1,28 +1,16 @@
 'use client';
 
 import { ChevronDown } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
 import type { Scene } from '@/lib/types';
 
 interface ScenePreviewProps {
   scenes: Scene[];
-  style?: string;
-  mood?: string;
 }
 
-export function ScenePreview({ scenes, style, mood }: ScenePreviewProps) {
+export function ScenePreview({ scenes }: ScenePreviewProps) {
   return (
     <div className="space-y-3">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <h2 className="text-sm font-medium text-[#ededed]">Scenes</h2>
-          <span className="text-xs font-mono text-[#444]">{scenes.length} scenes</span>
-        </div>
-        <div className="flex gap-2">
-          {style && <Badge>{style}</Badge>}
-          {mood && <Badge>{mood}</Badge>}
-        </div>
-      </div>
+      <h2 className="text-sm font-medium text-[#ededed]">Scenes</h2>
 
       <div className="grid gap-2">
         {scenes.map((scene, i) => (

@@ -398,11 +398,7 @@ export function VideoGenerator() {
 
         {/* Read-only Scenes (after video gen started) */}
         {state.status !== 'reviewing' && state.scenes && state.scenes.length > 0 && (
-          <ScenePreview
-            scenes={state.scenes}
-            style={state.generatedIdea?.style}
-            mood={state.generatedIdea?.mood}
-          />
+          <ScenePreview scenes={state.scenes} />
         )}
 
         {/* Videos */}
