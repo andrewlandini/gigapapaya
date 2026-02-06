@@ -22,15 +22,6 @@ interface FeedGridProps {
   onToggleVisibility?: (id: string, visibility: 'public' | 'private') => void;
 }
 
-// Must match the Tailwind grid-cols breakpoints
-const BREAKPOINTS = [
-  { min: 1536, cols: 6 }, // 2xl
-  { min: 1280, cols: 5 }, // xl
-  { min: 1024, cols: 4 }, // lg
-  { min: 640,  cols: 3 }, // sm
-  { min: 0,    cols: 2 }, // default
-];
-
 function isLandscape(ar: string) {
   return ar === '16:9' || ar === '4:3';
 }
@@ -39,17 +30,21 @@ export function FeedGrid({ videos, showVisibilityToggle, onToggleVisibility }: F
   const gridRef = useRef<HTMLDivElement>(null);
   const [cols, setCols] = useState(2);
 
+  // Read actual rendered column count from the grid's computed style
   const updateCols = useCallback(() => {
-    const w = gridRef.current?.offsetWidth ?? window.innerWidth;
-    for (const bp of BREAKPOINTS) {
-      if (w >= bp.min) { setCols(bp.cols); return; }
-    }
+    const el = gridRef.current;
+    if (!el) return;
+    const computed = getComputedStyle(el).gridTemplateColumns;
+    // gridTemplateColumns returns something like "200px 200px 200px" — count the values
+    const count = computed.split(' ').filter(Boolean).length;
+    if (count > 0) setCols(count);
   }, []);
 
   useEffect(() => {
     const el = gridRef.current;
     if (!el) return;
-    updateCols();
+    // Initial read after first paint
+    requestAnimationFrame(updateCols);
     const observer = new ResizeObserver(updateCols);
     observer.observe(el);
     return () => observer.disconnect();
