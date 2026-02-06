@@ -159,11 +159,48 @@ PHYSICAL PACING:
 
   const musicNote = noMusic ? `\n\nNO MUSIC: The user has disabled music. Do NOT include any background music, soundtrack, or musical score in audio cues. Only include diegetic sounds — ambient noise, dialogue, footsteps, environmental sounds, etc. The user will add music in post-production.` : '';
 
+  const sceneCountGuidance: Record<number, string> = {
+    2: `NARRATIVE STRUCTURE (2 SCENES):
+This is a BEFORE/AFTER or SETUP/PAYOFF. Two shots that create meaning through contrast.
+- Scene 1: Establish the situation, character, and tension
+- Scene 2: The punchline, reveal, consequence, or transformation
+Think: cause → effect. Question → answer. Calm → chaos. The cut between them IS the story.`,
+    3: `NARRATIVE STRUCTURE (3 SCENES):
+Classic three-act structure compressed into 3 shots. Beginning, middle, end.
+- Scene 1: ESTABLISH — set the world, introduce the character, show the status quo. Wide or medium shot.
+- Scene 2: ESCALATE — something changes, goes wrong, or intensifies. Move closer (close-up or over-shoulder).
+- Scene 3: RESOLVE — the payoff, punchline, consequence, or emotional landing. Different angle that recontextualizes what we saw.
+Each scene must ADVANCE the story. No two scenes should show the same beat.`,
+    4: `NARRATIVE STRUCTURE (4 SCENES):
+Four shots gives you room for a proper dramatic arc with a twist or complication.
+- Scene 1: ESTABLISH — world, character, context. Set the tone.
+- Scene 2: DEVELOP — deepen the situation, reveal a detail, build tension or comedy.
+- Scene 3: COMPLICATE — the twist, the interruption, the thing that changes everything.
+- Scene 4: LAND — the payoff, the reaction, the consequence. End on the strongest image.
+Think of it as: situation → deepening → disruption → aftermath.`,
+    5: `NARRATIVE STRUCTURE (5 SCENES):
+Five shots is a short film. You have room to BREATHE — use it for rhythm and pacing.
+- Scene 1: OPEN — establishing shot, set the world. Give context.
+- Scene 2: INTRODUCE — show who we're following and what they're doing.
+- Scene 3: DEVELOP — build, complicate, or deepen. Add a new element or tension.
+- Scene 4: CLIMAX — the peak moment, the biggest reaction, the turning point.
+- Scene 5: RESOLVE — aftermath, consequence, punchline, or quiet denouement.
+Vary the energy: don't make every scene intense. Use contrast — quiet/loud, wide/close, fast/slow.`,
+  };
+
+  const sceneNarrative = sceneCountGuidance[numScenes] || (numScenes >= 6 ? `NARRATIVE STRUCTURE (${numScenes} SCENES):
+With ${numScenes} shots you're making a proper short film. Think in SEQUENCES, not individual shots.
+- Opening sequence (scenes 1-2): Establish world, character, tone
+- Development (scenes 3-${Math.floor(numScenes * 0.6)}): Build the story, add complications, deepen characters
+- Climax (scene ${Math.floor(numScenes * 0.7)}-${Math.floor(numScenes * 0.8)}): Peak tension or comedy
+- Resolution (final ${numScenes - Math.floor(numScenes * 0.8)} scenes): Payoff, consequence, ending
+Vary pacing — not every scene should be the same intensity. Use quiet moments to make loud ones hit harder. Think about rhythm like music: verse, chorus, bridge, chorus.` : sceneCountGuidance[3]);
+
   const result = await generateObject({
     model: getTextModel(modelId),
     temperature: 1,
     schema: scenesResultSchema,
-    prompt: `${systemPrompt}${SCENE_AGENT_BASE}${durationGuidance}${musicNote}\n\nVideo Idea:\n${ideaSummary}\n\nGenerate ${numScenes} scenes, each ${duration} seconds long. Everything described must fit within ${duration} seconds of real time.`,
+    prompt: `${systemPrompt}${SCENE_AGENT_BASE}${durationGuidance}\n\n${sceneNarrative}${musicNote}\n\nVideo Idea:\n${ideaSummary}\n\nGenerate ${numScenes} scenes, each ${duration} seconds long. Everything described must fit within ${duration} seconds of real time. Do not self-censor or water down the creative concept — commit fully to the idea.`,
   });
 
   console.log('✅ SCENES AGENT: Complete');

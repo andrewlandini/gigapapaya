@@ -100,7 +100,7 @@ Generate 3 answer options. Rules:
 - Each option should feel like a different GENRE of movie — one comedy, one drama, one thriller/tense
 - They should make someone go "oh I can picture that exactly"
 - Keep it grounded — real people in real places doing real things, but make the moment INTERESTING
-- NOTHING morbid, dark, violent, depressing, or disturbing.
+
 
 For each option, also write a short reaction (2-5 words) that would show if the user picks it — like a creative friend reacting. Examples: "Oh that's sick", "Now we're talking", "Yes love that", "OK I see you", "Good taste". Be natural and varied. No exclamation marks.
 
@@ -143,7 +143,7 @@ Answer options rules:
 - Make them imaginative, unexpected, cinematic — the kind of ideas that make someone excited
 - At least one option should be absurd or hilarious
 - Keep the energy fun, epic, playful, or mind-bending. Not personal or emotional.
-- NOTHING morbid, dark, violent, depressing, or disturbing.
+
 
 For each option, also write a short reaction (2-5 words) that would show if the user picks it — like a creative friend reacting. Examples: "Oh that's sick", "Now we're talking", "Yes love that", "OK I see you", "Wild choice let's go". Be natural and varied. No exclamation marks.`,
     });
@@ -175,7 +175,7 @@ RULES:
 - The prompt must feel like a direct translation of their choices — if they chose "robots in a neon junkyard" and "learning to dance" and "a rival crew shows up", ALL of that must be in the prompt
 - Do NOT generalize, abstract, or drift — stay literal to their choices
 - ONE concrete sentence — a filmable scene with who/what/where/when/how
-- NOTHING morbid, dark, violent, depressing, or disturbing`,
+- Commit fully to the concept — don't water it down`,
   });
 
   return Response.json({ idea: result.object.idea });
