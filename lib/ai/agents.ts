@@ -56,6 +56,38 @@ export async function executeIdeaAgent(
   return result.object as VideoIdea;
 }
 
+// Base prompt appended to all scene agent calls (not shown in UI)
+const SCENE_AGENT_BASE = `
+
+CRITICAL PROMPT STRUCTURE FOR EACH SCENE:
+[SHOT TYPE] + [SUBJECT] + [ACTION] + [STYLE] + [CAMERA MOVEMENT] + [AUDIO CUES]
+
+Example: Medium shot, cyberpunk hacker typing frantically, neon reflections on face, blade runner aesthetic, slow push in, Audio: mechanical keyboard clicks, distant sirens
+
+Rules:
+- Front-load the important stuff — Veo 3 weights early words more heavily
+- Lock down the "what" then iterate on the "how"
+- One action per prompt — multiple actions = chaos (one action per scene)
+- Specific > Creative — "Walking sadly" < "shuffling with hunched shoulders"
+- Audio cues are essential — give the video a realistic feel
+
+Camera movements that work:
+- Slow push/pull (dolly in/out)
+- Orbit around subject
+- Handheld follow
+- Static with subject movement
+
+Avoid:
+- Complex combinations ("pan while zooming during a dolly")
+- Unmotivated movements
+- Multiple focal points
+
+Style references that consistently deliver:
+- "Shot on [specific camera]"
+- "[Director name] style"
+- "[Movie] cinematography"
+- Specific color grading terms`;
+
 /**
  * Agent 2: Generate scene breakdown from video idea
  */
@@ -83,7 +115,7 @@ Key Elements: ${idea.keyElements.join(', ')}
   const result = await generateObject({
     model: getTextModel(modelId),
     schema: scenesResultSchema,
-    prompt: `${systemPrompt}\n\nVideo Idea:\n${ideaSummary}\n\nGenerate ${numScenes} scenes that follow this concept.`,
+    prompt: `${systemPrompt}${SCENE_AGENT_BASE}\n\nVideo Idea:\n${ideaSummary}\n\nGenerate ${numScenes} scenes that follow this concept.`,
   });
 
   console.log('✅ SCENES AGENT: Complete');
