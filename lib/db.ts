@@ -48,11 +48,21 @@ export async function initDb() {
     )
   `;
 
+  await sql`
+    CREATE TABLE IF NOT EXISTS hearts (
+      user_id TEXT NOT NULL,
+      video_id TEXT NOT NULL,
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+      PRIMARY KEY (user_id, video_id)
+    )
+  `;
+
   // Migrations: add columns that may not exist on older schemas
   try { await sql`ALTER TABLE generations ADD COLUMN IF NOT EXISTS user_id TEXT`; } catch {}
   try { await sql`ALTER TABLE videos ADD COLUMN IF NOT EXISTS user_id TEXT`; } catch {}
   try { await sql`ALTER TABLE videos ADD COLUMN IF NOT EXISTS visibility TEXT DEFAULT 'private'`; } catch {}
   try { await sql`ALTER TABLE videos ADD COLUMN IF NOT EXISTS title TEXT`; } catch {}
+  try { await sql`ALTER TABLE videos ADD COLUMN IF NOT EXISTS description TEXT`; } catch {}
 
   console.log('✅ Database tables initialized');
 }
@@ -205,4 +215,88 @@ export async function getUserStats(userId: string) {
       (SELECT COUNT(*) FROM generations WHERE user_id = ${userId}) as generation_count
   `;
   return rows[0];
+}
+
+// ── Hearts ─────────────────────────────────────────────
+
+export async function toggleHeart(userId: string, videoId: string): Promise<boolean> {
+  const sql = getDb();
+  const existing = await sql`SELECT 1 FROM hearts WHERE user_id = ${userId} AND video_id = ${videoId}`;
+  if (existing.length > 0) {
+    await sql`DELETE FROM hearts WHERE user_id = ${userId} AND video_id = ${videoId}`;
+    return false; // unhearted
+  }
+  await sql`INSERT INTO hearts (user_id, video_id) VALUES (${userId}, ${videoId})`;
+  return true; // hearted
+}
+
+export async function getHeartCount(videoId: string): Promise<number> {
+  const sql = getDb();
+  const rows = await sql`SELECT COUNT(*) as count FROM hearts WHERE video_id = ${videoId}`;
+  return parseInt(rows[0].count, 10);
+}
+
+export async function hasUserHearted(userId: string, videoId: string): Promise<boolean> {
+  const sql = getDb();
+  const rows = await sql`SELECT 1 FROM hearts WHERE user_id = ${userId} AND video_id = ${videoId}`;
+  return rows.length > 0;
+}
+
+// ── Video Detail ───────────────────────────────────────
+
+export async function getVideoDetail(videoId: string) {
+  const sql = getDb();
+  const rows = await sql`
+    SELECT v.*, u.username, u.name as user_name, u.avatar_url,
+      (SELECT COUNT(*) FROM hearts WHERE video_id = v.id) as heart_count
+    FROM videos v
+    LEFT JOIN users u ON v.user_id = u.id
+    WHERE v.id = ${videoId}
+  `;
+  return rows[0] || null;
+}
+
+export async function updateVideoDescription(videoId: string, userId: string, description: string) {
+  const sql = getDb();
+  await sql`UPDATE videos SET description = ${description} WHERE id = ${videoId} AND user_id = ${userId}`;
+}
+
+// ── Feed (sorted by hearts) ────────────────────────────
+
+export async function getPublicVideosSorted(
+  limit: number = 30,
+  offset: number = 0,
+  period: 'day' | 'week' | 'month' | 'year' | 'all' = 'all'
+) {
+  const sql = getDb();
+
+  const intervals: Record<string, string> = {
+    day: '1 day',
+    week: '7 days',
+    month: '30 days',
+    year: '365 days',
+  };
+
+  if (period === 'all') {
+    return sql`
+      SELECT v.*, u.username, u.name as user_name, u.avatar_url,
+        (SELECT COUNT(*) FROM hearts WHERE video_id = v.id) as heart_count
+      FROM videos v
+      LEFT JOIN users u ON v.user_id = u.id
+      WHERE v.visibility = 'public'
+      ORDER BY heart_count DESC, v.created_at DESC
+      LIMIT ${limit} OFFSET ${offset}
+    `;
+  }
+
+  const interval = intervals[period];
+  return sql`
+    SELECT v.*, u.username, u.name as user_name, u.avatar_url,
+      (SELECT COUNT(*) FROM hearts WHERE video_id = v.id) as heart_count
+    FROM videos v
+    LEFT JOIN users u ON v.user_id = u.id
+    WHERE v.visibility = 'public' AND v.created_at >= NOW() - CAST(${interval} AS INTERVAL)
+    ORDER BY heart_count DESC, v.created_at DESC
+    LIMIT ${limit} OFFSET ${offset}
+  `;
 }

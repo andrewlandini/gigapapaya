@@ -1,10 +1,20 @@
 'use client';
 
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { FeedGrid } from './feed-grid';
 import { PromptBar } from './prompt-bar';
 import { useGeneration } from './generation-context';
 import { Loader2 } from 'lucide-react';
+import { cn } from '@/lib/utils';
+
+const PERIODS = [
+  { value: 'day', label: 'Today' },
+  { value: 'week', label: 'This Week' },
+  { value: 'month', label: 'This Month' },
+  { value: 'year', label: 'This Year' },
+  { value: 'all', label: 'All Time' },
+] as const;
 
 interface FeedVideo {
   id: string;
@@ -16,6 +26,7 @@ interface FeedVideo {
   aspect_ratio: string;
   duration: number;
   visibility: string;
+  heart_count?: string;
 }
 
 interface HomeContentProps {
@@ -23,10 +34,30 @@ interface HomeContentProps {
   isAuthenticated: boolean;
 }
 
-export function HomeContent({ videos, isAuthenticated }: HomeContentProps) {
+export function HomeContent({ videos: initialVideos, isAuthenticated }: HomeContentProps) {
   const { drafts } = useGeneration();
-  const activeDrafts = drafts.filter(d => d.status === 'generating');
   const totalDraftCount = drafts.length;
+  const [period, setPeriod] = useState<string>('all');
+  const [videos, setVideos] = useState<FeedVideo[]>(initialVideos);
+  const [loadingFeed, setLoadingFeed] = useState(false);
+
+  const fetchFeed = useCallback(async (p: string) => {
+    setLoadingFeed(true);
+    try {
+      const res = await fetch(`/api/feed?period=${p}`);
+      if (res.ok) setVideos(await res.json());
+    } catch {}
+    setLoadingFeed(false);
+  }, []);
+
+  useEffect(() => {
+    // Don't fetch on initial mount since we have server-side data for 'all'
+    if (period !== 'all') {
+      fetchFeed(period);
+    } else {
+      setVideos(initialVideos);
+    }
+  }, [period, fetchFeed, initialVideos]);
 
   return (
     <div className="min-h-screen bg-black flex flex-col">
@@ -79,8 +110,32 @@ export function HomeContent({ videos, isAuthenticated }: HomeContentProps) {
           </Link>
         )}
 
+        {/* Period filter tabs */}
+        <div className="flex items-center gap-1 mb-4 overflow-x-auto">
+          {PERIODS.map(({ value, label }) => (
+            <button
+              key={value}
+              onClick={() => setPeriod(value)}
+              className={cn(
+                'px-3 py-1.5 rounded-lg text-xs font-medium transition-colors whitespace-nowrap',
+                period === value
+                  ? 'bg-white text-black'
+                  : 'text-[#666] hover:text-white hover:bg-[#111]'
+              )}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+
         {/* Feed */}
-        <FeedGrid videos={videos} />
+        {loadingFeed ? (
+          <div className="flex items-center justify-center py-20">
+            <Loader2 className="h-5 w-5 text-[#555] animate-spin" />
+          </div>
+        ) : (
+          <FeedGrid videos={videos} />
+        )}
       </main>
 
       {/* Prompt bar */}

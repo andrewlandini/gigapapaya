@@ -12,6 +12,7 @@ interface FeedVideo {
   aspect_ratio: string;
   duration: number;
   visibility: string;
+  heart_count?: string;
 }
 
 interface FeedGridProps {
@@ -40,6 +41,7 @@ export function FeedGrid({ videos }: FeedGridProps) {
             avatarUrl={video.avatar_url}
             aspectRatio={video.aspect_ratio}
             duration={video.duration}
+            heartCount={video.heart_count ? parseInt(video.heart_count, 10) : undefined}
           />
         </div>
       ))}

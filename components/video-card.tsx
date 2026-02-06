@@ -2,7 +2,7 @@
 
 import { useRef, useState } from 'react';
 import Link from 'next/link';
-import { Eye, EyeOff, Globe, Lock } from 'lucide-react';
+import { Globe, Lock, Heart } from 'lucide-react';
 
 interface VideoCardProps {
   id: string;
@@ -13,6 +13,7 @@ interface VideoCardProps {
   aspectRatio: string;
   duration: number;
   visibility?: string;
+  heartCount?: number;
   showVisibilityToggle?: boolean;
   onToggleVisibility?: (id: string, visibility: 'public' | 'private') => void;
 }
@@ -26,6 +27,7 @@ export function VideoCard({
   aspectRatio,
   duration,
   visibility,
+  heartCount,
   showVisibilityToggle,
   onToggleVisibility,
 }: VideoCardProps) {
@@ -46,8 +48,9 @@ export function VideoCard({
   };
 
   return (
-    <div
-      className="relative rounded-xl overflow-hidden border border-[#222] hover:border-[#444] transition-all group cursor-pointer"
+    <Link
+      href={`/v/${id}`}
+      className="block relative rounded-xl overflow-hidden border border-[#222] hover:border-[#444] transition-all group cursor-pointer"
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
@@ -66,23 +69,33 @@ export function VideoCard({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             {username && (
-              <Link
-                href={`/u/${username}`}
-                className="flex items-center gap-1.5 hover:opacity-80 transition-opacity"
+              <span
+                className="flex items-center gap-1.5"
                 onClick={(e) => e.stopPropagation()}
               >
-                <div className="w-5 h-5 rounded-full bg-[#333] flex items-center justify-center text-[10px] font-bold text-white">
-                  {username[0].toUpperCase()}
+                <div className="w-5 h-5 rounded-full bg-[#333] flex items-center justify-center text-[10px] font-bold text-white overflow-hidden">
+                  {avatarUrl ? (
+                    <img src={avatarUrl} alt={username} className="w-full h-full object-cover" />
+                  ) : (
+                    username[0].toUpperCase()
+                  )}
                 </div>
                 <span className="text-xs text-white/80 font-medium">@{username}</span>
-              </Link>
+              </span>
             )}
           </div>
 
           <div className="flex items-center gap-2">
+            {heartCount !== undefined && heartCount > 0 && (
+              <span className="flex items-center gap-1 text-white/70">
+                <Heart className="h-3 w-3 fill-current" />
+                <span className="text-[10px] font-medium">{heartCount}</span>
+              </span>
+            )}
             {showVisibilityToggle && onToggleVisibility && (
               <button
                 onClick={(e) => {
+                  e.preventDefault();
                   e.stopPropagation();
                   onToggleVisibility(id, visibility === 'public' ? 'private' : 'public');
                 }}
@@ -96,12 +109,9 @@ export function VideoCard({
                 )}
               </button>
             )}
-            <span className="text-[10px] font-mono text-white/50 bg-black/40 px-1.5 py-0.5 rounded">
-              gigapapaya
-            </span>
           </div>
         </div>
       </div>
-    </div>
+    </Link>
   );
 }

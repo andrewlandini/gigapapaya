@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { getPublicVideos, initDb } from '@/lib/db';
+import { getPublicVideosSorted, initDb } from '@/lib/db';
 import { getSession } from '@/lib/auth/session';
 import { HomeContent } from '@/components/home-content';
 
@@ -14,7 +14,7 @@ export default async function HomePage() {
   try { await initDb(); } catch {}
 
   const [videos, user] = await Promise.all([
-    getPublicVideos(30, 0).catch(() => []),
+    getPublicVideosSorted(30, 0, 'all').catch(() => []),
     getSession(),
   ]);
 
