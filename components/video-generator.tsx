@@ -212,15 +212,18 @@ export function VideoGenerator() {
                 {GENERATION_MODES.map((mode) => {
                   const noIdea = !state.idea.trim();
                   return (
-                    <button
-                      key={mode.id}
-                      onClick={() => !noIdea && startModeGeneration(mode.id)}
-                      title={mode.description}
-                      className={`group flex items-center gap-2 h-11 px-5 rounded-full border border-[#333] bg-[#0a0a0a] transition-all ${noIdea ? 'opacity-30' : 'hover:border-[#555] hover:bg-[#111] cursor-pointer'}`}
-                    >
-                      <span className="text-base">{mode.icon}</span>
-                      <span className="text-sm text-[#ededed]">{mode.label}</span>
-                    </button>
+                    <div key={mode.id} className="relative group">
+                      <button
+                        onClick={() => !noIdea && startModeGeneration(mode.id)}
+                        className={`flex items-center gap-2 h-11 px-5 rounded-full border border-[#333] bg-[#0a0a0a] transition-all ${noIdea ? 'opacity-30' : 'hover:border-[#555] hover:bg-[#111] cursor-pointer'}`}
+                      >
+                        <span className="text-base">{mode.icon}</span>
+                        <span className="text-sm text-[#ededed]">{mode.label}</span>
+                      </button>
+                      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-1.5 rounded-lg bg-[#222] border border-[#333] text-xs text-[#ccc] whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                        {mode.description}
+                      </div>
+                    </div>
                   );
                 })}
               </div>
