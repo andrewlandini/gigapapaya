@@ -18,6 +18,8 @@ interface FeedVideo {
 
 interface FeedGridProps {
   videos: FeedVideo[];
+  showVisibilityToggle?: boolean;
+  onToggleVisibility?: (id: string, visibility: 'public' | 'private') => void;
 }
 
 // Must match the Tailwind grid-cols breakpoints
@@ -33,7 +35,7 @@ function isLandscape(ar: string) {
   return ar === '16:9' || ar === '4:3';
 }
 
-export function FeedGrid({ videos }: FeedGridProps) {
+export function FeedGrid({ videos, showVisibilityToggle, onToggleVisibility }: FeedGridProps) {
   const gridRef = useRef<HTMLDivElement>(null);
   const [cols, setCols] = useState(2);
 
@@ -88,6 +90,9 @@ export function FeedGrid({ videos }: FeedGridProps) {
             aspectRatio={video.aspect_ratio}
             duration={video.duration}
             heartCount={video.heart_count ? parseInt(video.heart_count, 10) : undefined}
+            visibility={video.visibility}
+            showVisibilityToggle={showVisibilityToggle}
+            onToggleVisibility={onToggleVisibility}
             tileAspect={tileAspects[i]}
           />
         </div>

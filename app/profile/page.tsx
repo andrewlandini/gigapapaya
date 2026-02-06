@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { Sparkles, Loader2, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { VideoCard } from '@/components/video-card';
+import { FeedGrid } from '@/components/feed-grid';
 import { PromptBar } from '@/components/prompt-bar';
 import { AvatarCropper } from '@/components/avatar-cropper';
 import { useAvatar } from '@/components/avatar-context';
@@ -229,30 +229,11 @@ export default function ProfilePage() {
 
       {/* Videos grid */}
       <div className="px-4 py-6 flex-1">
-        {videos.length === 0 ? (
-          <div className="text-center py-20">
-            <p className="text-[#555]">No videos yet</p>
-            <p className="text-[#333] text-sm mt-1">Generate your first video</p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-3">
-            {videos.map((video) => (
-              <div key={video.id}>
-                <VideoCard
-                  id={video.id}
-                  blobUrl={video.blob_url}
-                  prompt={video.prompt}
-                  username={video.username}
-                  aspectRatio={video.aspect_ratio}
-                  duration={video.duration}
-                  visibility={video.visibility}
-                  showVisibilityToggle
-                  onToggleVisibility={toggleVisibility}
-                />
-              </div>
-            ))}
-          </div>
-        )}
+        <FeedGrid
+          videos={videos as any}
+          showVisibilityToggle
+          onToggleVisibility={toggleVisibility}
+        />
       </div>
 
       {/* Prompt bar */}
