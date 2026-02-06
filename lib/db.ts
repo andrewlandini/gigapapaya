@@ -91,6 +91,11 @@ export async function getUserById(id: string) {
   return rows[0] || null;
 }
 
+export async function updateUserAvatar(userId: string, avatarUrl: string) {
+  const sql = getDb();
+  await sql`UPDATE users SET avatar_url = ${avatarUrl} WHERE id = ${userId}`;
+}
+
 // ── Generations ─────────────────────────────────────────
 
 export async function createGeneration(id: string, userInput: string, userId?: string) {

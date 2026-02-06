@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Globe, Lock } from 'lucide-react';
+import { Sparkles, Loader2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { VideoCard } from '@/components/video-card';
 
 interface Video {
@@ -15,7 +16,7 @@ interface Video {
 }
 
 interface UserData {
-  user: { username: string; name: string } | null;
+  user: { username: string; name: string; avatarUrl: string | null } | null;
   videos: Video[];
   stats: { video_count: string; public_count: string; generation_count: string };
 }
@@ -23,6 +24,9 @@ interface UserData {
 export default function ProfilePage() {
   const [data, setData] = useState<UserData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [iconPrompt, setIconPrompt] = useState('');
+  const [generatingIcon, setGeneratingIcon] = useState(false);
+  const [showIconGen, setShowIconGen] = useState(false);
 
   const load = async () => {
     const res = await fetch('/api/profile');
@@ -41,6 +45,32 @@ export default function ProfilePage() {
       body: JSON.stringify({ visibility }),
     });
     load();
+  };
+
+  const generateIcon = async () => {
+    if (!iconPrompt.trim()) return;
+    setGeneratingIcon(true);
+
+    try {
+      const res = await fetch('/api/generate-icon', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt: iconPrompt }),
+      });
+
+      if (res.ok) {
+        setShowIconGen(false);
+        setIconPrompt('');
+        load(); // Reload to get new avatar
+      } else {
+        const err = await res.json();
+        alert(err.error || 'Failed to generate icon');
+      }
+    } catch {
+      alert('Failed to generate icon');
+    } finally {
+      setGeneratingIcon(false);
+    }
   };
 
   if (loading) {
@@ -66,9 +96,64 @@ export default function ProfilePage() {
       {/* Profile header */}
       <div className="border-b border-[#222] py-10">
         <div className="max-w-4xl mx-auto px-6 text-center space-y-4">
-          <div className="w-20 h-20 rounded-full bg-[#222] border border-[#333] flex items-center justify-center text-2xl font-bold text-[#888] mx-auto">
-            {user.name[0].toUpperCase()}
+          {/* Avatar */}
+          <div className="relative inline-block group">
+            {user.avatarUrl ? (
+              <img
+                src={user.avatarUrl}
+                alt={user.name}
+                className="w-20 h-20 rounded-full object-cover border border-[#333]"
+              />
+            ) : (
+              <div className="w-20 h-20 rounded-full bg-[#222] border border-[#333] flex items-center justify-center text-2xl font-bold text-[#888]">
+                {user.name[0].toUpperCase()}
+              </div>
+            )}
+            <button
+              onClick={() => setShowIconGen(!showIconGen)}
+              title="Generate avatar with nanobanana"
+              className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-[#222] border border-[#333] flex items-center justify-center text-[#888] hover:text-white hover:border-[#555] transition-colors"
+            >
+              <Sparkles className="h-3.5 w-3.5" />
+            </button>
           </div>
+
+          {/* Icon generator */}
+          {showIconGen && (
+            <div className="max-w-sm mx-auto space-y-3 animate-fade-in">
+              <div className="border border-[#222] rounded-xl p-4 bg-[#0a0a0a] space-y-3">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="h-4 w-4 text-[#888]" />
+                  <span className="text-xs font-mono text-[#666]">nanobanana</span>
+                </div>
+                <input
+                  type="text"
+                  value={iconPrompt}
+                  onChange={(e) => setIconPrompt(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && generateIcon()}
+                  placeholder="a papaya in space, pixel art..."
+                  disabled={generatingIcon}
+                  className="w-full bg-black border border-[#333] rounded-lg px-3 py-2 text-sm text-[#ededed] placeholder:text-[#555] focus:outline-none focus:border-[#555] focus:ring-1 focus:ring-white/10"
+                />
+                <Button
+                  onClick={generateIcon}
+                  disabled={generatingIcon || !iconPrompt.trim()}
+                  size="sm"
+                  className="w-full"
+                >
+                  {generatingIcon ? (
+                    <>
+                      <Loader2 className="h-3.5 w-3.5 mr-2 animate-spin" />
+                      Generating...
+                    </>
+                  ) : (
+                    'Generate avatar'
+                  )}
+                </Button>
+              </div>
+            </div>
+          )}
+
           <div>
             <h1 className="text-xl font-semibold">{user.name}</h1>
             <p className="text-sm text-[#666] font-mono">@{user.username}</p>
