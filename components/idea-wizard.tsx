@@ -40,6 +40,7 @@ export function IdeaWizard({ onSelectIdea }: IdeaWizardProps) {
   const [step, setStep] = useState(0);
   const [answers, setAnswers] = useState<string[]>([]);
   const [ideas, setIdeas] = useState<string[]>([]);
+  const [visibleCount, setVisibleCount] = useState(3);
   const [loading, setLoading] = useState(false);
 
   const handleAnswer = async (answer: string) => {
@@ -77,6 +78,7 @@ export function IdeaWizard({ onSelectIdea }: IdeaWizardProps) {
     setStep(0);
     setAnswers([]);
     setIdeas([]);
+    setVisibleCount(3);
     setLoading(false);
   };
 
@@ -109,7 +111,7 @@ export function IdeaWizard({ onSelectIdea }: IdeaWizardProps) {
           </button>
         </div>
         <div className="flex flex-wrap gap-2">
-          {ideas.map((idea, i) => (
+          {ideas.slice(0, visibleCount).map((idea, i) => (
             <button
               key={i}
               onClick={() => { onSelectIdea(idea); handleClose(); }}
@@ -119,6 +121,14 @@ export function IdeaWizard({ onSelectIdea }: IdeaWizardProps) {
             </button>
           ))}
         </div>
+        {visibleCount < ideas.length && (
+          <button
+            onClick={() => setVisibleCount(prev => prev + 3)}
+            className="text-xs text-[#555] hover:text-[#888] transition-colors"
+          >
+            Show more
+          </button>
+        )}
       </div>
     );
   }
