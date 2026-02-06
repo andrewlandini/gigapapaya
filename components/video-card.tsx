@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Globe, Lock, Heart } from 'lucide-react';
 
@@ -32,7 +32,27 @@ export function VideoCard({
   onToggleVisibility,
 }: VideoCardProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const containerRef = useRef<HTMLAnchorElement>(null);
   const [hovering, setHovering] = useState(false);
+  const [visible, setVisible] = useState(false);
+
+  // Only load video src when card enters viewport
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setVisible(true);
+          observer.disconnect();
+        }
+      },
+      { rootMargin: '200px' } // start loading 200px before visible
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
 
   const handleMouseEnter = () => {
     setHovering(true);
@@ -49,6 +69,7 @@ export function VideoCard({
 
   return (
     <Link
+      ref={containerRef}
       href={`/v/${id}`}
       className="block relative rounded-xl overflow-hidden border border-[#222] hover:border-[#444] transition-all group cursor-pointer"
       onMouseEnter={handleMouseEnter}
@@ -56,7 +77,7 @@ export function VideoCard({
     >
       <video
         ref={videoRef}
-        src={blobUrl}
+        src={visible ? blobUrl : undefined}
         muted
         loop
         playsInline
