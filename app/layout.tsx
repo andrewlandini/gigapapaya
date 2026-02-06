@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { GeistSans } from 'geist/font/sans';
 import { GeistMono } from 'geist/font/mono';
 import { Sidebar } from '@/components/sidebar';
+import { UserMenu } from '@/components/user-menu';
 import { Providers } from '@/components/providers';
 import { getSession } from '@/lib/auth/session';
 import './globals.css';
@@ -48,6 +49,7 @@ export default async function RootLayout({
       <body className="font-sans">
         <Providers>
           <Sidebar user={user} />
+          <UserMenu user={user} />
           <div className="ml-[60px]">
             {children}
           </div>
