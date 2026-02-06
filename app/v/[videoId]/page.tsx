@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Heart, ArrowLeft, Download, Check, Pencil } from 'lucide-react';
 
@@ -23,6 +23,7 @@ interface VideoDetail {
 
 export default function VideoPage() {
   const { videoId } = useParams<{ videoId: string }>();
+  const router = useRouter();
   const [video, setVideo] = useState<VideoDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [hearted, setHearted] = useState(false);
@@ -96,12 +97,12 @@ export default function VideoPage() {
       <div className="flex flex-col lg:flex-row min-h-screen">
         {/* Video player — left */}
         <div className="flex-1 flex items-center justify-center bg-[#0a0a0a] relative min-h-[40vh] lg:min-h-screen p-4 lg:p-0">
-          <Link
-            href="/"
+          <button
+            onClick={() => router.back()}
             className="absolute top-4 left-4 z-10 w-9 h-9 rounded-lg bg-black/50 backdrop-blur-sm border border-[#333] flex items-center justify-center text-[#888] hover:text-white transition-colors"
           >
             <ArrowLeft className="h-4 w-4" />
-          </Link>
+          </button>
           <video
             src={video.blob_url}
             controls
