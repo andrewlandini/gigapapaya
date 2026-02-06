@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { Play, Pause, SkipForward, SkipBack } from 'lucide-react';
+import { Play, Pause, SkipForward, SkipBack, Scissors } from 'lucide-react';
 
 interface SceneVideo {
   id: string;
@@ -9,6 +9,11 @@ interface SceneVideo {
   prompt: string;
   duration: number;
   scene_index: number;
+}
+
+interface TrimPoints {
+  inPoint: number;  // seconds from start
+  outPoint: number; // seconds from start
 }
 
 interface ScenePlayerProps {
@@ -20,116 +25,165 @@ export function ScenePlayer({ videos, autoProgress: initialAutoProgress = true }
   const [currentIndex, setCurrentIndex] = useState(0);
   const [playing, setPlaying] = useState(false);
   const [autoProgress, setAutoProgress] = useState(initialAutoProgress);
-  const [progress, setProgress] = useState(0);
-  // Two video elements for seamless crossfade
-  const videoARef = useRef<HTMLVideoElement>(null);
-  const videoBRef = useRef<HTMLVideoElement>(null);
-  const [activePlayer, setActivePlayer] = useState<'A' | 'B'>('A');
+  const [trims, setTrims] = useState<Record<string, TrimPoints>>({});
+  const [showTrim, setShowTrim] = useState<string | null>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const nextVideoRef = useRef<HTMLVideoElement>(null);
+  const playingRef = useRef(false);
+  const autoProgressRef = useRef(autoProgress);
+  const currentIndexRef = useRef(currentIndex);
+  const [, forceUpdate] = useState(0);
+
+  // Keep refs in sync
+  autoProgressRef.current = autoProgress;
+  currentIndexRef.current = currentIndex;
 
   const current = videos[currentIndex];
   const next = videos[currentIndex + 1];
 
-  const getActiveRef = useCallback(() => activePlayer === 'A' ? videoARef : videoBRef, [activePlayer]);
-  const getInactiveRef = useCallback(() => activePlayer === 'A' ? videoBRef : videoARef, [activePlayer]);
+  const getTrim = useCallback((video: SceneVideo): TrimPoints => {
+    return trims[video.id] || { inPoint: 0, outPoint: video.duration };
+  }, [trims]);
 
-  // Preload next video into the inactive player
+  // Preload next video
   useEffect(() => {
-    const inactive = getInactiveRef().current;
-    if (inactive && next) {
-      inactive.src = next.blob_url;
-      inactive.load();
+    if (nextVideoRef.current && next) {
+      nextVideoRef.current.src = next.blob_url;
+      nextVideoRef.current.load();
     }
-  }, [next, getInactiveRef]);
+  }, [next?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Load current video into the active player on index change
-  useEffect(() => {
-    const active = getActiveRef().current;
-    if (active && current) {
-      active.src = current.blob_url;
-      active.load();
-      if (playing) {
-        active.play().catch(() => {});
+  // Handle time update — check out point for trim
+  const handleTimeUpdate = useCallback(() => {
+    const v = videoRef.current;
+    if (!v) return;
+
+    const trim = getTrim(videos[currentIndexRef.current]);
+
+    // If we've hit the out point, treat as ended
+    if (v.currentTime >= trim.outPoint - 0.05) {
+      if (autoProgressRef.current && currentIndexRef.current < videos.length - 1) {
+        // Advance to next
+        const nextIdx = currentIndexRef.current + 1;
+        const nextTrim = getTrim(videos[nextIdx]);
+        setCurrentIndex(nextIdx);
+        setPlaying(true);
+        playingRef.current = true;
+
+        // Use a microtask to let state update, then load and play
+        setTimeout(() => {
+          const el = videoRef.current;
+          if (el) {
+            el.src = videos[nextIdx].blob_url;
+            el.currentTime = nextTrim.inPoint;
+            el.play().catch(() => {});
+          }
+        }, 0);
+      } else {
+        v.pause();
+        setPlaying(false);
+        playingRef.current = false;
       }
     }
-  }, [currentIndex]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Handle video end — seamlessly switch to next
+    // Force re-render for progress bar
+    forceUpdate(n => n + 1);
+  }, [videos, getTrim]);
+
+  // Also handle native ended event as fallback
   const handleEnded = useCallback(() => {
-    if (autoProgress && currentIndex < videos.length - 1) {
-      const inactive = getInactiveRef().current;
-      if (inactive) {
-        // Start the preloaded next video immediately
-        inactive.currentTime = 0;
-        inactive.play().catch(() => {});
-      }
-      // Swap active player
-      setActivePlayer(prev => prev === 'A' ? 'B' : 'A');
-      setCurrentIndex(prev => prev + 1);
-      setProgress(0);
+    if (autoProgressRef.current && currentIndexRef.current < videos.length - 1) {
+      const nextIdx = currentIndexRef.current + 1;
+      const nextTrim = getTrim(videos[nextIdx]);
+      setCurrentIndex(nextIdx);
+      setPlaying(true);
+      playingRef.current = true;
+
+      setTimeout(() => {
+        const el = videoRef.current;
+        if (el) {
+          el.src = videos[nextIdx].blob_url;
+          el.currentTime = nextTrim.inPoint;
+          el.play().catch(() => {});
+        }
+      }, 0);
     } else {
       setPlaying(false);
+      playingRef.current = false;
     }
-  }, [autoProgress, currentIndex, videos.length, getInactiveRef]);
-
-  const handleTimeUpdate = useCallback(() => {
-    const active = getActiveRef().current;
-    if (!active) return;
-    const totalDuration = videos.reduce((sum, v) => sum + v.duration, 0);
-    const elapsed = videos.slice(0, currentIndex).reduce((sum, v) => sum + v.duration, 0) + active.currentTime;
-    setProgress((elapsed / totalDuration) * 100);
-  }, [currentIndex, videos, getActiveRef]);
+  }, [videos, getTrim]);
 
   const togglePlay = useCallback(() => {
-    const active = getActiveRef().current;
-    if (!active) return;
-    if (playing) {
-      active.pause();
+    const v = videoRef.current;
+    if (!v) return;
+    if (playingRef.current) {
+      v.pause();
+      setPlaying(false);
+      playingRef.current = false;
     } else {
-      active.play().catch(() => {});
+      const trim = getTrim(videos[currentIndexRef.current]);
+      // If at or past out point, restart from in point
+      if (v.currentTime >= trim.outPoint - 0.1) {
+        v.currentTime = trim.inPoint;
+      }
+      v.play().catch(() => {});
+      setPlaying(true);
+      playingRef.current = true;
     }
-    setPlaying(!playing);
-  }, [playing, getActiveRef]);
+  }, [videos, getTrim]);
 
   const goToScene = useCallback((index: number) => {
-    const active = getActiveRef().current;
-    if (active) {
-      active.src = videos[index].blob_url;
-      active.load();
-      active.play().catch(() => {});
-    }
+    const trim = getTrim(videos[index]);
     setCurrentIndex(index);
     setPlaying(true);
-  }, [getActiveRef, videos]);
+    playingRef.current = true;
+    setTimeout(() => {
+      const v = videoRef.current;
+      if (v) {
+        v.src = videos[index].blob_url;
+        v.currentTime = trim.inPoint;
+        v.play().catch(() => {});
+      }
+    }, 0);
+  }, [videos, getTrim]);
+
+  // Initial load
+  useEffect(() => {
+    const v = videoRef.current;
+    if (v && current) {
+      v.src = current.blob_url;
+      const trim = getTrim(current);
+      v.currentTime = trim.inPoint;
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (videos.length === 0) return null;
 
-  const totalDuration = videos.reduce((sum, v) => sum + v.duration, 0);
-  const activeRef = getActiveRef();
+  const getEffectiveDuration = (video: SceneVideo) => {
+    const trim = getTrim(video);
+    return trim.outPoint - trim.inPoint;
+  };
+
+  const totalDuration = videos.reduce((sum, v) => sum + getEffectiveDuration(v), 0);
+  const currentTrim = getTrim(current);
 
   return (
     <div className="space-y-4">
-      {/* Video player — two stacked elements for seamless transitions */}
+      {/* Video player */}
       <div className="relative rounded-xl overflow-hidden bg-black aspect-video group cursor-pointer" onClick={togglePlay}>
         <video
-          ref={videoARef}
-          className={`absolute inset-0 w-full h-full object-contain transition-opacity duration-150 ${activePlayer === 'A' ? 'opacity-100 z-10' : 'opacity-0 z-0'}`}
-          onEnded={activePlayer === 'A' ? handleEnded : undefined}
-          onTimeUpdate={activePlayer === 'A' ? handleTimeUpdate : undefined}
-          onPlay={activePlayer === 'A' ? () => setPlaying(true) : undefined}
-          onPause={activePlayer === 'A' ? () => setPlaying(false) : undefined}
+          ref={videoRef}
+          className="w-full h-full object-contain"
+          onTimeUpdate={handleTimeUpdate}
+          onEnded={handleEnded}
+          onPlay={() => { setPlaying(true); playingRef.current = true; }}
+          onPause={() => { if (playingRef.current) { setPlaying(false); playingRef.current = false; } }}
           playsInline
           preload="auto"
         />
-        <video
-          ref={videoBRef}
-          className={`absolute inset-0 w-full h-full object-contain transition-opacity duration-150 ${activePlayer === 'B' ? 'opacity-100 z-10' : 'opacity-0 z-0'}`}
-          onEnded={activePlayer === 'B' ? handleEnded : undefined}
-          onTimeUpdate={activePlayer === 'B' ? handleTimeUpdate : undefined}
-          onPlay={activePlayer === 'B' ? () => setPlaying(true) : undefined}
-          onPause={activePlayer === 'B' ? () => setPlaying(false) : undefined}
-          playsInline
-          preload="auto"
-        />
+
+        {/* Hidden preload */}
+        <video ref={nextVideoRef} className="hidden" preload="auto" muted />
 
         {/* Play/Pause overlay */}
         <div className={`absolute inset-0 flex items-center justify-center transition-opacity z-20 ${playing ? 'opacity-0 group-hover:opacity-100' : 'opacity-100'}`}>
@@ -151,11 +205,14 @@ export function ScenePlayer({ videos, autoProgress: initialAutoProgress = true }
       {/* Segmented progress bar */}
       <div className="flex gap-0.5 h-1 rounded-full overflow-hidden">
         {videos.map((v, i) => {
-          const segmentWidth = (v.duration / totalDuration) * 100;
+          const effDuration = getEffectiveDuration(v);
+          const segmentWidth = (effDuration / totalDuration) * 100;
+          const trim = getTrim(v);
           let segmentProgress = 0;
           if (i < currentIndex) segmentProgress = 100;
-          else if (i === currentIndex && activeRef.current) {
-            segmentProgress = (activeRef.current.currentTime / v.duration) * 100;
+          else if (i === currentIndex && videoRef.current) {
+            const elapsed = Math.max(0, videoRef.current.currentTime - trim.inPoint);
+            segmentProgress = Math.min(100, (elapsed / effDuration) * 100);
           }
           return (
             <button
@@ -198,38 +255,117 @@ export function ScenePlayer({ videos, autoProgress: initialAutoProgress = true }
           </button>
         </div>
 
-        <button
-          onClick={() => setAutoProgress(!autoProgress)}
-          className={`text-xs font-mono px-3 py-1 rounded-md transition-colors ${
-            autoProgress ? 'text-[#ededed] bg-[#222]' : 'text-[#555] hover:text-[#888]'
-          }`}
-        >
-          Auto-play {autoProgress ? 'on' : 'off'}
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowTrim(showTrim === current.id ? null : current.id)}
+            className={`flex items-center gap-1.5 text-xs font-mono px-3 py-1 rounded-md transition-colors ${
+              showTrim === current.id ? 'text-[#ededed] bg-[#222]' : 'text-[#555] hover:text-[#888]'
+            }`}
+          >
+            <Scissors className="h-3 w-3" />
+            Trim
+          </button>
+          <button
+            onClick={() => setAutoProgress(!autoProgress)}
+            className={`text-xs font-mono px-3 py-1 rounded-md transition-colors ${
+              autoProgress ? 'text-[#ededed] bg-[#222]' : 'text-[#555] hover:text-[#888]'
+            }`}
+          >
+            Auto-play {autoProgress ? 'on' : 'off'}
+          </button>
+        </div>
       </div>
+
+      {/* Trim controls */}
+      {showTrim === current.id && (
+        <div className="border border-[#222] rounded-xl p-4 space-y-3 animate-fade-in">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-mono text-[#888]">Trim Scene {currentIndex + 1}</span>
+            {(currentTrim.inPoint > 0 || currentTrim.outPoint < current.duration) && (
+              <button
+                onClick={() => setTrims(prev => {
+                  const next = { ...prev };
+                  delete next[current.id];
+                  return next;
+                })}
+                className="text-[10px] text-[#555] hover:text-[#888] transition-colors"
+              >
+                Reset trim
+              </button>
+            )}
+          </div>
+          <div className="flex items-center gap-4">
+            <div className="flex-1 space-y-1">
+              <label className="text-[10px] font-mono text-[#555]">In: {currentTrim.inPoint.toFixed(1)}s</label>
+              <input
+                type="range"
+                min={0}
+                max={current.duration}
+                step={0.1}
+                value={currentTrim.inPoint}
+                onChange={(e) => {
+                  const val = parseFloat(e.target.value);
+                  setTrims(prev => ({
+                    ...prev,
+                    [current.id]: { ...getTrim(current), inPoint: Math.min(val, getTrim(current).outPoint - 0.5) },
+                  }));
+                  if (videoRef.current) videoRef.current.currentTime = val;
+                }}
+                className="w-full accent-white h-1"
+              />
+            </div>
+            <div className="flex-1 space-y-1">
+              <label className="text-[10px] font-mono text-[#555]">Out: {currentTrim.outPoint.toFixed(1)}s</label>
+              <input
+                type="range"
+                min={0}
+                max={current.duration}
+                step={0.1}
+                value={currentTrim.outPoint}
+                onChange={(e) => {
+                  const val = parseFloat(e.target.value);
+                  setTrims(prev => ({
+                    ...prev,
+                    [current.id]: { ...getTrim(current), outPoint: Math.max(val, getTrim(current).inPoint + 0.5) },
+                  }));
+                }}
+                className="w-full accent-white h-1"
+              />
+            </div>
+            <span className="text-xs font-mono text-[#444] whitespace-nowrap">
+              {getEffectiveDuration(current).toFixed(1)}s
+            </span>
+          </div>
+        </div>
+      )}
 
       {/* Scene thumbnails */}
       <div className="flex gap-2 overflow-x-auto pb-1">
-        {videos.map((v, i) => (
-          <button
-            key={v.id}
-            onClick={() => goToScene(i)}
-            className={`flex-shrink-0 relative rounded-lg overflow-hidden border-2 transition-colors ${
-              i === currentIndex ? 'border-white' : 'border-[#333] hover:border-[#555]'
-            }`}
-            style={{ width: 120, height: 68 }}
-          >
-            <video
-              src={v.blob_url}
-              className="w-full h-full object-cover"
-              muted
-              preload="metadata"
-            />
-            <div className="absolute bottom-0 left-0 right-0 px-1.5 py-0.5 bg-black/70 text-[10px] font-mono text-white/80">
-              Scene {i + 1}
-            </div>
-          </button>
-        ))}
+        {videos.map((v, i) => {
+          const trim = getTrim(v);
+          const isTrimmed = trim.inPoint > 0 || trim.outPoint < v.duration;
+          return (
+            <button
+              key={v.id}
+              onClick={() => goToScene(i)}
+              className={`flex-shrink-0 relative rounded-lg overflow-hidden border-2 transition-colors ${
+                i === currentIndex ? 'border-white' : 'border-[#333] hover:border-[#555]'
+              }`}
+              style={{ width: 120, height: 68 }}
+            >
+              <video
+                src={v.blob_url}
+                className="w-full h-full object-cover"
+                muted
+                preload="metadata"
+              />
+              <div className="absolute bottom-0 left-0 right-0 px-1.5 py-0.5 bg-black/70 flex items-center justify-between">
+                <span className="text-[10px] font-mono text-white/80">Scene {i + 1}</span>
+                {isTrimmed && <Scissors className="h-2.5 w-2.5 text-white/50" />}
+              </div>
+            </button>
+          );
+        })}
       </div>
     </div>
   );
