@@ -43,9 +43,17 @@ export default async function UserProfilePage({
       {/* Profile header */}
       <div className="border-b border-[#222] py-10">
         <div className="max-w-4xl mx-auto px-6 text-center space-y-4">
-          <div className="w-20 h-20 rounded-full bg-[#222] border border-[#333] flex items-center justify-center text-2xl font-bold text-[#888] mx-auto">
-            {user.name[0].toUpperCase()}
-          </div>
+          {user.avatar_url ? (
+            <img
+              src={user.avatar_url}
+              alt={user.name}
+              className="w-20 h-20 rounded-full object-cover border border-[#333] mx-auto"
+            />
+          ) : (
+            <div className="w-20 h-20 rounded-full bg-[#222] border border-[#333] flex items-center justify-center text-2xl font-bold text-[#888] mx-auto">
+              {user.name[0].toUpperCase()}
+            </div>
+          )}
           <div>
             <h1 className="text-xl font-semibold">{user.name}</h1>
             <p className="text-sm text-[#666] font-mono">@{user.username}</p>
