@@ -35,6 +35,7 @@ export interface Video {
 export type ProgressEventType =
   | 'agent-start'
   | 'agent-complete'
+  | 'agent-log'
   | 'video-start'
   | 'video-complete'
   | 'complete'

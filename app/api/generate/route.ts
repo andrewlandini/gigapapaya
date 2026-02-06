@@ -59,6 +59,10 @@ export async function POST(request: NextRequest) {
 
           if (mode === 'direct') {
             // ── Direct mode: skip agents, generate video from raw prompt ──
+            sendEvent({ type: 'agent-log', agent: 'system', status: `Direct mode — skipping agents, sending prompt straight to Veo 3.1` });
+            sendEvent({ type: 'agent-log', agent: 'system', status: `Prompt: "${idea.substring(0, 120)}${idea.length > 120 ? '...' : ''}"` });
+            sendEvent({ type: 'agent-log', agent: 'system', status: `Config: ${options.aspectRatio} / ${options.duration}s / model: veo-3.1-generate-001` });
+
             sendEvent({
               type: 'video-start',
               sceneIndex: 0,
@@ -66,118 +70,82 @@ export async function POST(request: NextRequest) {
               status: 'Generating video from your prompt...',
             });
 
-            const video = await executeVideoAgent(
-              idea,
-              '', // no style
-              '', // no mood
-              options,
-              0
-            );
+            const video = await executeVideoAgent(idea, '', '', options, 0);
 
             await saveVideoRecord({
-              id: video.id,
-              generationId: sessionId,
-              blobUrl: video.url,
-              prompt: video.prompt,
-              duration: video.duration,
-              aspectRatio: video.aspectRatio,
-              size: video.size,
-              sceneIndex: 0,
+              id: video.id, generationId: sessionId, blobUrl: video.url,
+              prompt: video.prompt, duration: video.duration,
+              aspectRatio: video.aspectRatio, size: video.size, sceneIndex: 0,
             });
 
-            sendEvent({
-              type: 'video-complete',
-              sceneIndex: 0,
-              videoId: video.id,
-            });
+            sendEvent({ type: 'agent-log', agent: 'system', status: `Video uploaded to Blob Storage (${(video.size / (1024 * 1024)).toFixed(1)} MB)` });
+            sendEvent({ type: 'video-complete', sceneIndex: 0, videoId: video.id });
 
             await updateGenerationStatus(sessionId, 'complete');
-
-            sendEvent({
-              type: 'complete',
-              sessionId,
-              videos: [video],
-            });
+            sendEvent({ type: 'complete', sessionId, videos: [video] });
           } else {
             // ── Agent mode: full multi-agent pipeline ──
 
             // Agent 1: Idea
-            sendEvent({
-              type: 'agent-start',
-              agent: 'idea',
-              status: 'Generating creative video concept...',
-            });
+            sendEvent({ type: 'agent-log', agent: 'idea', status: `Reading user input: "${idea.substring(0, 100)}${idea.length > 100 ? '...' : ''}"` });
+            sendEvent({ type: 'agent-log', agent: 'idea', status: 'Analyzing input for visual potential, narrative hooks, and cinematic style...' });
+            sendEvent({ type: 'agent-start', agent: 'idea', status: 'Generating creative video concept...' });
 
             const ideaResult = await executeIdeaAgent(idea);
             await updateGenerationIdea(sessionId, ideaResult);
 
-            sendEvent({
-              type: 'agent-complete',
-              agent: 'idea',
-              result: ideaResult,
-            });
+            sendEvent({ type: 'agent-log', agent: 'idea', status: `Concept: "${ideaResult.title}"` });
+            sendEvent({ type: 'agent-log', agent: 'idea', status: `Style: ${ideaResult.style} / Mood: ${ideaResult.mood}` });
+            sendEvent({ type: 'agent-log', agent: 'idea', status: `Key elements: ${ideaResult.keyElements.join(', ')}` });
+            sendEvent({ type: 'agent-complete', agent: 'idea', result: ideaResult });
 
             // Agent 2: Scenes
-            sendEvent({
-              type: 'agent-start',
-              agent: 'scenes',
-              status: 'Crafting scene variations...',
-            });
+            sendEvent({ type: 'agent-log', agent: 'scenes', status: `Taking concept "${ideaResult.title}" and breaking into ${options.numScenes || 3} scene variations` });
+            sendEvent({ type: 'agent-log', agent: 'scenes', status: `Maintaining consistency: ${ideaResult.style} style, ${ideaResult.mood} mood across all scenes` });
+            sendEvent({ type: 'agent-log', agent: 'scenes', status: 'Crafting camera angles, lighting, composition for each scene...' });
+            sendEvent({ type: 'agent-start', agent: 'scenes', status: 'Crafting scene variations...' });
 
-            const scenesResult = await executeScenesAgent(
-              ideaResult,
-              options.numScenes || 3
-            );
+            const scenesResult = await executeScenesAgent(ideaResult, options.numScenes || 3);
             await updateGenerationScenes(sessionId, scenesResult);
 
-            sendEvent({
-              type: 'agent-complete',
-              agent: 'scenes',
-              result: scenesResult,
+            sendEvent({ type: 'agent-log', agent: 'scenes', status: `Generated ${scenesResult.scenes.length} scenes` });
+            scenesResult.scenes.forEach((scene, i) => {
+              sendEvent({ type: 'agent-log', agent: 'scenes', status: `Scene ${i + 1}: ${scene.prompt.substring(0, 80)}...` });
             });
+            sendEvent({ type: 'agent-log', agent: 'scenes', status: `Consistency: ${scenesResult.consistencyNotes.substring(0, 100)}...` });
+            sendEvent({ type: 'agent-complete', agent: 'scenes', result: scenesResult });
 
             // Agent 3: Videos
             const videos = [];
+            sendEvent({ type: 'agent-log', agent: 'videos', status: `Starting video generation for ${scenesResult.scenes.length} scenes using Veo 3.1` });
+            sendEvent({ type: 'agent-log', agent: 'videos', status: `Config: ${options.aspectRatio} / ${options.duration}s / model: veo-3.1-generate-001` });
 
             for (let i = 0; i < scenesResult.scenes.length; i++) {
               const scene = scenesResult.scenes[i];
 
+              sendEvent({ type: 'agent-log', agent: 'videos', status: `Preparing scene ${i + 1}: enhancing prompt with style "${ideaResult.style}" and mood "${ideaResult.mood}"` });
               sendEvent({
-                type: 'video-start',
-                sceneIndex: i,
-                prompt: scene.prompt,
+                type: 'video-start', sceneIndex: i, prompt: scene.prompt,
                 status: `Generating video ${i + 1}/${scenesResult.scenes.length}...`,
               });
 
               try {
                 const video = await executeVideoAgent(
-                  scene.prompt,
-                  ideaResult.style,
-                  ideaResult.mood,
-                  options,
-                  i
+                  scene.prompt, ideaResult.style, ideaResult.mood, options, i
                 );
 
                 await saveVideoRecord({
-                  id: video.id,
-                  generationId: sessionId,
-                  blobUrl: video.url,
-                  prompt: video.prompt,
-                  duration: video.duration,
-                  aspectRatio: video.aspectRatio,
-                  size: video.size,
-                  sceneIndex: i,
+                  id: video.id, generationId: sessionId, blobUrl: video.url,
+                  prompt: video.prompt, duration: video.duration,
+                  aspectRatio: video.aspectRatio, size: video.size, sceneIndex: i,
                 });
 
                 videos.push(video);
-
-                sendEvent({
-                  type: 'video-complete',
-                  sceneIndex: i,
-                  videoId: video.id,
-                });
+                sendEvent({ type: 'agent-log', agent: 'videos', status: `Scene ${i + 1} complete — ${(video.size / (1024 * 1024)).toFixed(1)} MB uploaded to Blob Storage` });
+                sendEvent({ type: 'video-complete', sceneIndex: i, videoId: video.id });
               } catch (error) {
                 console.error(`❌ Failed to generate video ${i + 1}:`, error);
+                sendEvent({ type: 'agent-log', agent: 'videos', status: `Scene ${i + 1} failed: ${error instanceof Error ? error.message : 'Unknown error'}` });
                 sendEvent({
                   type: 'error',
                   message: `Failed to generate video ${i + 1}: ${error instanceof Error ? error.message : 'Unknown error'}`,
@@ -186,13 +154,9 @@ export async function POST(request: NextRequest) {
               }
             }
 
+            sendEvent({ type: 'agent-log', agent: 'videos', status: `Pipeline complete: ${videos.length}/${scenesResult.scenes.length} videos generated successfully` });
             await updateGenerationStatus(sessionId, 'complete');
-
-            sendEvent({
-              type: 'complete',
-              sessionId,
-              videos,
-            });
+            sendEvent({ type: 'complete', sessionId, videos });
           }
 
           console.log(`✅ API: Generation complete\n`);

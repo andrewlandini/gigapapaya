@@ -131,7 +131,7 @@ export function VideoGenerator() {
   };
 
   return (
-    <div className="min-h-screen bg-black">
+    <div className="min-h-screen bg-black flex flex-col">
       {/* Header */}
       <header className="border-b border-[#222]">
         <div className="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
@@ -308,7 +308,7 @@ export function VideoGenerator() {
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-[#222] mt-20">
+      <footer className="border-t border-[#222] mt-auto">
         <div className="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
           <span className="text-xs font-mono text-[#333]">gigapapaya</span>
           <span className="text-xs font-mono text-[#333]">veo 3.1 / ai gateway</span>
