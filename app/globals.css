@@ -60,6 +60,20 @@
   animation: fade-in 0.4s ease-out forwards;
 }
 
+/* Gradient sweep for AI text */
+@keyframes gradient-sweep {
+  0% {
+    background-position: 0% 50%;
+  }
+  100% {
+    background-position: 200% 50%;
+  }
+}
+
+.animate-gradient-sweep {
+  animation: gradient-sweep 6s linear infinite;
+}
+
 /* Pulse dot for active status */
 @keyframes pulse-dot {
   0%, 100% {
