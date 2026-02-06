@@ -8,48 +8,69 @@ interface IdeaWizardProps {
   onActiveChange?: (active: boolean) => void;
 }
 
-interface WizardStep {
-  question: string;
-  options: string[];
-}
-
-const STEPS: WizardStep[] = [
-  {
-    question: 'What mood?',
-    options: ['Dreamy', 'Intense', 'Funny', 'Mysterious', 'Peaceful'],
-  },
-  {
-    question: 'Where?',
-    options: ['City', 'Nature', 'Space', 'Underwater', 'Indoors'],
-  },
-  {
-    question: 'Who or what?',
-    options: ['A person', 'An animal', 'An object', 'A crowd', 'Abstract'],
-  },
-  {
-    question: 'Doing what?',
-    options: ['Moving', 'Still', 'Dancing', 'Exploring', 'Creating'],
-  },
-  {
-    question: 'What time?',
-    options: ['Sunrise', 'Night', 'Golden hour', 'Storm', 'Timeless'],
-  },
-];
+const TOTAL_STEPS = 5;
 
 export function IdeaWizard({ onSelectIdea, onActiveChange }: IdeaWizardProps) {
   const [active, setActive] = useState(false);
   const [step, setStep] = useState(0);
+  const [questions, setQuestions] = useState<string[]>([]);
   const [answers, setAnswers] = useState<string[]>([]);
+  const [currentQuestion, setCurrentQuestion] = useState<string | null>(null);
+  const [currentOptions, setCurrentOptions] = useState<string[]>([]);
   const [ideas, setIdeas] = useState<string[]>([]);
   const [visibleCount, setVisibleCount] = useState(3);
   const [loading, setLoading] = useState(false);
+  const [loadingStep, setLoadingStep] = useState(false);
+
+  const fetchFirstStep = async () => {
+    setLoadingStep(true);
+    try {
+      const res = await fetch('/api/generate-ideas', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'first-step' }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setCurrentQuestion(data.question);
+        setCurrentOptions(data.options);
+      }
+    } catch {}
+    setLoadingStep(false);
+  };
+
+  const fetchNextStep = async (newQuestions: string[], newAnswers: string[]) => {
+    setLoadingStep(true);
+    try {
+      const res = await fetch('/api/generate-ideas', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'next-step', questions: newQuestions, answers: newAnswers }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setCurrentQuestion(data.question);
+        setCurrentOptions(data.options);
+      }
+    } catch {}
+    setLoadingStep(false);
+  };
+
+  const handleActivate = () => {
+    setActive(true);
+    onActiveChange?.(true);
+    fetchFirstStep();
+  };
 
   const handleAnswer = async (answer: string) => {
+    const newQuestions = [...questions, currentQuestion!];
     const newAnswers = [...answers, answer];
+    setQuestions(newQuestions);
     setAnswers(newAnswers);
 
-    if (newAnswers.length < STEPS.length) {
+    if (newAnswers.length < TOTAL_STEPS) {
       setStep(step + 1);
+      await fetchNextStep(newQuestions, newAnswers);
     } else {
       // All questions answered — generate ideas
       setLoading(true);
@@ -57,7 +78,7 @@ export function IdeaWizard({ onSelectIdea, onActiveChange }: IdeaWizardProps) {
         const res = await fetch('/api/generate-ideas', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ answers: newAnswers, steps: STEPS.map(s => s.question) }),
+          body: JSON.stringify({ answers: newAnswers, steps: newQuestions }),
         });
         if (res.ok) {
           const data = await res.json();
@@ -68,19 +89,34 @@ export function IdeaWizard({ onSelectIdea, onActiveChange }: IdeaWizardProps) {
     }
   };
 
-  const handleBack = () => {
+  const handleBack = async () => {
     if (step > 0) {
+      const prevQuestions = questions.slice(0, -1);
+      const prevAnswers = answers.slice(0, -1);
       setStep(step - 1);
-      setAnswers(answers.slice(0, -1));
+      setQuestions(prevQuestions);
+      setAnswers(prevAnswers);
+      // Re-show the previous question
+      setCurrentQuestion(questions[questions.length - 1]);
+      // Refetch options for the previous state
+      if (prevQuestions.length === 0) {
+        await fetchFirstStep();
+      } else {
+        await fetchNextStep(prevQuestions, prevAnswers);
+      }
     }
   };
 
   const handleReset = () => {
     setStep(0);
+    setQuestions([]);
     setAnswers([]);
+    setCurrentQuestion(null);
+    setCurrentOptions([]);
     setIdeas([]);
     setVisibleCount(3);
     setLoading(false);
+    setLoadingStep(false);
   };
 
   const handleClose = () => {
@@ -92,7 +128,7 @@ export function IdeaWizard({ onSelectIdea, onActiveChange }: IdeaWizardProps) {
   if (!active) {
     return (
       <button
-        onClick={() => { setActive(true); onActiveChange?.(true); }}
+        onClick={handleActivate}
         className="flex items-center gap-2 text-[#666] hover:text-[#ededed] transition-colors"
       >
         <Lightbulb className="h-4 w-4" />
@@ -135,7 +171,7 @@ export function IdeaWizard({ onSelectIdea, onActiveChange }: IdeaWizardProps) {
     );
   }
 
-  // Loading state
+  // Loading ideas
   if (loading) {
     return (
       <div className="flex items-center justify-center gap-3 py-2 animate-fade-in">
@@ -145,9 +181,17 @@ export function IdeaWizard({ onSelectIdea, onActiveChange }: IdeaWizardProps) {
     );
   }
 
-  // Question steps
-  const current = STEPS[step];
+  // Loading next question
+  if (loadingStep || !currentQuestion) {
+    return (
+      <div className="flex items-center justify-center gap-3 py-2 animate-fade-in">
+        <Loader2 className="h-4 w-4 text-[#555] animate-spin" />
+        <span className="text-sm text-[#555]">Thinking of a question...</span>
+      </div>
+    );
+  }
 
+  // Question step
   return (
     <div className="space-y-3 animate-fade-in">
       <div className="flex items-center justify-center gap-3">
@@ -156,8 +200,8 @@ export function IdeaWizard({ onSelectIdea, onActiveChange }: IdeaWizardProps) {
             <ArrowLeft className="h-3.5 w-3.5" />
           </button>
         )}
-        <span className="text-xs font-mono text-[#555]">{step + 1}/{STEPS.length}</span>
-        <span className="text-sm text-[#ededed]">{current.question}</span>
+        <span className="text-xs font-mono text-[#555]">{step + 1}/{TOTAL_STEPS}</span>
+        <span className="text-sm text-[#ededed]">{currentQuestion}</span>
         <button onClick={handleClose} className="text-xs text-[#555] hover:text-[#888] transition-colors">
           Cancel
         </button>
@@ -165,7 +209,7 @@ export function IdeaWizard({ onSelectIdea, onActiveChange }: IdeaWizardProps) {
 
       {/* Current options */}
       <div className="flex flex-wrap justify-center gap-2">
-        {current.options.map((option) => (
+        {currentOptions.map((option) => (
           <button
             key={option}
             onClick={() => handleAnswer(option)}

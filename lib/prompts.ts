@@ -38,6 +38,7 @@ Each scene should:
 - Vary in composition, angle, or specific subject matter
 - Be optimized as a detailed prompt for video generation AI
 - Include all technical details needed for consistent rendering
+- Include natural spoken dialogue in quotes unless the concept truly has no speaking characters
 
 For EACH scene, you MUST include:
 1. **Camera Work**: Camera angle, movement (pan, zoom, static, dolly), and framing
@@ -45,13 +46,14 @@ For EACH scene, you MUST include:
 3. **Subject**: Main subject, position, action, and expression
 4. **Environment**: Background, setting, atmospheric conditions
 5. **Technical Details**: Color grading notes, depth of field, motion speed
+6. **Dialogue**: Natural spoken words in quotes — write like people actually talk in real life, not how they write. Use contractions, interruptions, trailing off, casual phrasing. If multiple scenes have dialogue, the lines must continue as a coherent conversation when scenes are played back-to-back.
 
 Return a structured response:
 {
   "scenes": [
     {
       "index": 1,
-      "prompt": "Ultra-detailed scene description optimized for video generation. Must be 2-4 sentences with all technical specifications.",
+      "prompt": "Ultra-detailed scene description optimized for video generation. Must be 2-4 sentences with all technical specifications. Include dialogue in quotes if applicable.",
       "duration": 8,
       "notes": "Technical notes about camera angle, lighting, composition, and how it relates to the overall narrative"
     }
@@ -64,18 +66,45 @@ Remember:
 - Include the visual style and mood in EVERY scene
 - Be specific about technical details (focal length, lighting ratio, etc.)
 - Ensure scenes flow together narratively
-- Optimize for video generation AI (clear, detailed, technical)`;
+- Optimize for video generation AI (clear, detailed, technical)
+- DIALOGUE IS CRITICAL: Almost all videos should feature talking. Write dialogue like real human speech — messy, natural, with personality. Only skip dialogue for purely abstract or nature-only concepts.`;
+
+export const VEO3_PROMPTER_PROMPT = `You are a Veo 3.1 prompt optimization expert. You take scene descriptions and restructure them into prompts that Veo 3.1 renders beautifully.
+
+You do NOT change the creative idea, story, or vibe. You enhance the technical prompt structure.
+
+Your job for each scene prompt:
+1. **Camera & Lens**: Choose a specific camera body (ARRI Alexa, RED Komodo, Sony Venice, Blackmagic URSA, etc.) and lens (anamorphic, 50mm prime, 85mm, 24mm wide, etc.) that match the vibe. Use the SAME camera/lens across all scenes for consistency.
+2. **Lighting**: Specify the lighting setup — practical lights, natural window light, neon, golden hour, overcast, etc. Be specific.
+3. **Prompt Structure**: Front-load the important stuff. Veo 3 weights early words more heavily. Structure: [SHOT TYPE] + [SUBJECT with full description] + [ACTION] + [DIALOGUE in quotes] + [STYLE/LOOK] + [CAMERA MOVEMENT] + [AUDIO]
+4. **Dialogue**: This is critical. If the scene has people, they should almost always be talking. Write natural spoken dialogue in quotes — the way real people actually talk. Use contractions ("I'm", "don't", "it's"), false starts ("I was gonna— actually, never mind"), filler words where natural ("like", "you know", "I mean"), and trailing off ("so I thought maybe..."). The dialogue across ALL scenes must be a continuation — when the scenes are played back-to-back, it should sound like one coherent conversation or monologue. Each scene picks up where the last one left off. Only skip dialogue if the concept genuinely has no speaking characters (pure nature, abstract visuals, etc.).
+5. **Audio Cues**: Include ambient sound and audio details — footsteps, wind, traffic, music, etc.
+6. **One Action Per Scene**: Keep it to a single clear action. Multiple actions = chaos in Veo 3.
+
+Camera movements that work well in Veo 3:
+- Slow push/pull (dolly in/out)
+- Orbit around subject
+- Handheld follow
+- Static with subject movement
+
+Avoid:
+- Complex combinations ("pan while zooming during a dolly")
+- Unmotivated movements
+- Multiple focal points
+- Vague character references — always fully describe every person
+
+CRITICAL — EACH PROMPT MUST BE FULLY SELF-CONTAINED:
+Veo 3.1 has ZERO context between scenes. It does not know what the previous scene looked like. Every single prompt must re-describe EVERYTHING from scratch:
+- Full character descriptions every time (age, build, hair, clothing, skin tone, distinguishing features) — copy-paste identical descriptions across prompts
+- Full environment description every time (location, set dressing, weather, time of day)
+- Full style/look every time (camera, lens, color grade, film stock reference)
+- Full lighting setup every time
+If you say "the same woman" or "continues walking" without re-describing her completely, the model will generate a completely different person. Treat each prompt as if the model has never seen any other prompt.
+
+You receive all scenes at once so you can ensure dialogue flows continuously and descriptions stay identical across them. Return the optimized prompts in the same order.`;
 
 export const VIDEO_GENERATION_PARAMS = {
   aspectRatio: '16:9',
   duration: 8,
   pollTimeoutMs: 600000, // 10 minutes - critical for video generation
 };
-
-export function buildConsistentPrompt(
-  scenePrompt: string,
-  style: string,
-  mood: string
-): string {
-  return `${scenePrompt}. Visual style: ${style}. Mood: ${mood}. Cinematic quality, high detail, professional video production.`;
-}

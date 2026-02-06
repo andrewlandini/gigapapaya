@@ -4,7 +4,7 @@ import {
 } from 'ai';
 import { z } from 'zod';
 import { getTextModel, getVideoModel } from './provider';
-import { IDEA_AGENT_PROMPT, SCENES_AGENT_PROMPT, buildConsistentPrompt } from '../prompts';
+import { IDEA_AGENT_PROMPT, SCENES_AGENT_PROMPT, VEO3_PROMPTER_PROMPT } from '../prompts';
 import { saveVideo } from './video-storage';
 import type { VideoIdea, ScenesResult, Video, GenerationOptions } from '../types';
 
@@ -96,7 +96,15 @@ Style references that consistently deliver:
 - "Shot on [specific camera]" (use the SAME camera for all scenes)
 - "[Director name] style" (use the SAME director reference for all scenes)
 - "[Movie] cinematography" (use the SAME film reference for all scenes)
-- Specific color grading terms (use the SAME grade for all scenes)`;
+- Specific color grading terms (use the SAME grade for all scenes)
+
+DIALOGUE RULES (MANDATORY):
+- Almost ALL videos should feature talking unless the concept genuinely has no speaking characters (pure nature, abstract, etc.)
+- Include natural spoken dialogue in quotes within each scene prompt
+- Write dialogue like people ACTUALLY TALK in real life — not how they write. Use contractions ("I'm", "don't", "can't"), false starts ("I was gonna— actually"), filler words where natural ("like", "you know", "I mean"), trailing off ("so I thought maybe...")
+- Dialogue across scenes MUST be a continuation — when scenes are played back-to-back, it should sound like one coherent conversation or monologue. Each scene picks up where the last one left off.
+- The dialogue should match the mood and vibe of the concept — a tense scene has clipped, urgent speech; a dreamy scene has soft, wandering words
+- NEVER write stiff, formal, or "written" dialogue. Real people don't speak in complete, grammatically perfect sentences.`;
 
 /**
  * Agent 2: Generate scene breakdown from video idea
@@ -142,6 +150,42 @@ Key Elements: ${idea.keyElements.join(', ')}
 }
 
 /**
+ * Agent 2.5: Veo 3 Prompting Expert — optimize scene prompts for Veo 3.1
+ */
+const veo3OptimizedSchema = z.object({
+  optimizedPrompts: z.array(z.string()).describe('Optimized prompts for Veo 3.1, one per scene in the same order'),
+});
+
+export async function executeVeo3PrompterAgent(
+  scenePrompts: string[],
+  style: string,
+  mood: string,
+  consistencyNotes: string
+): Promise<string[]> {
+  console.log('\n🎬 VEO3 PROMPTER: Starting...');
+  console.log(`📹 Optimizing ${scenePrompts.length} scene prompts for Veo 3.1`);
+  console.log(`🎨 Style: ${style}, Mood: ${mood}\n`);
+
+  const scenesText = scenePrompts
+    .map((p, i) => `Scene ${i + 1}: ${p}`)
+    .join('\n\n');
+
+  const result = await generateObject({
+    model: getTextModel('anthropic/claude-sonnet-4.5'),
+    schema: veo3OptimizedSchema,
+    prompt: `${VEO3_PROMPTER_PROMPT}\n\nVisual Style: ${style}\nMood: ${mood}\nConsistency Notes: ${consistencyNotes}\n\nScene prompts to optimize:\n\n${scenesText}\n\nOptimize each prompt for Veo 3.1. Return exactly ${scenePrompts.length} optimized prompts in the same order.`,
+  });
+
+  console.log('✅ VEO3 PROMPTER: Complete');
+  result.object.optimizedPrompts.forEach((p, i) => {
+    console.log(`\n  Scene ${i + 1} (optimized): ${p.substring(0, 120)}...`);
+  });
+  console.log('');
+
+  return result.object.optimizedPrompts;
+}
+
+/**
  * Agent 3: Generate video from scene prompt using AI Gateway + Veo 3.1
  */
 export async function executeVideoAgent(
@@ -157,8 +201,9 @@ export async function executeVideoAgent(
   console.log(`⚙️  Options: ${options.aspectRatio}, ${options.duration}s`);
   console.log('⏳ Generating video (this may take 2-5 minutes)...\n');
 
-  const enhancedPrompt = buildConsistentPrompt(scenePrompt, style, mood);
-  console.log(`🎬 Enhanced Prompt: ${enhancedPrompt}\n`);
+  // Prompt is already optimized by the Veo3 Prompter agent (or passed directly in direct mode)
+  const enhancedPrompt = scenePrompt;
+  console.log(`🎬 Final Prompt: ${enhancedPrompt.substring(0, 200)}...\n`);
 
   const startTime = Date.now();
 

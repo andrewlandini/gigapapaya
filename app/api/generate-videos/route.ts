@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server';
-import { executeVideoAgent } from '@/lib/ai/agents';
+import { executeVideoAgent, executeVeo3PrompterAgent } from '@/lib/ai/agents';
 import { getSession } from '@/lib/auth/session';
 import {
   initDb,
@@ -53,21 +53,38 @@ export async function POST(request: NextRequest) {
         try {
           const videos = [];
 
-          sendEvent({ type: 'agent-log', agent: 'videos', status: `Starting video generation for ${scenes.length} approved scenes` });
+          // Veo 3 Prompter Agent — optimize all scene prompts before video generation
+          sendEvent({ type: 'agent-start', agent: 'veo3-prompter', status: 'Optimizing prompts for Veo 3.1...' });
+          sendEvent({ type: 'agent-log', agent: 'veo3-prompter', status: `Analyzing ${scenes.length} scenes — selecting camera, lens, lighting, adding dialogue...` });
+
+          const optimizedPrompts = await executeVeo3PrompterAgent(
+            scenes.map(s => s.prompt),
+            style,
+            mood,
+            '' // consistencyNotes passed as empty — the prompter handles consistency itself
+          );
+
+          optimizedPrompts.forEach((p, i) => {
+            sendEvent({ type: 'agent-log', agent: 'veo3-prompter', status: `Scene ${i + 1} optimized: ${p.substring(0, 100)}...` });
+          });
+          sendEvent({ type: 'agent-complete', agent: 'veo3-prompter', result: { optimizedPrompts } });
+
+          // Video generation
+          sendEvent({ type: 'agent-log', agent: 'videos', status: `Starting video generation for ${scenes.length} optimized scenes` });
           sendEvent({ type: 'agent-log', agent: 'videos', status: `Config: ${options.aspectRatio} / ${options.duration}s / model: veo-3.1-generate-001` });
 
           for (let i = 0; i < scenes.length; i++) {
-            const scene = scenes[i];
+            const finalPrompt = optimizedPrompts[i] || scenes[i].prompt;
 
-            sendEvent({ type: 'agent-log', agent: 'videos', status: `Preparing scene ${i + 1}: enhancing prompt with style "${style}" and mood "${mood}"` });
+            sendEvent({ type: 'agent-log', agent: 'videos', status: `Sending optimized scene ${i + 1} to Veo 3.1` });
             sendEvent({
-              type: 'video-start', sceneIndex: i, prompt: scene.prompt,
+              type: 'video-start', sceneIndex: i, prompt: finalPrompt,
               status: `Generating video ${i + 1}/${scenes.length}...`,
             });
 
             try {
               const video = await executeVideoAgent(
-                scene.prompt, style, mood, options, i
+                finalPrompt, style, mood, options, i
               );
 
               await saveVideoRecord({

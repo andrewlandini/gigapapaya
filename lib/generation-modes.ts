@@ -62,7 +62,9 @@ Return a structured response:
   "consistencyNotes": "How to maintain overwhelming intensity across all scenes"
 }
 
-Every frame should make the viewer's jaw drop.`,
+Every frame should make the viewer's jaw drop.
+
+DIALOGUE: Include natural spoken dialogue in quotes for talking scenes. Write like people actually talk — contractions, intensity, exclamations. Dialogue across scenes must continue as one coherent flow when played back-to-back. Only skip dialogue if the concept has no speaking characters.`,
   },
   {
     id: 'narrate',
@@ -116,7 +118,9 @@ Return a structured response:
   "consistencyNotes": "How to maintain emotional continuity and character consistency across scenes"
 }
 
-Every frame should reveal something about the character's inner world.`,
+Every frame should reveal something about the character's inner world.
+
+DIALOGUE: Include natural spoken dialogue in quotes. Write like people actually talk — soft, hesitant, emotional, real. Dialogue across scenes must continue as one coherent flow when played back-to-back. Only skip dialogue if the concept has no speaking characters.`,
   },
   {
     id: 'structure',
@@ -170,7 +174,9 @@ Return a structured response:
   "consistencyNotes": "The visual rules that define each structural beat"
 }
 
-The structure should be so clear a viewer could predict the next shot — and love being right.`,
+The structure should be so clear a viewer could predict the next shot — and love being right.
+
+DIALOGUE: Include natural spoken dialogue in quotes. Write like people actually talk — clear, rhythmic, matching the structural beats. Dialogue across scenes must continue as one coherent flow when played back-to-back. Only skip dialogue if the concept has no speaking characters.`,
   },
   {
     id: 'stylize',
@@ -224,7 +230,9 @@ Return a structured response:
   "consistencyNotes": "The strict aesthetic rules that must be maintained across every frame"
 }
 
-If someone muted the video, they should still feel the mood from the visuals alone.`,
+If someone muted the video, they should still feel the mood from the visuals alone.
+
+DIALOGUE: Include natural spoken dialogue in quotes. Write like people actually talk — dreamy, wandering, atmospheric, matching the mood. Dialogue across scenes must continue as one coherent flow when played back-to-back. Only skip dialogue if the concept has no speaking characters.`,
   },
   {
     id: 'subvert',
@@ -278,7 +286,9 @@ Return a structured response:
   "consistencyNotes": "The unifying principle behind the subversion — what ties the rule-breaking together"
 }
 
-If it looks like everything else, start over.`,
+If it looks like everything else, start over.
+
+DIALOGUE: Include natural spoken dialogue in quotes. Write like people actually talk — unexpected, ironic, deadpan, subversive. Dialogue across scenes must continue as one coherent flow when played back-to-back. Only skip dialogue if the concept has no speaking characters.`,
   },
 ];
 
