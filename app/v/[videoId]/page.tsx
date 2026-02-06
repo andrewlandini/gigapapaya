@@ -95,7 +95,7 @@ export default function VideoPage() {
     <div className="min-h-screen bg-black">
       <div className="flex flex-col lg:flex-row min-h-screen">
         {/* Video player — left */}
-        <div className="flex-1 flex items-center justify-center bg-[#0a0a0a] relative min-h-[50vh] lg:min-h-screen">
+        <div className="flex-1 flex items-center justify-center bg-[#0a0a0a] relative min-h-[40vh] lg:min-h-screen p-4 lg:p-0">
           <Link
             href="/"
             className="absolute top-4 left-4 z-10 w-9 h-9 rounded-lg bg-black/50 backdrop-blur-sm border border-[#333] flex items-center justify-center text-[#888] hover:text-white transition-colors"
@@ -107,12 +107,12 @@ export default function VideoPage() {
             controls
             autoPlay
             loop
-            className="max-w-full max-h-[90vh] object-contain"
+            className="w-full lg:w-auto max-w-full max-h-[60vh] lg:max-h-[90vh] object-contain rounded-xl lg:rounded-none"
           />
         </div>
 
         {/* Info panel — right */}
-        <div className="w-full lg:w-[400px] border-l border-[#222] flex flex-col">
+        <div className="w-full lg:w-[400px] lg:border-l border-t lg:border-t-0 border-[#222] flex flex-col">
           {/* Author + description */}
           <div className="p-5 border-b border-[#222] space-y-4">
             <div className="flex items-start gap-3">

@@ -189,9 +189,9 @@ export default function ProfilePage() {
             <p className="text-[#333] text-sm mt-1">Generate your first video</p>
           </div>
         ) : (
-          <div className="columns-1 sm:columns-2 lg:columns-3 gap-3 space-y-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             {videos.map((video) => (
-              <div key={video.id} className="break-inside-avoid">
+              <div key={video.id}>
                 <VideoCard
                   id={video.id}
                   blobUrl={video.blob_url}
