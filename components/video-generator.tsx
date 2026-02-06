@@ -203,10 +203,10 @@ export function VideoGenerator() {
 
                 {/* Scrollable content */}
                 <div className="flex-1 overflow-y-auto divide-y divide-[#222]">
-                  {/* Idea Agent */}
+                  {/* Concept Agent */}
                   <div className="p-5 space-y-3">
                     <div className="flex items-center justify-between">
-                      <span className="text-xs font-mono text-[#888]">Idea Agent</span>
+                      <span className="text-xs font-mono text-[#888]">Concept Agent</span>
                       <div className="flex items-center gap-2">
                         <button
                           onClick={() => restoreModeDefault(settingsTab, 'idea')}

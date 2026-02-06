@@ -41,7 +41,7 @@ export function ProgressTracker({ events }: ProgressTrackerProps) {
       }
 
       if (event.type === 'agent-start' && event.agent) {
-        const label = event.agent === 'idea' ? 'Idea Agent' : event.agent === 'scenes' ? 'Scene Agent' : 'Video Agent';
+        const label = event.agent === 'idea' ? 'Concept Agent' : event.agent === 'scenes' ? 'Scene Agent' : 'Video Agent';
         const idx = result.length;
         agentMap.set(event.agent, idx);
         result.push({
