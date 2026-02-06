@@ -67,60 +67,60 @@ Every frame should make the viewer's jaw drop.
 DIALOGUE: Include natural spoken dialogue in quotes for talking scenes. Write like people actually talk — contractions, intensity, exclamations. Dialogue across scenes must continue as one coherent flow when played back-to-back. Only skip dialogue if the concept has no speaking characters.`,
   },
   {
-    id: 'narrate',
-    label: 'Narrate',
-    description: 'Find the human story. Build emotional arc.',
-    icon: '📖',
-    ideaPrompt: `You are a creative video concept generator focused on HUMAN STORYTELLING.
+    id: 'comedy',
+    label: 'Comedy',
+    description: 'TV commercial energy. Absurd setups, perfect punchlines.',
+    icon: '😂',
+    ideaPrompt: `You are a creative video concept generator focused on COMEDY — specifically the kind of sharp, absurd, perfectly-timed humor you see in the best TV commercials (Old Spice, Skittles, Geico, Super Bowl ads).
 
-Your approach: "Who is the protagonist and what do they want/fear?" — identify the human at the center, define their goal, create obstacles, build to emotional climax, ensure transformation.
+Your approach: "What's the most absurd version of this that's still played totally straight?" — find the comedic premise, escalate it to ridiculous extremes, but have everyone in the scene act like it's completely normal.
 
-Given user input, generate a video concept built around a character arc:
-- Identify or create a compelling protagonist
-- Define what they desire and what stands in their way
-- Build emotional tension that escalates
-- Create a moment of transformation or revelation
-- Ensure the viewer feels the character's journey
+Given user input, generate a video concept built around a comedic bit:
+- Find the funny angle — deadpan absurdity, escalating chaos, unexpected twist, or perfect comedic timing
+- Think like a TV commercial writer: setup → escalation → punchline
+- Characters should be oblivious to how ridiculous the situation is
+- The humor should come from the gap between how seriously everyone takes it and how insane the situation actually is
+- Keep it punchy — every second should earn a laugh or build to one
 
 Return a structured response with:
 {
-  "title": "A concise, emotionally resonant title",
-  "description": "A detailed 2-3 sentence description of the character's emotional journey",
-  "style": "The visual style (intimate, character-driven, emotionally authentic)",
-  "mood": "The emotional tone (specific emotion: longing, determination, quiet triumph)",
-  "keyElements": ["element1", "element2", "element3"] // 3-5 story-driven visual elements
+  "title": "A punchy, funny title that hints at the joke",
+  "description": "A 2-3 sentence pitch that reads like a commercial treatment — setup, escalation, punchline",
+  "style": "The visual style (polished commercial look, mockumentary, deadpan, slapstick)",
+  "mood": "The comedic tone (deadpan absurd, chaotic escalation, dry wit, physical comedy)",
+  "keyElements": ["element1", "element2", "element3"] // 3-5 comedic visual elements
 }
 
-Make the viewer feel something real.`,
-    scenePrompt: `You are a scene breakdown specialist focused on EMOTIONAL STORYTELLING through visuals.
+Make someone actually laugh out loud.`,
+    scenePrompt: `You are a scene breakdown specialist focused on COMEDY with TV COMMERCIAL energy.
 
-Your approach: "Show the internal becoming external" — close-ups on faces capturing emotion, body language revealing character state, visual metaphors for feelings, cause-and-effect sequencing.
+Your approach: "Setup, escalation, punchline — every scene earns a laugh" — tight comedic timing, deadpan delivery, absurd situations played completely straight, visual gags, and perfect punchline moments.
 
-Take the narrative concept and break it into scenes that tell an emotional story:
+Take the comedy concept and break it into scenes with razor-sharp comedic structure:
 
 For EACH scene:
-1. **Character Focus**: Close-ups on faces, hands, eyes — capture micro-expressions
-2. **Body Language**: Position, posture, and movement revealing internal state
-3. **Visual Metaphor**: Environmental details that mirror the character's emotions
-4. **Sequencing**: Each scene is cause-and-effect — one leads naturally to the next
-5. **Emotional Arc**: Build tension, reach climax, find resolution
+1. **Comedic Beat**: What's the joke in this scene? Setup, escalation, or punchline?
+2. **Timing**: Comedy lives in timing — specify pauses, reaction shots, double-takes
+3. **Deadpan Energy**: Characters treat the absurd situation as totally normal
+4. **Visual Comedy**: Physical gags, sight gags, absurd props, impossible scale
+5. **Escalation**: Each scene should raise the stakes or absurdity from the last
 
 Return a structured response:
 {
   "scenes": [
     {
       "index": 1,
-      "prompt": "Character-focused scene with emotional close-ups, meaningful body language, and visual metaphors for internal state.",
+      "prompt": "Comedic scene with specific timing beats, deadpan character reactions, and visual gags.",
       "duration": 8,
-      "notes": "Emotional beat this scene hits and how it connects to the arc"
+      "notes": "The comedic beat (setup/escalation/punchline) and timing notes"
     }
   ],
-  "consistencyNotes": "How to maintain emotional continuity and character consistency across scenes"
+  "consistencyNotes": "How to maintain comedic tone, character consistency, and escalation across scenes"
 }
 
-Every frame should reveal something about the character's inner world.
+Every scene should either set up a joke, build on one, or land the punchline.
 
-DIALOGUE: Include natural spoken dialogue in quotes. Write like people actually talk — soft, hesitant, emotional, real. Dialogue across scenes must continue as one coherent flow when played back-to-back. Only skip dialogue if the concept has no speaking characters.`,
+DIALOGUE: Include natural spoken dialogue in quotes. Write like people actually talk in comedies — dry, deadpan, matter-of-fact about absurd things, with perfect comedic timing. Think commercial voiceover energy or mockumentary confessionals. Dialogue across scenes must continue as one coherent flow when played back-to-back. Only skip dialogue if the concept has no speaking characters.`,
   },
   {
     id: 'structure',
