@@ -1,12 +1,15 @@
 'use client';
 
-import { Zap, RotateCcw, Play, X, Trash2, Clock } from 'lucide-react';
+import { useState } from 'react';
+import { Zap, RotateCcw, Play, X, Trash2, Clock, ChevronDown, Settings2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ProgressTracker } from './progress-tracker';
 import { ScenePreview } from './scene-preview';
 import { VideoGallery } from './video-gallery';
 import { useStoryboard } from './storyboard-context';
+import { TEXT_MODELS } from '@/lib/types';
+import { IDEA_AGENT_PROMPT, SCENES_AGENT_PROMPT } from '@/lib/prompts';
 
 export function VideoGenerator() {
   const {
@@ -15,6 +18,8 @@ export function VideoGenerator() {
     isGenerating,
     history, deleteHistoryEntry, clearHistory, loadFromHistory,
   } = useStoryboard();
+
+  const [showAgentSettings, setShowAgentSettings] = useState(false);
 
   return (
     <div className="min-h-screen bg-black flex flex-col">
@@ -145,6 +150,87 @@ export function VideoGenerator() {
               )}
             </div>
           </div>
+
+          {/* Agent settings */}
+          {options.mode === 'agents' && (
+            <div className="border border-[#222] rounded-xl overflow-hidden">
+              <button
+                onClick={() => setShowAgentSettings(!showAgentSettings)}
+                disabled={isGenerating}
+                className="w-full flex items-center justify-between px-4 py-3 hover:bg-[#0a0a0a] transition-colors"
+              >
+                <div className="flex items-center gap-2">
+                  <Settings2 className="h-4 w-4 text-[#555]" />
+                  <span className="text-sm text-[#888]">Agent Settings</span>
+                </div>
+                <ChevronDown className={`h-4 w-4 text-[#555] transition-transform ${showAgentSettings ? 'rotate-180' : ''}`} />
+              </button>
+
+              {showAgentSettings && (
+                <div className="border-t border-[#222] divide-y divide-[#222]">
+                  {/* Idea Agent */}
+                  <div className="p-4 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-mono text-[#888]">Idea Agent</span>
+                      <select
+                        value={options.ideaAgent?.model || 'openai/gpt-4o'}
+                        onChange={(e) => setOptions(prev => ({
+                          ...prev,
+                          ideaAgent: { ...prev.ideaAgent, model: e.target.value, prompt: prev.ideaAgent?.prompt || IDEA_AGENT_PROMPT },
+                        }))}
+                        disabled={isGenerating}
+                        className="h-7 px-2 rounded-md border border-[#333] bg-black text-xs text-[#888] font-mono max-w-[200px]"
+                      >
+                        {TEXT_MODELS.map(m => (
+                          <option key={m.id} value={m.id}>{m.label}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <textarea
+                      value={options.ideaAgent?.prompt || IDEA_AGENT_PROMPT}
+                      onChange={(e) => setOptions(prev => ({
+                        ...prev,
+                        ideaAgent: { model: prev.ideaAgent?.model || 'openai/gpt-4o', prompt: e.target.value },
+                      }))}
+                      disabled={isGenerating}
+                      rows={6}
+                      className="w-full bg-[#0a0a0a] border border-[#333] rounded-lg px-3 py-2 text-xs text-[#888] font-mono placeholder:text-[#444] focus:outline-none focus:border-[#555] resize-y leading-relaxed"
+                    />
+                  </div>
+
+                  {/* Scene Agent */}
+                  <div className="p-4 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-mono text-[#888]">Scene Agent</span>
+                      <select
+                        value={options.sceneAgent?.model || 'openai/gpt-4o'}
+                        onChange={(e) => setOptions(prev => ({
+                          ...prev,
+                          sceneAgent: { ...prev.sceneAgent, model: e.target.value, prompt: prev.sceneAgent?.prompt || SCENES_AGENT_PROMPT },
+                        }))}
+                        disabled={isGenerating}
+                        className="h-7 px-2 rounded-md border border-[#333] bg-black text-xs text-[#888] font-mono max-w-[200px]"
+                      >
+                        {TEXT_MODELS.map(m => (
+                          <option key={m.id} value={m.id}>{m.label}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <textarea
+                      value={options.sceneAgent?.prompt || SCENES_AGENT_PROMPT}
+                      onChange={(e) => setOptions(prev => ({
+                        ...prev,
+                        sceneAgent: { model: prev.sceneAgent?.model || 'openai/gpt-4o', prompt: e.target.value },
+                      }))}
+                      disabled={isGenerating}
+                      rows={6}
+                      className="w-full bg-[#0a0a0a] border border-[#333] rounded-lg px-3 py-2 text-xs text-[#888] font-mono placeholder:text-[#444] focus:outline-none focus:border-[#555] resize-y leading-relaxed"
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Prompt history */}
           {state.status === 'idle' && history.length > 0 && (

@@ -65,12 +65,32 @@ export interface GenerationState {
   error: string | null;
 }
 
+export interface AgentConfig {
+  model: string;
+  prompt: string;
+}
+
 export interface GenerationOptions {
   aspectRatio: '16:9' | '9:16' | '4:3' | '1:1';
   duration: number;
   numScenes?: number;
   mode: 'agents' | 'direct';
+  ideaAgent?: AgentConfig;
+  sceneAgent?: AgentConfig;
 }
+
+export const TEXT_MODELS = [
+  { id: 'anthropic/claude-opus-4.6', label: 'Claude Opus 4.6' },
+  { id: 'openai/gpt-5', label: 'GPT-5' },
+  { id: 'google/gemini-2.5-pro', label: 'Gemini 2.5 Pro' },
+  { id: 'anthropic/claude-sonnet-4.5', label: 'Claude Sonnet 4.5' },
+  { id: 'openai/gpt-4o', label: 'GPT-4o' },
+  { id: 'xai/grok-3', label: 'Grok 3' },
+  { id: 'deepseek/deepseek-v3.2', label: 'DeepSeek V3.2' },
+  { id: 'mistral/mistral-large-3', label: 'Mistral Large 3' },
+  { id: 'google/gemini-3-flash', label: 'Gemini 3 Flash' },
+  { id: 'anthropic/claude-haiku-4.5', label: 'Claude Haiku 4.5' },
+] as const;
 
 export interface SSEMessage {
   type: ProgressEventType;

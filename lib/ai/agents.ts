@@ -32,14 +32,21 @@ const scenesResultSchema = z.object({
 /**
  * Agent 1: Generate creative video idea from user input
  */
-export async function executeIdeaAgent(userInput: string): Promise<VideoIdea> {
+export async function executeIdeaAgent(
+  userInput: string,
+  config?: { model?: string; prompt?: string }
+): Promise<VideoIdea> {
+  const modelId = config?.model || 'openai/gpt-4o';
+  const systemPrompt = config?.prompt || IDEA_AGENT_PROMPT;
+
   console.log('\n🎨 IDEA AGENT: Starting...');
-  console.log(`📝 User Input: "${userInput}"\n`);
+  console.log(`📝 User Input: "${userInput}"`);
+  console.log(`🤖 Model: ${modelId}\n`);
 
   const result = await generateObject({
-    model: getTextModel('openai/gpt-4o'),
+    model: getTextModel(modelId),
     schema: videoIdeaSchema,
-    prompt: `${IDEA_AGENT_PROMPT}\n\nUser Input: ${userInput}`,
+    prompt: `${systemPrompt}\n\nUser Input: ${userInput}`,
   });
 
   console.log('✅ IDEA AGENT: Complete');
@@ -54,11 +61,16 @@ export async function executeIdeaAgent(userInput: string): Promise<VideoIdea> {
  */
 export async function executeScenesAgent(
   idea: VideoIdea,
-  numScenes: number = 3
+  numScenes: number = 3,
+  config?: { model?: string; prompt?: string }
 ): Promise<ScenesResult> {
+  const modelId = config?.model || 'openai/gpt-4o';
+  const systemPrompt = config?.prompt || SCENES_AGENT_PROMPT;
+
   console.log('\n🎬 SCENES AGENT: Starting...');
   console.log(`📋 Idea: ${idea.title}`);
-  console.log(`🎯 Target: ${numScenes} scenes\n`);
+  console.log(`🎯 Target: ${numScenes} scenes`);
+  console.log(`🤖 Model: ${modelId}\n`);
 
   const ideaSummary = `
 Title: ${idea.title}
@@ -69,9 +81,9 @@ Key Elements: ${idea.keyElements.join(', ')}
 `;
 
   const result = await generateObject({
-    model: getTextModel('openai/gpt-4o'),
+    model: getTextModel(modelId),
     schema: scenesResultSchema,
-    prompt: `${SCENES_AGENT_PROMPT}\n\nVideo Idea:\n${ideaSummary}\n\nGenerate ${numScenes} scenes that follow this concept.`,
+    prompt: `${systemPrompt}\n\nVideo Idea:\n${ideaSummary}\n\nGenerate ${numScenes} scenes that follow this concept.`,
   });
 
   console.log('✅ SCENES AGENT: Complete');

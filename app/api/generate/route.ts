@@ -94,7 +94,7 @@ export async function POST(request: NextRequest) {
             sendEvent({ type: 'agent-log', agent: 'idea', status: 'Analyzing input for visual potential, narrative hooks, and cinematic style...' });
             sendEvent({ type: 'agent-start', agent: 'idea', status: 'Generating creative video concept...' });
 
-            const ideaResult = await executeIdeaAgent(idea);
+            const ideaResult = await executeIdeaAgent(idea, options.ideaAgent);
             await updateGenerationIdea(sessionId, ideaResult);
 
             sendEvent({ type: 'agent-log', agent: 'idea', status: `Concept: "${ideaResult.title}"` });
@@ -108,7 +108,7 @@ export async function POST(request: NextRequest) {
             sendEvent({ type: 'agent-log', agent: 'scenes', status: 'Crafting camera angles, lighting, composition for each scene...' });
             sendEvent({ type: 'agent-start', agent: 'scenes', status: 'Crafting scene variations...' });
 
-            const scenesResult = await executeScenesAgent(ideaResult, options.numScenes || 3);
+            const scenesResult = await executeScenesAgent(ideaResult, options.numScenes || 3, options.sceneAgent);
             await updateGenerationScenes(sessionId, scenesResult);
 
             sendEvent({ type: 'agent-log', agent: 'scenes', status: `Generated ${scenesResult.scenes.length} scenes` });
