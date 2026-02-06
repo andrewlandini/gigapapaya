@@ -209,18 +209,20 @@ export function VideoGenerator() {
 
               {/* Mode buttons */}
               <div className="flex flex-wrap gap-3 justify-center">
-                {GENERATION_MODES.map((mode) => (
-                  <button
-                    key={mode.id}
-                    onClick={() => startModeGeneration(mode.id)}
-                    disabled={!state.idea.trim()}
-                    title={mode.description}
-                    className="group flex items-center gap-2 h-11 px-5 rounded-full border border-[#333] bg-[#0a0a0a] hover:border-[#555] hover:bg-[#111] disabled:opacity-30 disabled:cursor-not-allowed transition-all"
-                  >
-                    <span className="text-base">{mode.icon}</span>
-                    <span className="text-sm text-[#ededed]">{mode.label}</span>
-                  </button>
-                ))}
+                {GENERATION_MODES.map((mode) => {
+                  const noIdea = !state.idea.trim();
+                  return (
+                    <button
+                      key={mode.id}
+                      onClick={() => !noIdea && startModeGeneration(mode.id)}
+                      title={mode.description}
+                      className={`group flex items-center gap-2 h-11 px-5 rounded-full border border-[#333] bg-[#0a0a0a] transition-all ${noIdea ? 'opacity-30' : 'hover:border-[#555] hover:bg-[#111] cursor-pointer'}`}
+                    >
+                      <span className="text-base">{mode.icon}</span>
+                      <span className="text-sm text-[#ededed]">{mode.label}</span>
+                    </button>
+                  );
+                })}
               </div>
 
             </div>
