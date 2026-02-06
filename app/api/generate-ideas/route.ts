@@ -7,54 +7,47 @@ import { getTextModel } from '@/lib/ai/provider';
 export const runtime = 'nodejs';
 export const maxDuration = 30;
 
-// Random creative seeds to force variety in AI responses
-const CREATIVE_SEEDS = [
-  "Think about: deep ocean creatures", "Think about: 1920s jazz age", "Think about: microscopic worlds",
-  "Think about: abandoned theme parks", "Think about: animals with human jobs", "Think about: food that's alive",
-  "Think about: parallel dimensions", "Think about: ancient civilizations with modern tech", "Think about: weather as a character",
-  "Think about: backwards time", "Think about: sentient machines", "Think about: dream logic",
-  "Think about: underground societies", "Think about: space tourism gone wrong", "Think about: tiny people big world",
-  "Think about: nature reclaiming cities", "Think about: mythical creatures in mundane jobs", "Think about: the internet as a physical place",
-  "Think about: music you can see", "Think about: gravity doesn't work", "Think about: everything is made of candy",
-  "Think about: Victorian steampunk", "Think about: pets running the government", "Think about: living inside a painting",
-  "Think about: a world without color", "Think about: aliens learning human culture", "Think about: objects with feelings",
-  "Think about: a restaurant at the end of the universe", "Think about: sports that don't exist yet", "Think about: time travelers as tourists",
-  "Think about: haunted but funny", "Think about: heist but wholesome", "Think about: detective noir but animals",
-  "Think about: cooking competition but apocalyptic", "Think about: road trip through impossible landscapes",
-  "Think about: old people doing extreme sports", "Think about: babies running a corporation",
-  "Think about: medieval knights with smartphones", "Think about: plants that can talk", "Think about: living inside a video game",
-  "Think about: a world where music is illegal", "Think about: cloud cities", "Think about: dinosaurs never went extinct",
-  "Think about: a library that contains every possible future", "Think about: a postal service between planets",
-  "Think about: a school for supervillains", "Think about: an elevator that goes to different realities",
-  "Think about: a world where shadows are alive", "Think about: last day on earth but it's chill",
-  "Think about: competitive sleeping", "Think about: a neighborhood of monsters", "Think about: backwards evolution",
-  "Think about: a taxi that drives through time", "Think about: mermaids in a landlocked city",
-  "Think about: robot stand-up comedy", "Think about: a dating show on Mars", "Think about: furniture that rearranges itself",
-  "Think about: a rain forest in a skyscraper", "Think about: a world where lying is physically impossible",
-  "Think about: pirates but in space", "Think about: a museum of things that never happened",
-  "Think about: sentient weather patterns", "Think about: a cafe between life and death",
-  "Think about: a world where everyone has one superpower but it's useless", "Think about: neon Tokyo alleyways",
-  "Think about: a documentary crew filming cryptids", "Think about: a retirement home for action heroes",
-  "Think about: a world powered by imagination", "Think about: trees that grow buildings",
-  "Think about: an orchestra of machines", "Think about: a world where art comes alive at night",
-  "Think about: competitive gardening but intense", "Think about: a train that never stops",
-  "Think about: a barbershop on the moon", "Think about: bugs with civilizations",
-  "Think about: a world where dance is communication", "Think about: volcanoes that erupt glitter",
-  "Think about: a snowglobe you can live inside", "Think about: cowboys but underwater",
-  "Think about: a world where memories are currency", "Think about: bioluminescent everything",
-  "Think about: a laundromat between dimensions", "Think about: a world where gravity shifts every hour",
-  "Think about: origami that folds itself", "Think about: a planet made entirely of glass",
-  "Think about: a farmer growing impossible things", "Think about: penguins with a space program",
-  "Think about: a city that walks", "Think about: a world where music creates physical things",
-  "Think about: a detective who solves crimes in dreams", "Think about: an ant colony the size of a country",
-  "Think about: a clockmaker who controls time", "Think about: fish that fly and birds that swim",
-  "Think about: a world where colors have sounds", "Think about: a hotel with infinite floors",
-  "Think about: moss that records memories", "Think about: a world where everyone has a twin from another era",
-  "Think about: a junkyard that builds itself into sculptures", "Think about: a desert that floods every sunset",
+// Random question framings to force variety — these change HOW the model asks, not just WHAT about
+const QUESTION_FRAMINGS = [
+  "Ask about a PLACE the user wants to visit", "Ask about a PERSON they'd want to film",
+  "Ask about a specific MOMENT in time", "Ask about a SOUND they want to hear",
+  "Ask about something they'd want to see in SLOW MOTION", "Ask about a TEXTURE or MATERIAL",
+  "Ask about a specific TIME OF DAY", "Ask about a WEATHER condition",
+  "Ask about a COLOR PALETTE", "Ask about a SIZE or SCALE (tiny? massive? infinite?)",
+  "Ask about an ERA or DECADE", "Ask about a specific ANIMAL",
+  "Ask about a TYPE OF VEHICLE", "Ask about a SPORT or PHYSICAL ACTIVITY",
+  "Ask about a specific FOOD or DRINK", "Ask about a ROOM or INTERIOR",
+  "Ask about a specific PROFESSION", "Ask about something that SHOULDN'T be able to move but does",
+  "Ask about something BEAUTIFUL happening somewhere UGLY", "Ask about something UGLY happening somewhere BEAUTIFUL",
+  "Ask about a COMPETITION between unlikely opponents", "Ask about something HUGE that's actually TINY",
+  "Ask about a MISTAKE that leads to something amazing", "Ask about the LAST TIME something happens",
+  "Ask about the FIRST TIME something happens", "Ask about something seen from an UNUSUAL ANGLE",
+  "Ask about a SECRET that's about to be revealed", "Ask about two OPPOSITE things colliding",
+  "Ask about something that only happens at NIGHT", "Ask about something happening UNDERWATER",
+  "Ask about something happening in the SKY", "Ask about something happening UNDERGROUND",
+  "Ask about a RITUAL or CEREMONY", "Ask about a specific MACHINE or DEVICE",
+  "Ask about something happening in a MIRROR or REFLECTION", "Ask about a CROWD doing something unexpected",
+  "Ask about ONE PERSON alone in a vast space", "Ask about something happening in COMPLETE SILENCE",
+  "Ask about something that's MELTING or DISSOLVING", "Ask about something being BUILT or ASSEMBLED",
+  "Ask about a CHASE", "Ask about a DANCE", "Ask about a FALL", "Ask about a DISCOVERY",
+  "Ask about a TRANSFORMATION", "Ask about an ARRIVAL", "Ask about a DEPARTURE",
+  "Ask about something GLOWING", "Ask about something SPINNING", "Ask about something FLOATING",
+];
+
+const OPTION_VIBES = [
+  "Make one option retro/vintage", "Make one option futuristic/sci-fi", "Make one option cozy/warm",
+  "Make one option epic/grand scale", "Make one option intimate/close-up", "Make one option chaotic/energetic",
+  "Make one option peaceful/meditative", "Make one option funny/absurd", "Make one option mysterious/noir",
+  "Make one option colorful/psychedelic", "Make one option minimalist/stark", "Make one option lush/tropical",
+  "Make one option industrial/gritty", "Make one option dreamlike/surreal", "Make one option documentary/real",
+  "Make one option theatrical/dramatic", "Make one option childlike/playful", "Make one option elegant/sophisticated",
+  "Make one option punk/rebellious", "Make one option nostalgic/bittersweet",
 ];
 
 function getRandomSeed(): string {
-  return CREATIVE_SEEDS[Math.floor(Math.random() * CREATIVE_SEEDS.length)];
+  const framing = QUESTION_FRAMINGS[Math.floor(Math.random() * QUESTION_FRAMINGS.length)];
+  const vibe = OPTION_VIBES[Math.floor(Math.random() * OPTION_VIBES.length)];
+  return `${framing}. ${vibe}.`;
 }
 
 const ideaSchema = z.object({
