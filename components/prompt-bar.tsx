@@ -18,28 +18,45 @@ const ORIENTATIONS = [
 
 const DURATIONS = [4, 6, 8] as const;
 
+const VIDEO_MODELS = [
+  { id: 'veo-3.1', label: 'Veo 3.1', available: true },
+  { id: 'sonnet-5', label: 'Sonnet 5', available: true },
+  { id: 'sora-2-pro', label: 'Sora 2 Pro', available: false },
+  { id: 'runway-gen4', label: 'Runway Gen-4', available: false },
+  { id: 'kling-2.1', label: 'Kling 2.1', available: false },
+  { id: 'minimax-video-01', label: 'MiniMax Video-01', available: false },
+  { id: 'pika-2.2', label: 'Pika 2.2', available: false },
+  { id: 'luma-ray-3', label: 'Luma Ray 3', available: false },
+] as const;
+
 export function PromptBar({ isAuthenticated }: PromptBarProps) {
   const [prompt, setPrompt] = useState('');
   const [showSettings, setShowSettings] = useState(false);
+  const [showModelPicker, setShowModelPicker] = useState(false);
+  const [selectedModel, setSelectedModel] = useState('veo-3.1');
   const [aspectRatio, setAspectRatio] = useState<string>('16:9');
   const [duration, setDuration] = useState<number>(8);
+  const modelRef = useRef<HTMLDivElement>(null);
   const settingsRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { startGeneration } = useGeneration();
   const { showToast } = useToast();
 
-  // Close settings on click outside
+  // Close popups on click outside
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
       if (settingsRef.current && !settingsRef.current.contains(e.target as Node)) {
         setShowSettings(false);
       }
+      if (modelRef.current && !modelRef.current.contains(e.target as Node)) {
+        setShowModelPicker(false);
+      }
     }
-    if (showSettings) {
+    if (showSettings || showModelPicker) {
       document.addEventListener('mousedown', handleClickOutside);
       return () => document.removeEventListener('mousedown', handleClickOutside);
     }
-  }, [showSettings]);
+  }, [showSettings, showModelPicker]);
 
   const autoResize = useCallback(() => {
     const el = textareaRef.current;
@@ -90,7 +107,7 @@ export function PromptBar({ isAuthenticated }: PromptBarProps) {
                   <span className="text-sm text-[#ededed]">Model</span>
                 </div>
                 <div className="flex items-center gap-1">
-                  <span className="text-sm text-[#888]">Veo 3.1</span>
+                  <span className="text-sm text-[#888]">{VIDEO_MODELS.find(m => m.id === selectedModel)?.label}</span>
                   <ChevronRight className="h-3.5 w-3.5 text-[#555]" />
                 </div>
               </div>
@@ -196,12 +213,45 @@ export function PromptBar({ isAuthenticated }: PromptBarProps) {
             </div>
 
             <div className="flex items-center gap-2">
-              <button
-                onClick={() => setShowSettings(!showSettings)}
-                className="h-9 px-3 rounded-xl bg-[#1a1a1a] border border-[#333] flex items-center gap-2 text-sm text-[#888] hover:text-white hover:border-[#555] transition-colors"
-              >
-                Veo 3.1
-              </button>
+              <div className="relative" ref={modelRef}>
+                <button
+                  onClick={() => setShowModelPicker(!showModelPicker)}
+                  className="h-9 px-3 rounded-xl bg-[#1a1a1a] border border-[#333] flex items-center gap-2 text-sm text-[#888] hover:text-white hover:border-[#555] transition-colors"
+                >
+                  {VIDEO_MODELS.find(m => m.id === selectedModel)?.label}
+                  <ChevronRight className={`h-3 w-3 transition-transform ${showModelPicker ? 'rotate-90' : ''}`} />
+                </button>
+                {showModelPicker && (
+                  <div className="absolute bottom-full right-0 mb-2 w-52 rounded-xl border border-[#333] bg-[#111]/95 backdrop-blur-xl shadow-2xl overflow-hidden animate-fade-in">
+                    <div className="p-1">
+                      {VIDEO_MODELS.map((model) => (
+                        <button
+                          key={model.id}
+                          onClick={() => {
+                            if (model.available) {
+                              setSelectedModel(model.id);
+                              setShowModelPicker(false);
+                            }
+                          }}
+                          disabled={!model.available}
+                          className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm transition-colors ${
+                            selectedModel === model.id
+                              ? 'bg-white text-black'
+                              : model.available
+                                ? 'text-[#ededed] hover:bg-[#1a1a1a]'
+                                : 'text-[#444] cursor-default'
+                          }`}
+                        >
+                          <span>{model.label}</span>
+                          {!model.available && (
+                            <span className="text-[10px] font-mono text-[#444]">coming soon</span>
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
               <button
                 onClick={handleSubmit}
                 disabled={!prompt.trim()}
