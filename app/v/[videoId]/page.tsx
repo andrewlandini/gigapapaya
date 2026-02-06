@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Heart, ArrowLeft, Download, Pencil, Trash2 } from 'lucide-react';
+import { Heart, ArrowLeft, Download, Pencil, Trash2, X } from 'lucide-react';
 
 interface VideoDetail {
   id: string;
@@ -33,6 +33,8 @@ export default function VideoPage() {
   const [editingDesc, setEditingDesc] = useState(false);
   const [description, setDescription] = useState('');
   const [savingDesc, setSavingDesc] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     async function load() {
@@ -72,8 +74,10 @@ export default function VideoPage() {
   };
 
   const handleDelete = async () => {
+    setDeleting(true);
     const res = await fetch(`/api/videos/${videoId}/delete`, { method: 'POST' });
     if (res.ok) router.back();
+    setDeleting(false);
   };
 
   if (loading) {
@@ -218,11 +222,11 @@ export default function VideoPage() {
                 <Download className="h-5 w-5" />
               </a>
 
-              {isAdmin && (
+              {(isOwner || isAdmin) && (
                 <button
-                  onClick={handleDelete}
+                  onClick={() => setShowDeleteConfirm(true)}
                   className="flex items-center gap-1.5 text-[#555] hover:text-[#ff4444] transition-colors ml-auto"
-                  title="Delete video (admin)"
+                  title="Delete video"
                 >
                   <Trash2 className="h-5 w-5" />
                 </button>
@@ -234,6 +238,42 @@ export default function VideoPage() {
           <div className="flex-1" />
         </div>
       </div>
+
+      {/* Delete confirmation */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={() => setShowDeleteConfirm(false)} />
+          <div className="relative bg-[#111] border border-[#333] rounded-2xl w-full max-w-sm shadow-2xl">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-[#222]">
+              <span className="text-sm font-medium text-[#ededed]">Delete video?</span>
+              <button
+                onClick={() => setShowDeleteConfirm(false)}
+                className="p-1 rounded-lg text-[#555] hover:text-white hover:bg-[#222] transition-colors"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            <div className="p-5 space-y-4">
+              <p className="text-sm text-[#888]">This will permanently delete this video. This action cannot be undone.</p>
+              <div className="flex gap-2">
+                <button
+                  onClick={handleDelete}
+                  disabled={deleting}
+                  className="flex-1 h-10 rounded-lg bg-[#ff4444] text-white text-sm font-medium hover:bg-[#ff4444]/90 transition-colors disabled:opacity-50"
+                >
+                  {deleting ? 'Deleting...' : 'Delete'}
+                </button>
+                <button
+                  onClick={() => setShowDeleteConfirm(false)}
+                  className="flex-1 h-10 rounded-lg border border-[#333] text-sm text-[#ededed] hover:bg-[#222] transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
