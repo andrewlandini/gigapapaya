@@ -37,7 +37,7 @@ export async function executeIdeaAgent(userInput: string): Promise<VideoIdea> {
   console.log(`📝 User Input: "${userInput}"\n`);
 
   const result = await generateObject({
-    model: getTextModel('gpt-4o') as any,
+    model: getTextModel('gpt-4o'),
     schema: videoIdeaSchema,
     prompt: `${IDEA_AGENT_PROMPT}\n\nUser Input: ${userInput}`,
   });
@@ -69,7 +69,7 @@ Key Elements: ${idea.keyElements.join(', ')}
 `;
 
   const result = await generateObject({
-    model: getTextModel('gpt-4o') as any,
+    model: getTextModel('gpt-4o'),
     schema: scenesResultSchema,
     prompt: `${SCENES_AGENT_PROMPT}\n\nVideo Idea:\n${ideaSummary}\n\nGenerate ${numScenes} scenes that follow this concept.`,
   });

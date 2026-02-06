@@ -19,7 +19,6 @@ let dbInitialized = false;
 export async function POST(request: NextRequest) {
   console.log('\n🚀 API: Generate endpoint called');
 
-  // Initialize database on first request
   if (!dbInitialized) {
     await initDb();
     dbInitialized = true;
@@ -32,7 +31,9 @@ export async function POST(request: NextRequest) {
       options: GenerationOptions;
     };
 
+    const mode = options.mode || 'agents';
     console.log(`📝 Idea: ${idea}`);
+    console.log(`⚙️  Mode: ${mode}`);
     console.log(`⚙️  Options:`, options);
 
     if (!idea || !idea.trim()) {
@@ -54,105 +55,147 @@ export async function POST(request: NextRequest) {
         };
 
         try {
-          // Create generation record in DB
           await createGeneration(sessionId, idea);
 
-          // ── Agent 1: Idea ──────────────────────────────────
-          sendEvent({
-            type: 'agent-start',
-            agent: 'idea',
-            status: 'Generating creative video concept...',
-          });
-
-          const ideaResult = await executeIdeaAgent(idea);
-          await updateGenerationIdea(sessionId, ideaResult);
-
-          sendEvent({
-            type: 'agent-complete',
-            agent: 'idea',
-            result: ideaResult,
-          });
-
-          // ── Agent 2: Scenes ────────────────────────────────
-          sendEvent({
-            type: 'agent-start',
-            agent: 'scenes',
-            status: 'Crafting scene variations...',
-          });
-
-          const scenesResult = await executeScenesAgent(
-            ideaResult,
-            options.numScenes || 3
-          );
-          await updateGenerationScenes(sessionId, scenesResult);
-
-          sendEvent({
-            type: 'agent-complete',
-            agent: 'scenes',
-            result: scenesResult,
-          });
-
-          // ── Agent 3: Videos ────────────────────────────────
-          const videos = [];
-
-          for (let i = 0; i < scenesResult.scenes.length; i++) {
-            const scene = scenesResult.scenes[i];
-
+          if (mode === 'direct') {
+            // ── Direct mode: skip agents, generate video from raw prompt ──
             sendEvent({
               type: 'video-start',
-              sceneIndex: i,
-              prompt: scene.prompt,
-              status: `Generating video ${i + 1}/${scenesResult.scenes.length}...`,
+              sceneIndex: 0,
+              prompt: idea,
+              status: 'Generating video from your prompt...',
             });
 
-            try {
-              const video = await executeVideoAgent(
-                scene.prompt,
-                ideaResult.style,
-                ideaResult.mood,
-                options,
-                i
-              );
+            const video = await executeVideoAgent(
+              idea,
+              '', // no style
+              '', // no mood
+              options,
+              0
+            );
 
-              // Save video record to DB
-              await saveVideoRecord({
-                id: video.id,
-                generationId: sessionId,
-                blobUrl: video.url,
-                prompt: video.prompt,
-                duration: video.duration,
-                aspectRatio: video.aspectRatio,
-                size: video.size,
-                sceneIndex: i,
-              });
+            await saveVideoRecord({
+              id: video.id,
+              generationId: sessionId,
+              blobUrl: video.url,
+              prompt: video.prompt,
+              duration: video.duration,
+              aspectRatio: video.aspectRatio,
+              size: video.size,
+              sceneIndex: 0,
+            });
 
-              videos.push(video);
+            sendEvent({
+              type: 'video-complete',
+              sceneIndex: 0,
+              videoId: video.id,
+            });
+
+            await updateGenerationStatus(sessionId, 'complete');
+
+            sendEvent({
+              type: 'complete',
+              sessionId,
+              videos: [video],
+            });
+          } else {
+            // ── Agent mode: full multi-agent pipeline ──
+
+            // Agent 1: Idea
+            sendEvent({
+              type: 'agent-start',
+              agent: 'idea',
+              status: 'Generating creative video concept...',
+            });
+
+            const ideaResult = await executeIdeaAgent(idea);
+            await updateGenerationIdea(sessionId, ideaResult);
+
+            sendEvent({
+              type: 'agent-complete',
+              agent: 'idea',
+              result: ideaResult,
+            });
+
+            // Agent 2: Scenes
+            sendEvent({
+              type: 'agent-start',
+              agent: 'scenes',
+              status: 'Crafting scene variations...',
+            });
+
+            const scenesResult = await executeScenesAgent(
+              ideaResult,
+              options.numScenes || 3
+            );
+            await updateGenerationScenes(sessionId, scenesResult);
+
+            sendEvent({
+              type: 'agent-complete',
+              agent: 'scenes',
+              result: scenesResult,
+            });
+
+            // Agent 3: Videos
+            const videos = [];
+
+            for (let i = 0; i < scenesResult.scenes.length; i++) {
+              const scene = scenesResult.scenes[i];
 
               sendEvent({
-                type: 'video-complete',
+                type: 'video-start',
                 sceneIndex: i,
-                videoId: video.id,
+                prompt: scene.prompt,
+                status: `Generating video ${i + 1}/${scenesResult.scenes.length}...`,
               });
-            } catch (error) {
-              console.error(`❌ Failed to generate video ${i + 1}:`, error);
-              sendEvent({
-                type: 'error',
-                message: `Failed to generate video ${i + 1}: ${error instanceof Error ? error.message : 'Unknown error'}`,
-                sceneIndex: i,
-              });
+
+              try {
+                const video = await executeVideoAgent(
+                  scene.prompt,
+                  ideaResult.style,
+                  ideaResult.mood,
+                  options,
+                  i
+                );
+
+                await saveVideoRecord({
+                  id: video.id,
+                  generationId: sessionId,
+                  blobUrl: video.url,
+                  prompt: video.prompt,
+                  duration: video.duration,
+                  aspectRatio: video.aspectRatio,
+                  size: video.size,
+                  sceneIndex: i,
+                });
+
+                videos.push(video);
+
+                sendEvent({
+                  type: 'video-complete',
+                  sceneIndex: i,
+                  videoId: video.id,
+                });
+              } catch (error) {
+                console.error(`❌ Failed to generate video ${i + 1}:`, error);
+                sendEvent({
+                  type: 'error',
+                  message: `Failed to generate video ${i + 1}: ${error instanceof Error ? error.message : 'Unknown error'}`,
+                  sceneIndex: i,
+                });
+              }
             }
+
+            await updateGenerationStatus(sessionId, 'complete');
+
+            sendEvent({
+              type: 'complete',
+              sessionId,
+              videos,
+            });
           }
 
-          // ── Complete ───────────────────────────────────────
-          await updateGenerationStatus(sessionId, 'complete');
-
-          sendEvent({
-            type: 'complete',
-            sessionId,
-            videos,
-          });
-
-          console.log(`✅ API: Generation complete - ${videos.length} videos\n`);
+          console.log(`✅ API: Generation complete\n`);
           controller.close();
         } catch (error) {
           console.error('❌ API: Generation failed:', error);

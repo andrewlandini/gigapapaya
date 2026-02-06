@@ -66,6 +66,7 @@ export interface GenerationOptions {
   aspectRatio: '16:9' | '9:16' | '4:3' | '1:1';
   duration: number;
   numScenes?: number;
+  mode: 'agents' | 'direct';
 }
 
 export interface SSEMessage {

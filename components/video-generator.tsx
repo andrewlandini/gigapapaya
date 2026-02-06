@@ -25,6 +25,7 @@ export function VideoGenerator() {
     aspectRatio: '16:9',
     duration: 8,
     numScenes: 3,
+    mode: 'agents',
   });
 
   const handleGenerate = async () => {
@@ -159,7 +160,9 @@ export function VideoGenerator() {
           <div className="space-y-2">
             <h1 className="text-[32px] font-semibold tracking-tight">Generate videos</h1>
             <p className="text-[#666] text-[15px] leading-relaxed">
-              Describe an idea. Three AI agents will generate a concept, craft scenes, and produce video variations.
+              {options.mode === 'agents'
+                ? 'Describe an idea. Three AI agents will generate a concept, craft scenes, and produce video variations.'
+                : 'Write a prompt. Generate a single video directly with Veo 3.1 — no agents, no frills.'}
             </p>
           </div>
 
@@ -189,7 +192,20 @@ export function VideoGenerator() {
             </div>
 
             {/* Options */}
-            <div className="flex items-center gap-6">
+            <div className="flex items-center gap-6 flex-wrap">
+              <div className="flex items-center gap-2">
+                <label className="text-xs font-mono text-[#555]">mode</label>
+                <select
+                  value={options.mode}
+                  onChange={(e) => setOptions(prev => ({ ...prev, mode: e.target.value as any }))}
+                  disabled={state.status === 'generating'}
+                  className="h-8 px-2 rounded-md border border-[#333] bg-black text-xs text-[#888] font-mono"
+                >
+                  <option value="agents">agents</option>
+                  <option value="direct">direct</option>
+                </select>
+              </div>
+
               <div className="flex items-center gap-2">
                 <label className="text-xs font-mono text-[#555]">ratio</label>
                 <select
@@ -219,20 +235,22 @@ export function VideoGenerator() {
                 </select>
               </div>
 
-              <div className="flex items-center gap-2">
-                <label className="text-xs font-mono text-[#555]">scenes</label>
-                <select
-                  value={options.numScenes}
-                  onChange={(e) => setOptions(prev => ({ ...prev, numScenes: parseInt(e.target.value) }))}
-                  disabled={state.status === 'generating'}
-                  className="h-8 px-2 rounded-md border border-[#333] bg-black text-xs text-[#888] font-mono"
-                >
-                  <option value={2}>2</option>
-                  <option value={3}>3</option>
-                  <option value={4}>4</option>
-                  <option value={5}>5</option>
-                </select>
-              </div>
+              {options.mode === 'agents' && (
+                <div className="flex items-center gap-2">
+                  <label className="text-xs font-mono text-[#555]">scenes</label>
+                  <select
+                    value={options.numScenes}
+                    onChange={(e) => setOptions(prev => ({ ...prev, numScenes: parseInt(e.target.value) }))}
+                    disabled={state.status === 'generating'}
+                    className="h-8 px-2 rounded-md border border-[#333] bg-black text-xs text-[#888] font-mono"
+                  >
+                    <option value={2}>2</option>
+                    <option value={3}>3</option>
+                    <option value={4}>4</option>
+                    <option value={5}>5</option>
+                  </select>
+                </div>
+              )}
             </div>
           </div>
         </div>
