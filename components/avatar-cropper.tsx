@@ -10,12 +10,13 @@ interface AvatarCropperProps {
 }
 
 const CIRCLE_SIZE = 240;
+const VIEW_SIZE = 340; // Larger than circle so you see image context outside it
 
 export function AvatarCropper({ imageUrl, onSave, onCancel }: AvatarCropperProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const imgRef = useRef<HTMLImageElement | null>(null);
   const [minScale, setMinScale] = useState(1);
-  const [zoom, setZoom] = useState(1); // 1 = min scale (fills circle), 3 = 3x
+  const [zoom, setZoom] = useState(1);
   const [offset, setOffset] = useState({ x: 0, y: 0 });
   const [dragging, setDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
@@ -27,6 +28,7 @@ export function AvatarCropper({ imageUrl, onSave, onCancel }: AvatarCropperProps
     img.crossOrigin = 'anonymous';
     img.onload = () => {
       imgRef.current = img;
+      // Min scale: the shorter side of the image must fill the circle diameter
       const ms = CIRCLE_SIZE / Math.min(img.width, img.height);
       setMinScale(ms);
       setZoom(1);
@@ -38,7 +40,10 @@ export function AvatarCropper({ imageUrl, onSave, onCancel }: AvatarCropperProps
 
   const effectiveScale = minScale * zoom;
 
-  // Clamp offset so image always covers the circle
+  // Clamp offset so the image always fully covers the circle.
+  // The image center is at the circle center + offset.
+  // For the image to cover the circle, no edge of the image can be inside the circle.
+  // Since the circle is inscribed in a CIRCLE_SIZE square, covering the square covers the circle.
   const clampOffset = useCallback((ox: number, oy: number, s: number) => {
     const img = imgRef.current;
     if (!img) return { x: 0, y: 0 };
@@ -74,7 +79,6 @@ export function AvatarCropper({ imageUrl, onSave, onCancel }: AvatarCropperProps
     e.preventDefault();
     setZoom(prev => {
       const next = Math.max(1, Math.min(4, prev - e.deltaY * 0.002));
-      // Re-clamp offset for new scale
       const newScale = minScale * next;
       setOffset(prev2 => clampOffset(prev2.x, prev2.y, newScale));
       return next;
@@ -123,6 +127,9 @@ export function AvatarCropper({ imageUrl, onSave, onCancel }: AvatarCropperProps
   const imgW = img ? img.width * effectiveScale : 0;
   const imgH = img ? img.height * effectiveScale : 0;
 
+  // Circle is centered in the view area
+  const circleOffset = (VIEW_SIZE - CIRCLE_SIZE) / 2;
+
   return (
     <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={onCancel} />
@@ -132,15 +139,16 @@ export function AvatarCropper({ imageUrl, onSave, onCancel }: AvatarCropperProps
           <p className="text-xs text-[#555]">Drag to move, scroll to zoom</p>
         </div>
 
-        {/* Crop area */}
+        {/* Crop area — image is visible beyond the circle for context */}
         <div
-          className="relative mx-auto overflow-hidden rounded-full border-2 border-[#555] cursor-grab active:cursor-grabbing bg-black"
-          style={{ width: CIRCLE_SIZE, height: CIRCLE_SIZE }}
+          className="relative mx-auto cursor-grab active:cursor-grabbing"
+          style={{ width: VIEW_SIZE, height: VIEW_SIZE }}
           onPointerDown={handlePointerDown}
           onPointerMove={handlePointerMove}
           onPointerUp={handlePointerUp}
           onWheel={handleWheel}
         >
+          {/* Image layer — can extend beyond the view area */}
           {imgLoaded && img && (
             <img
               src={imageUrl}
@@ -150,11 +158,44 @@ export function AvatarCropper({ imageUrl, onSave, onCancel }: AvatarCropperProps
               style={{
                 width: imgW,
                 height: imgH,
-                left: CIRCLE_SIZE / 2 - imgW / 2 + offset.x,
-                top: CIRCLE_SIZE / 2 - imgH / 2 + offset.y,
+                left: VIEW_SIZE / 2 - imgW / 2 + offset.x,
+                top: VIEW_SIZE / 2 - imgH / 2 + offset.y,
               }}
             />
           )}
+
+          {/* Dark overlay with circle cutout — shows what gets cropped */}
+          <svg
+            className="absolute inset-0 pointer-events-none"
+            width={VIEW_SIZE}
+            height={VIEW_SIZE}
+          >
+            <defs>
+              <mask id="circle-mask">
+                <rect width={VIEW_SIZE} height={VIEW_SIZE} fill="white" />
+                <circle
+                  cx={VIEW_SIZE / 2}
+                  cy={VIEW_SIZE / 2}
+                  r={CIRCLE_SIZE / 2}
+                  fill="black"
+                />
+              </mask>
+            </defs>
+            <rect
+              width={VIEW_SIZE}
+              height={VIEW_SIZE}
+              fill="rgba(0,0,0,0.7)"
+              mask="url(#circle-mask)"
+            />
+            <circle
+              cx={VIEW_SIZE / 2}
+              cy={VIEW_SIZE / 2}
+              r={CIRCLE_SIZE / 2}
+              fill="none"
+              stroke="#555"
+              strokeWidth="2"
+            />
+          </svg>
         </div>
 
         {/* Zoom controls */}

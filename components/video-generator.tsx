@@ -88,7 +88,7 @@ export function VideoGenerator() {
         </div>
       </header>
 
-      <main className="max-w-6xl mx-auto px-6 py-10 space-y-10 flex-1">
+      <main className="max-w-6xl mx-auto px-6 pt-16 pb-10 space-y-10 flex-1">
         {/* Hero + Input */}
         <div className="max-w-3xl mx-auto space-y-8 text-center">
           <h1 className="text-[40px] font-bold tracking-tight leading-tight">{headline}</h1>

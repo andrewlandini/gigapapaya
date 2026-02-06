@@ -30,7 +30,21 @@ export async function POST(request: NextRequest) {
     const result = await generateObject({
       model: getTextModel('anthropic/claude-sonnet-4.5'),
       schema: nextStepSchema,
-      prompt: `You are helping someone brainstorm a video idea. Ask them ONE creative, unexpected opening question to understand what kind of video they want to make. The question should be short (3-6 words), intriguing, and NOT generic like "What mood?" or "What genre?". Think more like "What keeps you up at night?", "What made you laugh last?", "What's your guilty pleasure?", "What sounds do you love?". Be creative and surprising — the question should feel like a conversation starter, not a form field. Generate 5 diverse, specific answer options that are interesting and spark imagination. Options should NOT be single words — make them evocative phrases (3-8 words each).`,
+      prompt: `You are a wildly creative director helping someone discover what video they actually want to make — they just don't know it yet.
+
+Ask ONE opening question. Rules:
+- NEVER ask about mood, genre, style, setting, or any filmmaking term. You're not making a form.
+- Ask something personal, weird, or philosophical. You're starting a real conversation.
+- The question should make them FEEL something or remember something specific.
+- Examples of the ENERGY (don't use these exact ones): "What's the last thing that gave you chills?", "What would you film if no one was watching?", "What do you miss that doesn't exist anymore?", "When did time stop for you?"
+- Keep it under 8 words.
+
+Generate 5 answer options. Rules:
+- Each option should be a vivid, specific scenario or feeling (5-10 words)
+- NOT categories. NOT adjectives. Actual moments, memories, images.
+- Each option should paint a completely different picture in the reader's mind
+- They should feel like confessions, not menu items
+- Example energy: "My dog's face when I come home", "2am gas station fluorescent lights", "The silence right after thunder"`,
     });
     return Response.json(result.object);
   }
@@ -47,22 +61,26 @@ export async function POST(request: NextRequest) {
     const result = await generateObject({
       model: getTextModel('anthropic/claude-sonnet-4.5'),
       schema: nextStepSchema,
-      prompt: `You are helping someone brainstorm a video idea through a creative conversation. Here's what they've said so far:
+      prompt: `You are a wildly creative director having a real conversation to discover what video someone needs to make. Here's what they've revealed so far:
 
 ${qaPairs}
 
-Ask them question #${stepNumber} of 5. This question should:
-- Build on their previous answers — pick up on something specific they said and dig deeper
-- Be short (3-6 words), surprising, and conversational
-- NOT repeat themes already covered
-- Feel like a natural follow-up in a creative conversation, not a survey
-- Get progressively more specific as you learn more about their vision
+This is question ${stepNumber} of 5. You're getting to know them. React to what they just said — pick up on something specific, something emotional, something interesting in their last answer.
 
-Generate 5 answer options that:
-- Are specific and evocative (3-8 words each), not single words
-- Feel like they naturally follow from the conversation so far
-- Are diverse from each other — offer genuinely different creative directions
-- Would each lead to a very different kind of video`,
+Question rules:
+- Reference or riff on their actual words. Show you were listening.
+- Go deeper into the feeling behind what they said, not wider into new topics
+- NEVER use filmmaking jargon (mood, tone, style, genre, aesthetic)
+- Keep it under 8 words
+- It should feel like something a curious friend would ask, not a chatbot
+
+Answer options rules:
+- 5 options, each 5-10 words
+- Each should be a specific image, moment, or scenario — NOT categories or adjectives
+- They should feel like responses in a real conversation
+- Each one should take the video in a wildly different direction
+- Ground them in sensory details — what you'd see, hear, feel
+- Make at least one option weird or unexpected`,
     });
     return Response.json(result.object);
   }
