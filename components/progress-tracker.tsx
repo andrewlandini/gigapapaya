@@ -21,6 +21,7 @@ interface AgentGroup {
   prompt?: string;
   result?: any;
   type: 'agent' | 'video' | 'complete' | 'error';
+  shots?: { sceneIndex: number; status: 'pending' | 'running' | 'done' | 'error'; prompt?: string }[];
 }
 
 export function ProgressTracker({ events, status, shotCount }: ProgressTrackerProps) {
@@ -80,28 +81,43 @@ export function ProgressTracker({ events, status, shotCount }: ProgressTrackerPr
 
       if (event.type === 'video-start') {
         const sceneIdx = event.sceneIndex ?? 0;
-        currentGroup = {
-          key: `video-${sceneIdx}`,
-          label: `Video ${sceneIdx + 1}`,
+        let videoGroup = result.find(g => g.key === 'video-generation');
+        if (!videoGroup) {
+          videoGroup = {
+            key: 'video-generation',
+            label: 'Generating Videos',
+            status: 'running',
+            message: `0/${shotCount || '?'} complete`,
+            timestamp: event.timestamp,
+            logs: [],
+            type: 'video',
+            shots: [],
+          };
+          result.push(videoGroup);
+        }
+        videoGroup.shots!.push({
+          sceneIndex: sceneIdx,
           status: 'running',
-          message: event.status || '',
-          timestamp: event.timestamp,
-          logs: [],
           prompt: event.prompt,
-          type: 'video',
-        };
-        result.push(currentGroup);
+        });
+        currentGroup = videoGroup;
         continue;
       }
 
       if (event.type === 'video-complete') {
         const sceneIdx = event.sceneIndex ?? 0;
-        const group = result.find(g => g.key === `video-${sceneIdx}`);
-        if (group) {
-          group.status = 'done';
-          group.message = 'Generated successfully';
+        const videoGroup = result.find(g => g.key === 'video-generation');
+        if (videoGroup?.shots) {
+          const shot = videoGroup.shots.find(s => s.sceneIndex === sceneIdx);
+          if (shot) shot.status = 'done';
+          const doneCount = videoGroup.shots.filter(s => s.status === 'done').length;
+          const errorCount = videoGroup.shots.filter(s => s.status === 'error').length;
+          const total = shotCount || videoGroup.shots.length;
+          videoGroup.message = `${doneCount}/${total} complete${errorCount > 0 ? `, ${errorCount} failed` : ''}`;
+          if (doneCount + errorCount >= total) {
+            videoGroup.status = doneCount > 0 ? 'done' : 'error';
+          }
         }
-        currentGroup = null;
         continue;
       }
 
@@ -121,10 +137,17 @@ export function ProgressTracker({ events, status, shotCount }: ProgressTrackerPr
 
       if (event.type === 'error') {
         if (event.sceneIndex !== undefined && event.sceneIndex !== null) {
-          const group = result.find(g => g.key === `video-${event.sceneIndex}`);
-          if (group) {
-            group.status = 'error';
-            group.message = event.message || 'Failed';
+          const videoGroup = result.find(g => g.key === 'video-generation');
+          if (videoGroup?.shots) {
+            const shot = videoGroup.shots.find(s => s.sceneIndex === event.sceneIndex);
+            if (shot) shot.status = 'error';
+            const doneCount = videoGroup.shots.filter(s => s.status === 'done').length;
+            const errorCount = videoGroup.shots.filter(s => s.status === 'error').length;
+            const total = shotCount || videoGroup.shots.length;
+            videoGroup.message = `${doneCount}/${total} complete${errorCount > 0 ? `, ${errorCount} failed` : ''}`;
+            if (doneCount + errorCount >= total) {
+              videoGroup.status = doneCount > 0 ? 'done' : 'error';
+            }
           }
           continue;
         }
@@ -158,12 +181,27 @@ export function ProgressTracker({ events, status, shotCount }: ProgressTrackerPr
           result.push({ key: 'agent-scenes', label: 'Shot Agent', status: 'pending', message: '', timestamp: new Date(), logs: [], type: 'agent' });
         }
       } else if (status === 'generating-videos' && shotCount) {
-        // Phase 2: Video 1 → Video 2 → ... → Complete
+        // Phase 2: Single group for all parallel video generations
+        let videoGroup = result.find(g => g.key === 'video-generation');
+        if (!videoGroup) {
+          videoGroup = {
+            key: 'video-generation',
+            label: 'Generating Videos',
+            status: 'running',
+            message: `0/${shotCount} complete`,
+            timestamp: new Date(),
+            logs: [],
+            type: 'video',
+            shots: [],
+          };
+          result.push(videoGroup);
+        }
         for (let i = 0; i < shotCount; i++) {
-          if (!hasKey(`video-${i}`)) {
-            result.push({ key: `video-${i}`, label: `Video ${i + 1}`, status: 'pending', message: '', timestamp: new Date(), logs: [], type: 'video' });
+          if (!videoGroup.shots!.some(s => s.sceneIndex === i)) {
+            videoGroup.shots!.push({ sceneIndex: i, status: 'pending' });
           }
         }
+        videoGroup.shots!.sort((a, b) => a.sceneIndex - b.sceneIndex);
       }
     }
 
@@ -218,7 +256,7 @@ export function ProgressTracker({ events, status, shotCount }: ProgressTrackerPr
           const isError = group.status === 'error';
           const isPending = group.status === 'pending';
           const isExpanded = isRunning || isError || expanded.has(group.key);
-          const hasLogs = group.logs.length > 0 || (group.type === 'video' && group.prompt);
+          const hasLogs = group.logs.length > 0 || (group.shots && group.shots.length > 0);
 
           return (
             <div key={group.key} className={`border-b border-[#222] last:border-b-0 ${isPending ? '' : 'animate-fade-in'}`}>
@@ -271,11 +309,37 @@ export function ProgressTracker({ events, status, shotCount }: ProgressTrackerPr
                     <p className="text-xs font-mono text-[#555]">{log.message}</p>
                   </div>
                 ))}
-                {group.type === 'video' && group.prompt && (
-                  <div className="px-4 py-2 border-t border-[#181818]">
-                    <p className="text-xs font-mono text-[#555] bg-[#111] p-3 rounded-lg border border-[#222] leading-relaxed">
-                      {group.prompt}
-                    </p>
+                {group.shots && group.shots.length > 0 && (
+                  <div className="px-4 py-2 border-t border-[#181818] space-y-0.5">
+                    {group.shots.map((shot) => (
+                      <div key={shot.sceneIndex} className="flex items-center gap-2 py-1">
+                        <div className="flex-shrink-0">
+                          {shot.status === 'done' ? (
+                            <CheckCircle2 className="h-3 w-3 text-[#00cc88]" />
+                          ) : shot.status === 'error' ? (
+                            <AlertCircle className="h-3 w-3 text-[#ff4444]" />
+                          ) : shot.status === 'running' ? (
+                            <Loader2 className="h-3 w-3 text-[#888] animate-spin" />
+                          ) : (
+                            <Circle className="h-3 w-3 text-[#333]" />
+                          )}
+                        </div>
+                        <span className={`text-xs font-mono ${shot.status === 'pending' ? 'text-[#444]' : 'text-[#666]'}`}>
+                          Shot {shot.sceneIndex + 1}
+                        </span>
+                        <span className={`text-xs font-mono ${
+                          shot.status === 'done' ? 'text-[#00cc88]' :
+                          shot.status === 'error' ? 'text-[#ff4444]' :
+                          shot.status === 'running' ? 'text-[#888]' :
+                          'text-[#333]'
+                        }`}>
+                          {shot.status === 'done' ? 'complete' :
+                           shot.status === 'error' ? 'failed' :
+                           shot.status === 'running' ? 'generating...' :
+                           'waiting'}
+                        </span>
+                      </div>
+                    ))}
                   </div>
                 )}
               </div>

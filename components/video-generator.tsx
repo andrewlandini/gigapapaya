@@ -34,7 +34,7 @@ const PHASE_HEADLINES: Record<string, string[]> = {
   idea: ["Writing your concept.", "Crafting the story.", "Building the world.", "Finding the angle."],
   scenes: ["Breaking it into shots.", "Blocking the shots.", "Mapping the sequence.", "Setting up each shot."],
   reviewing: ["Your scenes are ready.", "Review and edit.", "Make it yours.", "Check the shots."],
-  video: ["Generating video", "Rendering scene", "Camera is rolling", "Bringing it to life", "Processing scene", "Building the shot", "Rendering the take", "Assembling the clip"],
+  video: ["Generating videos.", "Rendering scenes.", "Cameras rolling.", "Bringing it to life.", "Processing shots.", "Building the shots.", "Assembling the clips."],
   complete: ["That's a wrap.", "All done.", "Picture's up.", "And... cut."],
 };
 
@@ -82,7 +82,6 @@ export function VideoGenerator() {
 
     // Determine current phase from progress events and status
     let phase = 'idea';
-    let videoNum = 0;
 
     if (state.status === 'reviewing') {
       phase = 'reviewing';
@@ -92,21 +91,18 @@ export function VideoGenerator() {
       for (const event of state.progress) {
         if (event.type === 'agent-start' && event.agent === 'idea') phase = 'idea';
         if (event.type === 'agent-start' && event.agent === 'scenes') phase = 'scenes';
-        if (event.type === 'video-start') { phase = 'video'; videoNum = (event.sceneIndex ?? 0) + 1; }
+        if (event.type === 'video-start') phase = 'video';
       }
     }
 
-    const phaseKey = `${phase}-${videoNum}`;
-    if (phaseKey === lastPhaseRef.current) return;
-    lastPhaseRef.current = phaseKey;
+    if (phase === lastPhaseRef.current) return;
+    lastPhaseRef.current = phase;
 
     // Fade out, swap, fade in
     setHeadlineFade(false);
     setTimeout(() => {
       const headlines = PHASE_HEADLINES[phase] || PHASE_HEADLINES.idea;
-      let text = pickRandom(headlines);
-      if (phase === 'video' && videoNum > 0) text = `${text} ${videoNum}.`;
-      setGeneratingHeadline(text);
+      setGeneratingHeadline(pickRandom(headlines));
       setHeadlineFade(true);
     }, 600);
   }, [isActive, state.progress, state.status]);
