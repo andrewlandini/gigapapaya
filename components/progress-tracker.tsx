@@ -208,25 +208,30 @@ export function ProgressTracker({ events, status, shotCount }: ProgressTrackerPr
     return result;
   }, [events, status, shotCount]);
 
-  // Auto-collapse completed agents after 3 seconds
+  // Auto-collapse done groups 5 seconds after the NEXT step starts running
   useEffect(() => {
-    const doneGroups = groups.filter(g => g.status === 'done' && g.logs.length > 0);
     const timers: NodeJS.Timeout[] = [];
 
-    for (const group of doneGroups) {
-      if (!collapsedByTimer.current.has(group.key) && !manualToggle.has(group.key)) {
-        collapsedByTimer.current.add(group.key);
-        const timer = setTimeout(() => {
-          setExpanded(prev => {
-            const next = new Set(prev);
-            if (!manualToggle.has(group.key)) {
-              next.delete(group.key);
-            }
-            return next;
-          });
-        }, 3000);
-        timers.push(timer);
-      }
+    for (let i = 0; i < groups.length; i++) {
+      const group = groups[i];
+      if (group.status !== 'done' || group.logs.length === 0) continue;
+      if (collapsedByTimer.current.has(group.key) || manualToggle.has(group.key)) continue;
+
+      // Only collapse once the next step is active (running or done)
+      const nextGroup = groups[i + 1];
+      if (!nextGroup || nextGroup.status === 'pending') continue;
+
+      collapsedByTimer.current.add(group.key);
+      const timer = setTimeout(() => {
+        setExpanded(prev => {
+          const next = new Set(prev);
+          if (!manualToggle.has(group.key)) {
+            next.delete(group.key);
+          }
+          return next;
+        });
+      }, 5000);
+      timers.push(timer);
     }
 
     return () => timers.forEach(t => clearTimeout(t));
@@ -294,7 +299,7 @@ export function ProgressTracker({ events, status, shotCount }: ProgressTrackerPr
 
               {/* Collapsible logs */}
               <div
-                className="overflow-hidden transition-all duration-500 ease-in-out"
+                className="overflow-hidden transition-all duration-1000 ease-in-out"
                 style={{
                   maxHeight: isExpanded ? '2000px' : '0px',
                   opacity: isExpanded ? 1 : 0,
