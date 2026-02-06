@@ -52,7 +52,8 @@ const OPTION_VIBES = [
 function getRandomSeed(): string {
   const framing = QUESTION_FRAMINGS[Math.floor(Math.random() * QUESTION_FRAMINGS.length)];
   const vibe = OPTION_VIBES[Math.floor(Math.random() * OPTION_VIBES.length)];
-  return `${framing}. ${vibe}.`;
+  const num = Math.floor(Math.random() * 8_999_999_999) + 2;
+  return `Seed: ${num}. ${framing}. ${vibe}.`;
 }
 
 const ideaSchema = z.object({
