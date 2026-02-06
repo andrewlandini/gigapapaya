@@ -9,6 +9,7 @@ function getDb() {
 export async function initDb() {
   const sql = getDb();
 
+  // Create tables
   await sql`
     CREATE TABLE IF NOT EXISTS users (
       id TEXT PRIMARY KEY,
@@ -25,7 +26,6 @@ export async function initDb() {
   await sql`
     CREATE TABLE IF NOT EXISTS generations (
       id TEXT PRIMARY KEY,
-      user_id TEXT REFERENCES users(id),
       user_input TEXT NOT NULL,
       idea JSONB,
       scenes JSONB,
@@ -37,19 +37,22 @@ export async function initDb() {
   await sql`
     CREATE TABLE IF NOT EXISTS videos (
       id TEXT PRIMARY KEY,
-      generation_id TEXT NOT NULL REFERENCES generations(id),
-      user_id TEXT REFERENCES users(id),
+      generation_id TEXT NOT NULL,
       blob_url TEXT NOT NULL,
       prompt TEXT NOT NULL,
-      title TEXT,
       duration INTEGER NOT NULL,
       aspect_ratio TEXT NOT NULL,
       size INTEGER NOT NULL,
       scene_index INTEGER NOT NULL,
-      visibility TEXT NOT NULL DEFAULT 'private',
       created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
     )
   `;
+
+  // Migrations: add columns that may not exist on older schemas
+  try { await sql`ALTER TABLE generations ADD COLUMN IF NOT EXISTS user_id TEXT`; } catch {}
+  try { await sql`ALTER TABLE videos ADD COLUMN IF NOT EXISTS user_id TEXT`; } catch {}
+  try { await sql`ALTER TABLE videos ADD COLUMN IF NOT EXISTS visibility TEXT DEFAULT 'private'`; } catch {}
+  try { await sql`ALTER TABLE videos ADD COLUMN IF NOT EXISTS title TEXT`; } catch {}
 
   console.log('✅ Database tables initialized');
 }
