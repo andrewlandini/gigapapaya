@@ -161,7 +161,7 @@ export function IdeaWizard({ onSelectIdea, onActiveChange }: IdeaWizardProps) {
         <span className="text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-400 border border-purple-500/30">
           new
         </span>
-        <span className="text-[15px] font-medium bg-[length:200%_100%] bg-clip-text text-transparent animate-gradient-sweep bg-gradient-to-r from-purple-400 via-fuchsia-400 to-violet-400 group-hover:brightness-125 transition-all">
+        <span className="text-[15px] font-medium text-white group-hover:text-white/80 transition-colors">
           Spark an idea for me
         </span>
       </button>
