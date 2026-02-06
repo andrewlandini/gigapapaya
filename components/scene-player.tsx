@@ -21,84 +21,118 @@ export function ScenePlayer({ videos, autoProgress: initialAutoProgress = true }
   const [playing, setPlaying] = useState(false);
   const [autoProgress, setAutoProgress] = useState(initialAutoProgress);
   const [progress, setProgress] = useState(0);
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const preloadRef = useRef<HTMLVideoElement>(null);
+  // Two video elements for seamless crossfade
+  const videoARef = useRef<HTMLVideoElement>(null);
+  const videoBRef = useRef<HTMLVideoElement>(null);
+  const [activePlayer, setActivePlayer] = useState<'A' | 'B'>('A');
 
   const current = videos[currentIndex];
   const next = videos[currentIndex + 1];
 
-  // Preload next video
-  useEffect(() => {
-    if (preloadRef.current && next) {
-      preloadRef.current.src = next.blob_url;
-      preloadRef.current.load();
-    }
-  }, [next]);
+  const getActiveRef = useCallback(() => activePlayer === 'A' ? videoARef : videoBRef, [activePlayer]);
+  const getInactiveRef = useCallback(() => activePlayer === 'A' ? videoBRef : videoARef, [activePlayer]);
 
-  // Handle video end — auto-progress to next
+  // Preload next video into the inactive player
+  useEffect(() => {
+    const inactive = getInactiveRef().current;
+    if (inactive && next) {
+      inactive.src = next.blob_url;
+      inactive.load();
+    }
+  }, [next, getInactiveRef]);
+
+  // Load current video into the active player on index change
+  useEffect(() => {
+    const active = getActiveRef().current;
+    if (active && current) {
+      active.src = current.blob_url;
+      active.load();
+      if (playing) {
+        active.play().catch(() => {});
+      }
+    }
+  }, [currentIndex]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Handle video end — seamlessly switch to next
   const handleEnded = useCallback(() => {
     if (autoProgress && currentIndex < videos.length - 1) {
+      const inactive = getInactiveRef().current;
+      if (inactive) {
+        // Start the preloaded next video immediately
+        inactive.currentTime = 0;
+        inactive.play().catch(() => {});
+      }
+      // Swap active player
+      setActivePlayer(prev => prev === 'A' ? 'B' : 'A');
       setCurrentIndex(prev => prev + 1);
       setProgress(0);
     } else {
       setPlaying(false);
     }
-  }, [autoProgress, currentIndex, videos.length]);
-
-  // Auto-play when switching scenes
-  useEffect(() => {
-    if (videoRef.current && playing) {
-      videoRef.current.play().catch(() => {});
-    }
-  }, [currentIndex, playing]);
+  }, [autoProgress, currentIndex, videos.length, getInactiveRef]);
 
   const handleTimeUpdate = useCallback(() => {
-    if (!videoRef.current) return;
-    const v = videoRef.current;
-    // Calculate progress across ALL videos
+    const active = getActiveRef().current;
+    if (!active) return;
     const totalDuration = videos.reduce((sum, v) => sum + v.duration, 0);
-    const elapsed = videos.slice(0, currentIndex).reduce((sum, v) => sum + v.duration, 0) + v.currentTime;
+    const elapsed = videos.slice(0, currentIndex).reduce((sum, v) => sum + v.duration, 0) + active.currentTime;
     setProgress((elapsed / totalDuration) * 100);
-  }, [currentIndex, videos]);
+  }, [currentIndex, videos, getActiveRef]);
 
   const togglePlay = useCallback(() => {
-    if (!videoRef.current) return;
+    const active = getActiveRef().current;
+    if (!active) return;
     if (playing) {
-      videoRef.current.pause();
+      active.pause();
     } else {
-      videoRef.current.play().catch(() => {});
+      active.play().catch(() => {});
     }
     setPlaying(!playing);
-  }, [playing]);
+  }, [playing, getActiveRef]);
 
   const goToScene = useCallback((index: number) => {
+    const active = getActiveRef().current;
+    if (active) {
+      active.src = videos[index].blob_url;
+      active.load();
+      active.play().catch(() => {});
+    }
     setCurrentIndex(index);
     setPlaying(true);
-  }, []);
+  }, [getActiveRef, videos]);
 
   if (videos.length === 0) return null;
 
-  // Calculate segment positions for the progress bar
   const totalDuration = videos.reduce((sum, v) => sum + v.duration, 0);
+  const activeRef = getActiveRef();
 
   return (
     <div className="space-y-4">
-      {/* Video player */}
+      {/* Video player — two stacked elements for seamless transitions */}
       <div className="relative rounded-xl overflow-hidden bg-black aspect-video group cursor-pointer" onClick={togglePlay}>
         <video
-          ref={videoRef}
-          key={current.blob_url}
-          src={current.blob_url}
-          className="w-full h-full object-contain"
-          onEnded={handleEnded}
-          onTimeUpdate={handleTimeUpdate}
-          onPlay={() => setPlaying(true)}
-          onPause={() => setPlaying(false)}
+          ref={videoARef}
+          className={`absolute inset-0 w-full h-full object-contain transition-opacity duration-150 ${activePlayer === 'A' ? 'opacity-100 z-10' : 'opacity-0 z-0'}`}
+          onEnded={activePlayer === 'A' ? handleEnded : undefined}
+          onTimeUpdate={activePlayer === 'A' ? handleTimeUpdate : undefined}
+          onPlay={activePlayer === 'A' ? () => setPlaying(true) : undefined}
+          onPause={activePlayer === 'A' ? () => setPlaying(false) : undefined}
           playsInline
+          preload="auto"
+        />
+        <video
+          ref={videoBRef}
+          className={`absolute inset-0 w-full h-full object-contain transition-opacity duration-150 ${activePlayer === 'B' ? 'opacity-100 z-10' : 'opacity-0 z-0'}`}
+          onEnded={activePlayer === 'B' ? handleEnded : undefined}
+          onTimeUpdate={activePlayer === 'B' ? handleTimeUpdate : undefined}
+          onPlay={activePlayer === 'B' ? () => setPlaying(true) : undefined}
+          onPause={activePlayer === 'B' ? () => setPlaying(false) : undefined}
+          playsInline
+          preload="auto"
         />
 
         {/* Play/Pause overlay */}
-        <div className={`absolute inset-0 flex items-center justify-center transition-opacity ${playing ? 'opacity-0 group-hover:opacity-100' : 'opacity-100'}`}>
+        <div className={`absolute inset-0 flex items-center justify-center transition-opacity z-20 ${playing ? 'opacity-0 group-hover:opacity-100' : 'opacity-100'}`}>
           <div className="w-14 h-14 rounded-full bg-white/10 backdrop-blur-sm flex items-center justify-center">
             {playing ? (
               <Pause className="h-6 w-6 text-white" />
@@ -109,12 +143,9 @@ export function ScenePlayer({ videos, autoProgress: initialAutoProgress = true }
         </div>
 
         {/* Scene indicator */}
-        <div className="absolute top-3 left-3 px-2 py-1 rounded-md bg-black/60 backdrop-blur-sm text-xs font-mono text-white/80">
+        <div className="absolute top-3 left-3 z-20 px-2 py-1 rounded-md bg-black/60 backdrop-blur-sm text-xs font-mono text-white/80">
           Scene {currentIndex + 1} of {videos.length}
         </div>
-
-        {/* Hidden preload element */}
-        <video ref={preloadRef} className="hidden" preload="auto" muted />
       </div>
 
       {/* Segmented progress bar */}
@@ -123,8 +154,8 @@ export function ScenePlayer({ videos, autoProgress: initialAutoProgress = true }
           const segmentWidth = (v.duration / totalDuration) * 100;
           let segmentProgress = 0;
           if (i < currentIndex) segmentProgress = 100;
-          else if (i === currentIndex && videoRef.current) {
-            segmentProgress = (videoRef.current.currentTime / v.duration) * 100;
+          else if (i === currentIndex && activeRef.current) {
+            segmentProgress = (activeRef.current.currentTime / v.duration) * 100;
           }
           return (
             <button
