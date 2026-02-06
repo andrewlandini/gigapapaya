@@ -1,11 +1,11 @@
 import { NextRequest } from 'next/server';
-import { readVideo } from '@/lib/ai/video-storage';
+import { getVideoById } from '@/lib/db';
 
 export const runtime = 'nodejs';
 
 /**
  * GET /api/download/[videoId]
- * Download video file
+ * Proxy download from Blob Storage with attachment header
  */
 export async function GET(
   request: NextRequest,
@@ -15,24 +15,31 @@ export async function GET(
     const { videoId } = await params;
     console.log(`⬇️  Downloading video: ${videoId}`);
 
-    const videoBuffer = await readVideo(videoId);
+    const video = await getVideoById(videoId);
+    if (!video) {
+      return new Response(
+        JSON.stringify({ error: 'Video not found' }),
+        { status: 404, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
 
-    return new Response(new Uint8Array(videoBuffer), {
+    // Fetch from Blob Storage and stream as download
+    const blobResponse = await fetch(video.blob_url);
+    if (!blobResponse.ok) {
+      throw new Error(`Failed to fetch from blob: ${blobResponse.status}`);
+    }
+
+    return new Response(blobResponse.body, {
       headers: {
         'Content-Type': 'video/mp4',
         'Content-Disposition': `attachment; filename="${videoId}.mp4"`,
-        'Content-Length': videoBuffer.length.toString(),
       },
     });
   } catch (error) {
     console.error('❌ Failed to download video:', error);
-
     return new Response(
       JSON.stringify({ error: 'Video not found' }),
-      {
-        status: 404,
-        headers: { 'Content-Type': 'application/json' },
-      }
+      { status: 404, headers: { 'Content-Type': 'application/json' } }
     );
   }
 }

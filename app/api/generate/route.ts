@@ -1,20 +1,29 @@
 import { NextRequest } from 'next/server';
+import crypto from 'crypto';
 import { executeIdeaAgent, executeScenesAgent, executeVideoAgent } from '@/lib/ai/agents';
+import {
+  initDb,
+  createGeneration,
+  updateGenerationIdea,
+  updateGenerationScenes,
+  updateGenerationStatus,
+  saveVideoRecord,
+} from '@/lib/db';
 import type { GenerationOptions, SSEMessage } from '@/lib/types';
 
 export const runtime = 'nodejs';
-export const maxDuration = 600; // 10 minutes max execution time
+export const maxDuration = 600;
 
-/**
- * POST /api/generate
- * Main orchestrator endpoint with Server-Sent Events (SSE)
- * Executes multi-agent workflow and streams progress in real-time
- */
+let dbInitialized = false;
+
 export async function POST(request: NextRequest) {
   console.log('\n🚀 API: Generate endpoint called');
 
-  let encoder: TextEncoder;
-  let controller: ReadableStreamDefaultController;
+  // Initialize database on first request
+  if (!dbInitialized) {
+    await initDb();
+    dbInitialized = true;
+  }
 
   try {
     const body = await request.json();
@@ -33,12 +42,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create SSE stream
-    encoder = new TextEncoder();
-    const stream = new ReadableStream({
-      async start(ctrl) {
-        controller = ctrl;
+    const sessionId = crypto.randomUUID();
 
+    const encoder = new TextEncoder();
+    const stream = new ReadableStream({
+      async start(controller) {
         const sendEvent = (data: SSEMessage) => {
           const message = `data: ${JSON.stringify(data)}\n\n`;
           console.log(`📡 SSE: ${data.type}`, data.agent || '');
@@ -46,16 +54,18 @@ export async function POST(request: NextRequest) {
         };
 
         try {
-          // ============================================================
-          // AGENT 1: Generate Idea
-          // ============================================================
+          // Create generation record in DB
+          await createGeneration(sessionId, idea);
+
+          // ── Agent 1: Idea ──────────────────────────────────
           sendEvent({
             type: 'agent-start',
             agent: 'idea',
-            status: '🎨 Generating creative video concept...',
+            status: 'Generating creative video concept...',
           });
 
           const ideaResult = await executeIdeaAgent(idea);
+          await updateGenerationIdea(sessionId, ideaResult);
 
           sendEvent({
             type: 'agent-complete',
@@ -63,19 +73,18 @@ export async function POST(request: NextRequest) {
             result: ideaResult,
           });
 
-          // ============================================================
-          // AGENT 2: Generate Scenes
-          // ============================================================
+          // ── Agent 2: Scenes ────────────────────────────────
           sendEvent({
             type: 'agent-start',
             agent: 'scenes',
-            status: '🎬 Crafting scene variations...',
+            status: 'Crafting scene variations...',
           });
 
           const scenesResult = await executeScenesAgent(
             ideaResult,
             options.numScenes || 3
           );
+          await updateGenerationScenes(sessionId, scenesResult);
 
           sendEvent({
             type: 'agent-complete',
@@ -83,9 +92,7 @@ export async function POST(request: NextRequest) {
             result: scenesResult,
           });
 
-          // ============================================================
-          // AGENT 3: Generate Videos
-          // ============================================================
+          // ── Agent 3: Videos ────────────────────────────────
           const videos = [];
 
           for (let i = 0; i < scenesResult.scenes.length; i++) {
@@ -95,7 +102,7 @@ export async function POST(request: NextRequest) {
               type: 'video-start',
               sceneIndex: i,
               prompt: scene.prompt,
-              status: `🎥 Generating video ${i + 1}/${scenesResult.scenes.length}...`,
+              status: `Generating video ${i + 1}/${scenesResult.scenes.length}...`,
             });
 
             try {
@@ -106,6 +113,18 @@ export async function POST(request: NextRequest) {
                 options,
                 i
               );
+
+              // Save video record to DB
+              await saveVideoRecord({
+                id: video.id,
+                generationId: sessionId,
+                blobUrl: video.url,
+                prompt: video.prompt,
+                duration: video.duration,
+                aspectRatio: video.aspectRatio,
+                size: video.size,
+                sceneIndex: i,
+              });
 
               videos.push(video);
 
@@ -121,31 +140,28 @@ export async function POST(request: NextRequest) {
                 message: `Failed to generate video ${i + 1}: ${error instanceof Error ? error.message : 'Unknown error'}`,
                 sceneIndex: i,
               });
-              // Continue with next video
             }
           }
 
-          // ============================================================
-          // COMPLETE
-          // ============================================================
+          // ── Complete ───────────────────────────────────────
+          await updateGenerationStatus(sessionId, 'complete');
+
           sendEvent({
             type: 'complete',
+            sessionId,
             videos,
           });
 
-          console.log(`✅ API: Generation complete - ${videos.length} videos generated\n`);
-
+          console.log(`✅ API: Generation complete - ${videos.length} videos\n`);
           controller.close();
         } catch (error) {
           console.error('❌ API: Generation failed:', error);
-
-          const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+          await updateGenerationStatus(sessionId, 'error').catch(() => {});
 
           sendEvent({
             type: 'error',
-            message: `Generation failed: ${errorMessage}`,
+            message: `Generation failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
           });
-
           controller.close();
         }
       },
@@ -156,20 +172,14 @@ export async function POST(request: NextRequest) {
         'Content-Type': 'text/event-stream',
         'Cache-Control': 'no-cache, no-transform',
         'Connection': 'keep-alive',
-        'X-Accel-Buffering': 'no', // Disable buffering in nginx
+        'X-Accel-Buffering': 'no',
       },
     });
   } catch (error) {
     console.error('❌ API: Request failed:', error);
-
     return new Response(
-      JSON.stringify({
-        error: error instanceof Error ? error.message : 'Unknown error',
-      }),
-      {
-        status: 500,
-        headers: { 'Content-Type': 'application/json' },
-      }
+      JSON.stringify({ error: error instanceof Error ? error.message : 'Unknown error' }),
+      { status: 500, headers: { 'Content-Type': 'application/json' } }
     );
   }
 }

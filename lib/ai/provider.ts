@@ -1,21 +1,20 @@
 import { gateway } from 'ai';
 import { createOpenAI } from '@ai-sdk/openai';
 
-// AI Gateway Configuration
-const AI_GATEWAY_API_KEY = process.env.AI_GATEWAY_API_KEY;
+// Vercel AI Gateway
+const VERCEL_AI_GATEWAY = process.env.VERCEL_AI_GATEWAY;
 
-if (!AI_GATEWAY_API_KEY) {
-  console.warn('⚠️  AI_GATEWAY_API_KEY not found in environment variables');
+if (!VERCEL_AI_GATEWAY) {
+  console.warn('⚠️  VERCEL_AI_GATEWAY not found in environment variables');
 }
 
-// Text model provider via OpenAI-compatible gateway
+// Text model provider via AI Gateway
 const openaiProvider = createOpenAI({
-  apiKey: AI_GATEWAY_API_KEY || 'dummy-key',
+  apiKey: VERCEL_AI_GATEWAY || 'dummy-key',
 });
 
 /**
  * Get a text model for idea and scene generation
- * Uses OpenAI provider via AI Gateway
  */
 export function getTextModel(modelName: string = 'gpt-4o') {
   console.log(`📝 Using text model: ${modelName}`);
@@ -36,9 +35,6 @@ export function getVideoModel(modelName: string = 'google/veo-3.1-generate-001')
   return gateway.videoModel(modelName);
 }
 
-/**
- * Available Veo 3.1 models (gateway prefixed)
- */
 export const AVAILABLE_VIDEO_MODELS = [
   'google/veo-3.1-generate-001',
   'google/veo-3.1-generate-preview',

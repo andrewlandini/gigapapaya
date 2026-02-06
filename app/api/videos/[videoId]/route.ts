@@ -1,11 +1,11 @@
 import { NextRequest } from 'next/server';
-import { readVideo } from '@/lib/ai/video-storage';
+import { getVideoById } from '@/lib/db';
 
 export const runtime = 'nodejs';
 
 /**
  * GET /api/videos/[videoId]
- * Serve video file for playback
+ * Redirect to Blob Storage URL
  */
 export async function GET(
   request: NextRequest,
@@ -15,24 +15,21 @@ export async function GET(
     const { videoId } = await params;
     console.log(`📺 Serving video: ${videoId}`);
 
-    const videoBuffer = await readVideo(videoId);
+    const video = await getVideoById(videoId);
+    if (!video) {
+      return new Response(
+        JSON.stringify({ error: 'Video not found' }),
+        { status: 404, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
 
-    return new Response(new Uint8Array(videoBuffer), {
-      headers: {
-        'Content-Type': 'video/mp4',
-        'Cache-Control': 'public, max-age=31536000, immutable',
-        'Content-Length': videoBuffer.length.toString(),
-      },
-    });
+    // Redirect to Blob Storage URL
+    return Response.redirect(video.blob_url, 302);
   } catch (error) {
     console.error('❌ Failed to serve video:', error);
-
     return new Response(
       JSON.stringify({ error: 'Video not found' }),
-      {
-        status: 404,
-        headers: { 'Content-Type': 'application/json' },
-      }
+      { status: 404, headers: { 'Content-Type': 'application/json' } }
     );
   }
 }
