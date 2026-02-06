@@ -233,8 +233,8 @@ export function VideoGenerator() {
             </div>
           )}
 
-          {/* Start over button — shown when complete */}
-          {state.status === 'complete' && (
+          {/* Start over button — shown whenever generation is active */}
+          {isActive && (
             <button
               onClick={handleReset}
               className="flex items-center gap-2 mx-auto text-sm text-[#555] hover:text-[#ededed] transition-colors animate-fade-in"
