@@ -314,7 +314,7 @@ export async function getPublicVideosSorted(
       FROM videos v
       LEFT JOIN users u ON v.user_id = u.id
       WHERE v.visibility = 'public'
-      ORDER BY heart_count DESC, v.created_at DESC
+      ORDER BY heart_count DESC, RANDOM()
       LIMIT ${limit} OFFSET ${offset}
     `;
   }
@@ -326,7 +326,7 @@ export async function getPublicVideosSorted(
     FROM videos v
     LEFT JOIN users u ON v.user_id = u.id
     WHERE v.visibility = 'public' AND v.created_at >= NOW() - CAST(${interval} AS INTERVAL)
-    ORDER BY heart_count DESC, v.created_at DESC
+    ORDER BY heart_count DESC, RANDOM()
     LIMIT ${limit} OFFSET ${offset}
   `;
 }
