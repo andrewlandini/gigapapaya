@@ -242,7 +242,7 @@ export function VideoGenerator() {
 
       <main className="max-w-6xl mx-auto px-6 py-10 space-y-10 flex-1">
         {/* Hero + Input */}
-        <div className="max-w-2xl space-y-6">
+        <div className="max-w-3xl space-y-6">
           <div className="space-y-2">
             <h1 className="text-[32px] font-semibold tracking-tight">Generate videos</h1>
             <p className="text-[#666] text-[15px] leading-relaxed">
@@ -253,28 +253,31 @@ export function VideoGenerator() {
           </div>
 
           <div className="space-y-4">
-            <div className="flex gap-3">
-              <Input
+            <div className="space-y-3">
+              <textarea
                 placeholder="A frog drinking a cocktail at Martha's Vineyard..."
                 value={state.idea}
                 onChange={(e) => setState(prev => ({ ...prev, idea: e.target.value }))}
-                onKeyDown={(e) => e.key === 'Enter' && state.status === 'idle' && handleGenerate()}
+                onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && state.status === 'idle' && (e.preventDefault(), handleGenerate())}
                 disabled={isGenerating || state.status === 'reviewing'}
-                className="h-12 text-[15px] bg-black"
+                rows={3}
+                className="w-full bg-black border border-[#333] rounded-xl px-4 py-3 text-[15px] text-[#ededed] placeholder:text-[#555] focus:outline-none focus:border-[#555] focus:ring-1 focus:ring-white/10 resize-none leading-relaxed"
               />
-              <Button
-                onClick={handleGenerate}
-                disabled={isGenerating || state.status === 'reviewing' || !state.idea.trim()}
-                className="h-12 px-6"
-              >
-                <Zap className="h-4 w-4 mr-2" />
-                Generate
-              </Button>
-              {state.status !== 'idle' && (
-                <Button onClick={handleReset} variant="ghost" className="h-12" title="Reset">
-                  <RotateCcw className="h-4 w-4" />
+              <div className="flex gap-3">
+                <Button
+                  onClick={handleGenerate}
+                  disabled={isGenerating || state.status === 'reviewing' || !state.idea.trim()}
+                  className="h-10 px-6"
+                >
+                  <Zap className="h-4 w-4 mr-2" />
+                  Generate
                 </Button>
-              )}
+                {state.status !== 'idle' && (
+                  <Button onClick={handleReset} variant="ghost" className="h-10" title="Reset">
+                    <RotateCcw className="h-4 w-4" />
+                  </Button>
+                )}
+              </div>
             </div>
 
             {/* Options */}
@@ -341,30 +344,33 @@ export function VideoGenerator() {
           </div>
         </div>
 
-        {/* Two Column: Concept + Progress */}
-        {(state.generatedIdea || state.progress.length > 0) && (
+        {/* Concept + Progress */}
+        {state.generatedIdea && state.progress.length > 0 && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <div className="space-y-6">
-              {state.generatedIdea && (
-                <div className="space-y-3 animate-fade-in">
-                  <h2 className="text-sm font-medium text-[#ededed]">Concept</h2>
-                  <div className="border border-[#222] rounded-xl p-5 space-y-3">
-                    <h3 className="text-lg font-semibold tracking-tight">{state.generatedIdea.title}</h3>
-                    <p className="text-sm text-[#888] leading-relaxed">{state.generatedIdea.description}</p>
-                    <div className="flex flex-wrap gap-2 pt-1">
-                      <Badge>{state.generatedIdea.style}</Badge>
-                      <Badge>{state.generatedIdea.mood}</Badge>
-                      {state.generatedIdea.keyElements.map((el, i) => (
-                        <Badge key={i}>{el}</Badge>
-                      ))}
-                    </div>
-                  </div>
+            <div className="space-y-3 animate-fade-in">
+              <h2 className="text-sm font-medium text-[#ededed]">Concept</h2>
+              <div className="border border-[#222] rounded-xl p-5 space-y-3">
+                <h3 className="text-lg font-semibold tracking-tight">{state.generatedIdea.title}</h3>
+                <p className="text-sm text-[#888] leading-relaxed">{state.generatedIdea.description}</p>
+                <div className="flex flex-wrap gap-2 pt-1">
+                  <Badge>{state.generatedIdea.style}</Badge>
+                  <Badge>{state.generatedIdea.mood}</Badge>
+                  {state.generatedIdea.keyElements.map((el, i) => (
+                    <Badge key={i}>{el}</Badge>
+                  ))}
                 </div>
-              )}
+              </div>
             </div>
             <div>
               <ProgressTracker events={state.progress} />
             </div>
+          </div>
+        )}
+
+        {/* Progress only (direct mode / no concept yet) */}
+        {!state.generatedIdea && state.progress.length > 0 && (
+          <div className="max-w-3xl">
+            <ProgressTracker events={state.progress} />
           </div>
         )}
 
