@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
     console.log(`🎨 Generating icon for @${user.username}: "${prompt}"`);
 
     const { images } = await generateImage({
-      model: gateway.imageModel('nanobanana'),
+      model: gateway.imageModel('google/gemini-3-pro-image'),
       prompt,
       n: 1,
       size: '1024x1024',

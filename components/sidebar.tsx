@@ -20,10 +20,13 @@ export function Sidebar({ user }: SidebarProps) {
 
   return (
     <aside className="fixed left-0 top-0 h-full w-[60px] border-r border-[#222] bg-black flex flex-col items-center py-4 z-50">
-      {/* Logo */}
-      <Link href="/" className="mb-8 w-9 h-9 rounded-lg bg-white flex items-center justify-center">
-        <svg width="16" height="16" viewBox="0 0 76 65" fill="none" xmlns="http://www.w3.org/2000/svg">
+      {/* Logo — Vercel Agent: triangle with sparkle */}
+      <Link href="/" className="mb-8 w-9 h-9 rounded-lg bg-white flex items-center justify-center relative">
+        <svg width="14" height="14" viewBox="0 0 76 65" fill="none" xmlns="http://www.w3.org/2000/svg">
           <path d="M37.5274 0L75.0548 65H0L37.5274 0Z" fill="black" />
+        </svg>
+        <svg width="8" height="8" viewBox="0 0 16 16" fill="none" className="absolute -top-0.5 -right-0.5">
+          <path d="M8 0L9.5 6.5L16 8L9.5 9.5L8 16L6.5 9.5L0 8L6.5 6.5L8 0Z" fill="black" />
         </svg>
       </Link>
 
