@@ -7,41 +7,46 @@ import { getTextModel } from '@/lib/ai/provider';
 export const runtime = 'nodejs';
 export const maxDuration = 30;
 
-// Random question framings to force variety — these change HOW the model asks, not just WHAT about
+// Random seeds to force variety — grounded real-world situations, not surreal/fantasy
 const QUESTION_FRAMINGS = [
-  "Ask about a PLACE the user wants to visit", "Ask about a PERSON they'd want to film",
-  "Ask about a specific MOMENT in time", "Ask about a SOUND they want to hear",
-  "Ask about something they'd want to see in SLOW MOTION", "Ask about a TEXTURE or MATERIAL",
-  "Ask about a specific TIME OF DAY", "Ask about a WEATHER condition",
-  "Ask about a COLOR PALETTE", "Ask about a SIZE or SCALE (tiny? massive? infinite?)",
-  "Ask about an ERA or DECADE", "Ask about a specific ANIMAL",
-  "Ask about a TYPE OF VEHICLE", "Ask about a SPORT or PHYSICAL ACTIVITY",
-  "Ask about a specific FOOD or DRINK", "Ask about a ROOM or INTERIOR",
-  "Ask about a specific PROFESSION", "Ask about something that SHOULDN'T be able to move but does",
-  "Ask about something BEAUTIFUL happening somewhere UGLY", "Ask about something UGLY happening somewhere BEAUTIFUL",
-  "Ask about a COMPETITION between unlikely opponents", "Ask about something HUGE that's actually TINY",
-  "Ask about a MISTAKE that leads to something amazing", "Ask about the LAST TIME something happens",
-  "Ask about the FIRST TIME something happens", "Ask about something seen from an UNUSUAL ANGLE",
-  "Ask about a SECRET that's about to be revealed", "Ask about two OPPOSITE things colliding",
-  "Ask about something that only happens at NIGHT", "Ask about something happening UNDERWATER",
-  "Ask about something happening in the SKY", "Ask about something happening UNDERGROUND",
-  "Ask about a RITUAL or CEREMONY", "Ask about a specific MACHINE or DEVICE",
-  "Ask about something happening in a MIRROR or REFLECTION", "Ask about a CROWD doing something unexpected",
-  "Ask about ONE PERSON alone in a vast space", "Ask about something happening in COMPLETE SILENCE",
-  "Ask about something that's MELTING or DISSOLVING", "Ask about something being BUILT or ASSEMBLED",
-  "Ask about a CHASE", "Ask about a DANCE", "Ask about a FALL", "Ask about a DISCOVERY",
-  "Ask about a TRANSFORMATION", "Ask about an ARRIVAL", "Ask about a DEPARTURE",
-  "Ask about something GLOWING", "Ask about something SPINNING", "Ask about something FLOATING",
+  "Ask about a real CITY or NEIGHBORHOOD", "Ask about a specific JOB or WORKPLACE",
+  "Ask about a FAMILY moment", "Ask about a FRIENDSHIP dynamic",
+  "Ask about a FIRST DATE scenario", "Ask about a ROAD TRIP situation",
+  "Ask about a COOKING or KITCHEN moment", "Ask about a SPORTS moment",
+  "Ask about a LATE NIGHT scenario", "Ask about an EARLY MORNING routine",
+  "Ask about a MOVING DAY situation", "Ask about a JOB INTERVIEW moment",
+  "Ask about a WEDDING or CELEBRATION", "Ask about a BREAKUP or GOODBYE",
+  "Ask about a REUNION after years apart", "Ask about a PRANK or SURPRISE",
+  "Ask about a ROAD RAGE or TRAFFIC moment", "Ask about a BARBERSHOP or SALON visit",
+  "Ask about a GYM or FITNESS situation", "Ask about a GROCERY STORE moment",
+  "Ask about a CONCERT or LIVE MUSIC experience", "Ask about a CAMPING or OUTDOOR trip",
+  "Ask about a CLASSROOM or SCHOOL moment", "Ask about a HOSPITAL or DOCTOR visit",
+  "Ask about a HOUSE PARTY situation", "Ask about a NEIGHBORHOOD drama",
+  "Ask about a PET OWNER moment", "Ask about a COMMUTE or PUBLIC TRANSIT ride",
+  "Ask about a BAR or RESTAURANT scene", "Ask about a BEACH DAY",
+  "Ask about a LAUNDROMAT moment", "Ask about a PARKING LOT situation",
+  "Ask about a GAS STATION stop", "Ask about a HOTEL or MOTEL stay",
+  "Ask about a PHONE CALL that changes everything", "Ask about a TEXT MESSAGE situation",
+  "Ask about a NEIGHBOR interaction", "Ask about a PARENT-CHILD conversation",
+  "Ask about a COWORKER dynamic", "Ask about a STRANGER encounter",
+  "Ask about a DELIVERY DRIVER moment", "Ask about a WAITING ROOM situation",
+  "Ask about a ELEVATOR ride", "Ask about a DINER at 2am",
+  "Ask about a GARAGE or WORKSHOP project", "Ask about a THRIFT STORE find",
+  "Ask about a FARMER'S MARKET morning", "Ask about a COFFEE SHOP regular",
+  "Ask about a DOG WALK encounter", "Ask about a AIRPORT or TRAVEL moment",
 ];
 
 const OPTION_VIBES = [
-  "Make one option retro/vintage", "Make one option futuristic/sci-fi", "Make one option cozy/warm",
-  "Make one option epic/grand scale", "Make one option intimate/close-up", "Make one option chaotic/energetic",
-  "Make one option peaceful/meditative", "Make one option funny/absurd", "Make one option mysterious/noir",
-  "Make one option colorful/psychedelic", "Make one option minimalist/stark", "Make one option lush/tropical",
-  "Make one option industrial/gritty", "Make one option dreamlike/surreal", "Make one option documentary/real",
-  "Make one option theatrical/dramatic", "Make one option childlike/playful", "Make one option elegant/sophisticated",
-  "Make one option punk/rebellious", "Make one option nostalgic/bittersweet",
+  "Make one option feel like a comedy", "Make one option feel like a drama",
+  "Make one option feel like a thriller", "Make one option feel heartwarming",
+  "Make one option feel awkward/cringe", "Make one option feel triumphant",
+  "Make one option feel chaotic", "Make one option feel peaceful",
+  "Make one option feel tense", "Make one option feel nostalgic",
+  "Make one option feel like a confession", "Make one option feel competitive",
+  "Make one option feel rebellious", "Make one option feel bittersweet",
+  "Make one option feel like an argument", "Make one option feel like a celebration",
+  "Make one option feel exhausting", "Make one option feel like relief",
+  "Make one option feel embarrassing", "Make one option feel inspiring",
 ];
 
 function getRandomSeed(): string {
@@ -81,27 +86,24 @@ export async function POST(request: NextRequest) {
       schema: nextStepSchema,
       prompt: `Creative direction seed: ${seed1}
 
-You are a wildly creative video concept brainstormer. You help people come up with out-there, imaginative, cinematic video ideas — the weirder and more visually interesting, the better.
+You are a creative video concept brainstormer. You help people come up with cinematic, visually compelling video ideas grounded in REAL situations — real people, real places, real moments.
 
-The first question should kick off the creative direction. Ask about what kind of WORLD, SCENARIO, or VISUAL they want to see — not how they feel.
-
-Ask ONE opening question. Rules:
-- Ask about a concept, scenario, world, or visual — NOT about feelings, emotions, or personal experiences
-- Think like: "What world do you want to drop into?", "What would blow your mind to see?", "What's the wildest thing you'd film?", "What universe should we build?"
-- Keep it under 8 words. Make it fun and energizing.
+Ask ONE opening question that kicks off the creative direction. Rules:
+- Ask about a REAL situation, setting, or scenario — not fantasy or sci-fi
+- Think like: "Where are we?", "Who's in the scene?", "What just happened?", "What kind of day is it?"
+- Keep it under 8 words. Make it feel natural and inviting.
 
 Generate 3 answer options. Rules:
-- Each option should be a wild, specific, visual scenario or world (5-12 words)
-- Think big — alien landscapes, impossible physics, talking animals, time travel, microscopic worlds, retro futures, underwater cities
-- Example energy: "A chef cooking dinner on the surface of Mars", "Robots learning to dance in a neon junkyard", "A tiny civilization living inside a vending machine", "Dinosaurs commuting to office jobs in Tokyo", "An underwater jazz club run by octopuses"
-- Each option should be a completely different creative universe — something sci-fi, something absurd/funny, something beautiful/epic, something surreal, something grounded-but-twisted
-- They should make someone go "oh that would be sick to watch"
-- Keep the energy fun, playful, epic, or mind-bending. Not personal or emotional.
+- Each option should be a specific, grounded, REAL scenario (5-12 words)
+- Think real life but cinematic — a tense family dinner, two strangers stuck in an elevator, a chef who just burned the main course, a couple arguing in a parked car, a kid performing for an empty auditorium
+- Each option should feel like a different GENRE of movie — one comedy, one drama, one thriller/tense
+- They should make someone go "oh I can picture that exactly"
+- Keep it grounded — real people in real places doing real things, but make the moment INTERESTING
 - NOTHING morbid, dark, violent, depressing, or disturbing.
 
-For each option, also write a short reaction (2-5 words) that would show if the user picks it — like a creative friend reacting. Examples: "Oh that's sick", "Now we're talking", "Yes love that", "OK I see you", "Wild choice let's go". Be natural and varied. No exclamation marks.
+For each option, also write a short reaction (2-5 words) that would show if the user picks it — like a creative friend reacting. Examples: "Oh that's sick", "Now we're talking", "Yes love that", "OK I see you", "Good taste". Be natural and varied. No exclamation marks.
 
-Also consider this creative angle: ${seed2}`,
+Also consider this angle: ${seed2}`,
     });
     return Response.json(result.object);
   }
