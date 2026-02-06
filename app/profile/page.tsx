@@ -5,6 +5,7 @@ import { Sparkles, Loader2, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { VideoCard } from '@/components/video-card';
 import { PromptBar } from '@/components/prompt-bar';
+import { AvatarCropper } from '@/components/avatar-cropper';
 
 interface Video {
   id: string;
@@ -29,6 +30,7 @@ export default function ProfilePage() {
   const [generatingIcon, setGeneratingIcon] = useState(false);
   const [showIconGen, setShowIconGen] = useState(false);
   const [iconError, setIconError] = useState<string | null>(null);
+  const [cropImageUrl, setCropImageUrl] = useState<string | null>(null);
 
   const load = async () => {
     const res = await fetch('/api/profile');
@@ -62,9 +64,10 @@ export default function ProfilePage() {
       });
 
       if (res.ok) {
+        const { url } = await res.json();
+        setCropImageUrl(url);
         setShowIconGen(false);
         setIconPrompt('');
-        load();
       } else {
         const err = await res.json();
         setIconError(err.error || 'Failed to generate icon');
@@ -93,6 +96,21 @@ export default function ProfilePage() {
   }
 
   const { user, videos, stats } = data;
+
+  const handleCropSave = async (blob: Blob) => {
+    const reader = new FileReader();
+    reader.onloadend = async () => {
+      const base64 = reader.result as string;
+      await fetch('/api/generate-icon', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'save-cropped', prompt: base64 }),
+      });
+      setCropImageUrl(null);
+      load();
+    };
+    reader.readAsDataURL(blob);
+  };
 
   return (
     <div className="min-h-screen bg-black flex flex-col">
@@ -232,6 +250,15 @@ export default function ProfilePage() {
 
       {/* Prompt bar */}
       <PromptBar isAuthenticated={true} />
+
+      {/* Avatar cropper */}
+      {cropImageUrl && (
+        <AvatarCropper
+          imageUrl={cropImageUrl}
+          onSave={handleCropSave}
+          onCancel={() => { setCropImageUrl(null); load(); }}
+        />
+      )}
     </div>
   );
 }

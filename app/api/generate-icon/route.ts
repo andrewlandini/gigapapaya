@@ -21,6 +21,22 @@ export async function POST(request: NextRequest) {
   try {
     const { prompt, action } = await request.json();
 
+    // Save cropped avatar from blob upload
+    if (action === 'save-cropped') {
+      const dbUser = await getUserById(user.id);
+      if (dbUser?.avatar_url) {
+        try { await del(dbUser.avatar_url); } catch {}
+      }
+      // prompt field contains base64 image data
+      const buffer = Buffer.from(prompt.split(',')[1] || prompt, 'base64');
+      const blob = await put(`avatars/${user.id}-${Date.now()}.png`, buffer, {
+        access: 'public',
+        contentType: 'image/png',
+      });
+      await updateUserAvatar(user.id, blob.url);
+      return Response.json({ url: blob.url });
+    }
+
     // Delete avatar
     if (action === 'delete') {
       const dbUser = await getUserById(user.id);
