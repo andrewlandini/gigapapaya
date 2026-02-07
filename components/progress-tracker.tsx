@@ -1,8 +1,11 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { CheckCircle2, Loader2, AlertCircle, ChevronDown, Circle } from 'lucide-react';
 import type { ProgressEvent } from '@/lib/types';
+
+// Stable date used for pending groups to avoid server/client hydration mismatch
+const EPOCH = new Date(0);
 
 interface ProgressTrackerProps {
   events: ProgressEvent[];
@@ -220,10 +223,10 @@ export function ProgressTracker({ events, status, shotCount }: ProgressTrackerPr
       if (status === 'generating') {
         // Phase 1: Concept → (Mood Board if beta) → Shots → Review
         if (!hasKey('agent-idea')) {
-          result.push({ key: 'agent-idea', label: 'Concept Agent', status: 'pending', message: '', timestamp: new Date(), logs: [], type: 'agent' });
+          result.push({ key: 'agent-idea', label: 'Concept Agent', status: 'pending', message: '', timestamp: EPOCH, logs: [], type: 'agent' });
         }
         if (!hasKey('agent-scenes')) {
-          result.push({ key: 'agent-scenes', label: 'Shot Agent', status: 'pending', message: '', timestamp: new Date(), logs: [], type: 'agent' });
+          result.push({ key: 'agent-scenes', label: 'Shot Agent', status: 'pending', message: '', timestamp: EPOCH, logs: [], type: 'agent' });
         }
       } else if (status === 'generating-videos' && shotCount) {
         // Phase 2: Single group for all parallel video generations
@@ -234,7 +237,7 @@ export function ProgressTracker({ events, status, shotCount }: ProgressTrackerPr
             label: 'Generating Videos',
             status: 'running',
             message: `0/${shotCount} complete`,
-            timestamp: new Date(),
+            timestamp: EPOCH,
             logs: [],
             type: 'video',
             shots: [],

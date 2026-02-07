@@ -54,11 +54,8 @@ export async function POST(request: NextRequest) {
           // Shot agent already writes Veo3-ready prompts — go straight to video generation
           const perShotDurations = scenes.map((s: any) => s.duration || (typeof options?.duration === 'number' ? options.duration : 8));
 
-          sendEvent({ type: 'agent-log', agent: 'videos', status: `Starting video generation for ${scenes.length} shots (sequential — each shot references the previous)` });
+          sendEvent({ type: 'agent-log', agent: 'videos', status: `Starting video generation for ${scenes.length} shots (using storyboard frames as reference)` });
           sendEvent({ type: 'agent-log', agent: 'videos', status: `Config: ${options.aspectRatio} / ${options.duration === 'auto' ? 'auto' : options.duration + 's'} / model: veo-3.1-generate-001` });
-
-          // Generate shots sequentially — each shot uses the previous shot's video as reference
-          let previousVideoUrl: string | undefined;
 
           for (let i = 0; i < scenes.length; i++) {
             const scene = scenes[i] as { prompt: string; dialogue?: string; duration: number };
@@ -88,27 +85,23 @@ export async function POST(request: NextRequest) {
             const shotDuration = perShotDurations[i];
             const shotOptions = { ...options, duration: shotDuration };
 
-            sendEvent({ type: 'agent-log', agent: 'videos', status: `Sending shot ${i + 1}/${scenes.length} to Veo 3.1 (${shotDuration}s)${previousVideoUrl ? ' — using previous shot as reference' : ''}` });
+            // Reference image priority (must be JPEG/PNG — Veo 3.1 image-to-video rejects video files):
+            // 1. Current shot's storyboard frame (character-consistent pre-generated image)
+            // 2. Mood board fallback
+            const refImage = (storyboardImages?.[i] && storyboardImages[i] !== '' ? storyboardImages[i] : undefined)
+              || (moodBoard?.length ? moodBoard[i % moodBoard.length] : undefined);
+
+            sendEvent({ type: 'agent-log', agent: 'videos', status: `Sending shot ${i + 1}/${scenes.length} to Veo 3.1 (${shotDuration}s)${refImage ? ' — with reference image' : ''}` });
             sendEvent({
               type: 'video-start', sceneIndex: i, prompt: finalPrompt,
               status: `Generating video ${i + 1}/${scenes.length}...`,
             });
 
             try {
-              // Reference image priority:
-              // 1. Previous shot's generated video URL (visual continuity — same face, room, clothing)
-              // 2. Current shot's storyboard frame (character-consistent pre-generated)
-              // 3. Mood board fallback
-              const refImage = previousVideoUrl
-                || (storyboardImages?.[i] && storyboardImages[i] !== '' ? storyboardImages[i] : undefined)
-                || (moodBoard?.length ? moodBoard[i % moodBoard.length] : undefined);
 
               const video = await executeVideoAgent(
                 finalPrompt, style, mood, shotOptions, i, refImage
               );
-
-              // This video becomes the reference for the next shot
-              previousVideoUrl = video.url;
 
               await saveVideoRecord({
                 id: video.id, generationId: sessionId, userId,
