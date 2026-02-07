@@ -631,8 +631,21 @@ export async function executeVideoAgent(
     return video;
   } catch (error) {
     console.error(`❌ VIDEO AGENT: Failed to generate video for scene ${sceneIndex + 1}`);
-    console.error('Error:', error);
-    throw error;
+    // The AI SDK sometimes throws a Promise instead of an Error — resolve it
+    let resolvedError = error;
+    if (error && typeof error === 'object' && typeof (error as any).then === 'function') {
+      try {
+        await (error as Promise<unknown>);
+      } catch (inner) {
+        resolvedError = inner;
+      }
+    }
+    console.error('Error:', resolvedError);
+    throw resolvedError instanceof Error ? resolvedError : new Error(
+      typeof resolvedError === 'string' ? resolvedError :
+      resolvedError && typeof resolvedError === 'object' ? JSON.stringify(resolvedError) :
+      'Unknown video generation error'
+    );
   }
 }
 

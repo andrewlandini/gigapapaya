@@ -65,9 +65,7 @@ export function useStoryboard() {
 }
 
 export function StoryboardProvider({ children }: { children: ReactNode }) {
-  const { debugMode, pushLog, clearLogs } = useDebug();
-  const debugRef = useRef(debugMode);
-  debugRef.current = debugMode;
+  const { pushLog } = useDebug();
   const pushLogRef = useRef(pushLog);
   pushLogRef.current = pushLog;
 
@@ -248,9 +246,7 @@ export function StoryboardProvider({ children }: { children: ReactNode }) {
       for (const line of lines) {
         if (line.startsWith('data: ')) {
           const data = JSON.parse(line.slice(6)) as SSEMessage;
-          if (debugRef.current) {
-            pushLogRef.current({ timestamp: Date.now(), source, raw: data as unknown as Record<string, unknown> });
-          }
+          pushLogRef.current({ timestamp: Date.now(), source, raw: data as unknown as Record<string, unknown> });
           onEvent(data);
         }
       }
@@ -404,7 +400,7 @@ export function StoryboardProvider({ children }: { children: ReactNode }) {
         fetch('/api/generate-videos', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ sessionId: sid, scenes, style, mood, options: currentOptions, moodBoard: currentMoodBoard, storyboardImages: currentStoryboard, characterPortraits: currentPortraits, verbose: debugRef.current }),
+          body: JSON.stringify({ sessionId: sid, scenes, style, mood, options: currentOptions, moodBoard: currentMoodBoard, storyboardImages: currentStoryboard, characterPortraits: currentPortraits }),
           signal: controller.signal,
         })
           .then(async (response) => {
