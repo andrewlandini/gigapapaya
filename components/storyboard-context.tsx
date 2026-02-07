@@ -329,7 +329,19 @@ export function StoryboardProvider({ children }: { children: ReactNode }) {
               setState(prev => ({
                 ...prev,
                 status: 'reviewing',
-                editableScenes: prev.scenes ? prev.scenes.map(s => ({ ...s })) : null,
+                editableScenes: prev.scenes ? prev.scenes.map(s => {
+                  // Ensure dialogue field exists (safety net if agent omits it)
+                  const scene = { ...s, dialogue: s.dialogue || '', characters: s.characters || [] };
+                  // If dialogue ended up in the prompt (old agent behavior), extract it
+                  if (!scene.dialogue) {
+                    const match = scene.prompt.match(/"([^"]{3,})"/);
+                    if (match) {
+                      scene.dialogue = match[1];
+                      scene.prompt = scene.prompt.replace(`"${match[1]}"`, '').replace(/,\s*saying\s*,/, ',').replace(/\s+/g, ' ').trim();
+                    }
+                  }
+                  return scene;
+                }) : null,
                 moodBoard: data.moodBoard || prev.moodBoard,
                 storyboardImages: data.storyboardImages || prev.storyboardImages,
                 characterPortraits: data.characterPortraits || prev.characterPortraits,
