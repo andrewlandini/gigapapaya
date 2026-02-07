@@ -407,7 +407,7 @@ Framing: Tight medium close-up from chest up. Subject fills the frame. Shallow b
 
 This is a definitive character reference photograph for a film production. Every detail of their appearance (face, hair, skin, build, clothing) must be precisely rendered as described. This exact person must be recognizable in every subsequent frame.
 
-ABSOLUTELY NO text, captions, speech bubbles, labels, watermarks, overlays, or graphics of any kind. Clean photographic image only. Output only the image.`
+NO overlay graphics, captions, speech bubbles, subtitles, labels, watermarks, or post-production text of any kind. Screens that exist IN the scene (phones, laptops, TVs, monitors) can show content — that is part of the shot. But nothing should be composited OVER the image. Clean photographic image only. Output only the image.`
       );
       if (url) {
         portraits[char.name] = url;
@@ -474,7 +474,7 @@ Characters: ${charDescs}
 
 Framing: Medium shot, both characters clearly visible in frame with natural spatial relationship. Cinematic composition — rule of thirds, depth in the frame, motivated lighting. Each character must look IDENTICAL to their reference portrait — same face, same hair, same skin tone, same build, same clothing.
 
-ABSOLUTELY NO text, captions, speech bubbles, labels, watermarks, overlays, or graphics of any kind. Clean photographic image only. Output only the image.`,
+NO overlay graphics, captions, speech bubbles, subtitles, labels, watermarks, or post-production text of any kind. Screens that exist IN the scene (phones, laptops, TVs, monitors) can show content — that is part of the shot. But nothing should be composited OVER the image. Clean photographic image only. Output only the image.`,
         refImages
       );
       if (url) {
@@ -535,7 +535,7 @@ Shot description: ${scene.prompt}
 
 ${charContext ? `Characters in this frame: ${charContext}\n` : ''}This should look like a frame grab from a real film — deliberate composition, cinematic lens characteristics (shallow depth of field, anamorphic bokeh, lens breathing), motivated lighting, production-quality color grade. NOT corporate stock photography. NOT B-roll. Think Roger Deakins, Bradford Young, Hoyte van Hoytema. Every element in the frame should feel intentional.
 
-ABSOLUTELY NO text, captions, speech bubbles, dialogue text, subtitles, labels, watermarks, overlays, or graphics of any kind anywhere in the image. Clean photographic frame only. Output only the image.`,
+NO overlay graphics, captions, speech bubbles, dialogue text, subtitles, labels, watermarks, or post-production text of any kind anywhere in the image. Screens that exist IN the scene (phones, laptops, TVs, monitors) can show content — that is a legitimate part of the shot. But nothing should be composited OVER the image. Clean photographic frame only. Output only the image.`,
         refImages.length > 0 ? refImages : undefined
       );
       if (url) {
