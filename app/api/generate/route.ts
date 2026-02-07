@@ -138,31 +138,47 @@ export async function POST(request: NextRequest) {
 
             try {
               const chars = scenesResult.characters || [];
+              sendEvent({ type: 'agent-log', agent: 'mood-board', status: `Found ${chars.length} character(s): ${chars.map((c: any) => c.name).join(', ') || 'none'}` });
 
               // Step 1: Character portraits
               if (chars.length > 0) {
                 sendEvent({ type: 'agent-log', agent: 'mood-board', status: `Generating ${chars.length} character portrait(s)...` });
-                characterPortraits = await generateCharacterPortraits(chars, ideaResult.style, ideaResult.mood);
-                sendEvent({ type: 'agent-log', agent: 'mood-board', status: `${Object.keys(characterPortraits).length} portrait(s) ready` });
+                try {
+                  characterPortraits = await generateCharacterPortraits(chars, ideaResult.style, ideaResult.mood);
+                  sendEvent({ type: 'agent-log', agent: 'mood-board', status: `${Object.keys(characterPortraits).length} portrait(s) ready` });
+                } catch (e) {
+                  sendEvent({ type: 'agent-log', agent: 'mood-board', status: `Portrait generation failed: ${e instanceof Error ? e.message : 'Unknown error'}` });
+                }
               }
 
               // Step 2: Group references for multi-character scenes
-              const groupRefs = await generateGroupReferences(
-                scenesResult.scenes, chars, characterPortraits, ideaResult.style, ideaResult.mood,
-              );
-              if (Object.keys(groupRefs).length > 0) {
-                sendEvent({ type: 'agent-log', agent: 'mood-board', status: `${Object.keys(groupRefs).length} group reference(s) ready` });
+              let groupRefs: Record<string, string> = {};
+              try {
+                groupRefs = await generateGroupReferences(
+                  scenesResult.scenes, chars, characterPortraits, ideaResult.style, ideaResult.mood,
+                );
+                if (Object.keys(groupRefs).length > 0) {
+                  sendEvent({ type: 'agent-log', agent: 'mood-board', status: `${Object.keys(groupRefs).length} group reference(s) ready` });
+                }
+              } catch (e) {
+                sendEvent({ type: 'agent-log', agent: 'mood-board', status: `Group refs failed: ${e instanceof Error ? e.message : 'Unknown error'}` });
               }
 
               // Step 3: Scene storyboard frames
               sendEvent({ type: 'agent-log', agent: 'mood-board', status: `Generating ${scenesResult.scenes.length} scene frames...` });
-              storyboardImages = await generateSceneStoryboards(
-                scenesResult.scenes, chars, characterPortraits, groupRefs, ideaResult.style, ideaResult.mood,
-              );
-              sendEvent({ type: 'agent-log', agent: 'mood-board', status: `${storyboardImages.filter(Boolean).length} storyboard frames ready` });
+              try {
+                storyboardImages = await generateSceneStoryboards(
+                  scenesResult.scenes, chars, characterPortraits, groupRefs, ideaResult.style, ideaResult.mood,
+                );
+                sendEvent({ type: 'agent-log', agent: 'mood-board', status: `${storyboardImages.filter(Boolean).length}/${scenesResult.scenes.length} storyboard frames ready` });
+              } catch (e) {
+                sendEvent({ type: 'agent-log', agent: 'mood-board', status: `Scene frames failed: ${e instanceof Error ? e.message : 'Unknown error'}` });
+              }
+
               sendEvent({ type: 'storyboard-complete' as any, storyboardImages, characterPortraits });
             } catch (error) {
               console.error('❌ Storyboard generation failed:', error);
+              sendEvent({ type: 'agent-log', agent: 'mood-board', status: `Storyboard failed: ${error instanceof Error ? error.message : 'Unknown error'}` });
               sendEvent({ type: 'storyboard-complete' as any, storyboardImages: [], characterPortraits: {} });
             }
 

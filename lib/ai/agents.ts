@@ -383,7 +383,7 @@ export async function generateCharacterPortraits(
         console.log(`✅ Portrait for ${char.name} generated`);
       }
     } catch (error) {
-      console.error(`❌ Failed to generate portrait for ${char.name}:`, error);
+      console.error(`❌ Failed to generate portrait for ${char.name}:`, error instanceof Error ? error.message : error);
     }
   });
 
@@ -450,7 +450,7 @@ export async function generateGroupReferences(
         console.log(`✅ Group ref for ${key} generated`);
       }
     } catch (error) {
-      console.error(`❌ Failed to generate group ref for ${key}:`, error);
+      console.error(`❌ Failed to generate group ref for ${key}:`, error instanceof Error ? error.message : error);
     }
   });
 
@@ -503,7 +503,7 @@ export async function generateSceneStoryboards(
         console.log(`✅ Frame ${i + 1} generated`);
       }
     } catch (error) {
-      console.error(`❌ Failed to generate frame ${i + 1}:`, error);
+      console.error(`❌ Failed to generate frame ${i + 1}:`, error instanceof Error ? error.message : error);
     }
   });
 
