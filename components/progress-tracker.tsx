@@ -283,9 +283,9 @@ export function ProgressTracker({ events, status, shotCount }: ProgressTrackerPr
 
           return (
             <div key={group.key} className={`border-b border-[#222] last:border-b-0 ${isPending ? '' : 'animate-fade-in'}`}>
-              {/* Header — single line for agent steps, expandable for video or debug */}
+              {/* Header — single line for agent steps, expandable for video */}
               <div
-                className={`flex items-center gap-3 px-4 py-2.5 ${(hasShots && group.status === 'done') || hasDebug ? 'cursor-pointer hover:bg-[#0a0a0a]' : ''}`}
+                className={`flex items-center gap-3 px-4 py-2.5 ${hasShots && group.status === 'done' ? 'cursor-pointer hover:bg-[#0a0a0a]' : !hasShots && hasDebug ? 'cursor-pointer hover:bg-[#0a0a0a]' : ''}`}
                 onClick={() => {
                   if (hasShots && group.status === 'done') toggleExpand(group.key);
                   else if (hasDebug) toggleExpand(`${group.key}-debug`);
@@ -308,6 +308,14 @@ export function ProgressTracker({ events, status, shotCount }: ProgressTrackerPr
                     <span className="text-xs text-[#555] truncate">{group.message}</span>
                   )}
                 </div>
+                {hasDebug && (
+                  <button
+                    className="text-[10px] font-mono text-[#444] hover:text-[#888] transition-colors flex-shrink-0"
+                    onClick={(e) => { e.stopPropagation(); toggleExpand(`${group.key}-debug`); }}
+                  >
+                    {isDebugExpanded ? 'hide log' : 'log'}
+                  </button>
+                )}
                 {hasShots && group.status === 'done' && (
                   <ChevronDown className={`h-3 w-3 text-[#555] transition-transform duration-300 flex-shrink-0 ${isExpanded ? 'rotate-180' : ''}`} />
                 )}
