@@ -71,7 +71,7 @@ export function VideoGenerator() {
   const [generatingHeadline, setGeneratingHeadline] = useState('');
   const [headlineFade, setHeadlineFade] = useState(true);
   const lastPhaseRef = useRef('');
-  const headline = useMemo(() => HEADLINES[Math.floor(Math.random() * HEADLINES.length)], []);
+  const [headline] = useState(() => HEADLINES[Math.floor(Math.random() * HEADLINES.length)]);
 
   const settingsMode = getModeById(settingsTab);
   const isActive = state.status !== 'idle';

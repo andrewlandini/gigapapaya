@@ -1,8 +1,7 @@
 'use client';
 
-import { useMemo, useState, useEffect, useRef } from 'react';
+import { useMemo, useState } from 'react';
 import { CheckCircle2, Loader2, AlertCircle, ChevronDown, Circle } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
 import type { ProgressEvent } from '@/lib/types';
 
 interface ProgressTrackerProps {
@@ -26,8 +25,6 @@ interface AgentGroup {
 
 export function ProgressTracker({ events, status, shotCount }: ProgressTrackerProps) {
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
-  const [manualToggle, setManualToggle] = useState<Set<string>>(new Set());
-  const collapsedByTimer = useRef<Set<string>>(new Set());
 
   const groups = useMemo(() => {
     const result: AgentGroup[] = [];
@@ -256,43 +253,11 @@ export function ProgressTracker({ events, status, shotCount }: ProgressTrackerPr
     return result;
   }, [events, status, shotCount]);
 
-  // Auto-collapse done groups 5 seconds after the NEXT step starts running
-  useEffect(() => {
-    const timers: NodeJS.Timeout[] = [];
-
-    for (let i = 0; i < groups.length; i++) {
-      const group = groups[i];
-      if (group.status !== 'done' || group.logs.length === 0) continue;
-      if (collapsedByTimer.current.has(group.key) || manualToggle.has(group.key)) continue;
-
-      // Only collapse once the next step is active (running or done)
-      const nextGroup = groups[i + 1];
-      if (!nextGroup || nextGroup.status === 'pending') continue;
-
-      collapsedByTimer.current.add(group.key);
-      const timer = setTimeout(() => {
-        setExpanded(prev => {
-          const next = new Set(prev);
-          if (!manualToggle.has(group.key)) {
-            next.delete(group.key);
-          }
-          return next;
-        });
-      }, 5000);
-      timers.push(timer);
-    }
-
-    return () => timers.forEach(t => clearTimeout(t));
-  }, [groups, manualToggle]);
+  // No auto-collapse — agent steps are single-line, only video group expands
 
   if (groups.length === 0) return null;
 
   const toggleExpand = (key: string) => {
-    setManualToggle(prev => {
-      const next = new Set(prev);
-      next.add(key);
-      return next;
-    });
     setExpanded(prev => {
       const next = new Set(prev);
       if (next.has(key)) next.delete(key);
@@ -305,63 +270,49 @@ export function ProgressTracker({ events, status, shotCount }: ProgressTrackerPr
     <div className="space-y-0 text-left">
       <div className="border border-[#222] rounded-xl overflow-hidden">
         {groups.map((group) => {
-          const isRunning = group.status === 'running';
-          const isError = group.status === 'error';
           const isPending = group.status === 'pending';
-          const isExpanded = isRunning || isError || expanded.has(group.key);
-          const hasLogs = group.logs.length > 0 || (group.shots && group.shots.length > 0);
+          const isVideoGroup = group.type === 'video';
+          const isExpanded = isVideoGroup && (group.status === 'running' || group.status === 'error' || expanded.has(group.key));
+          const hasShots = isVideoGroup && group.shots && group.shots.length > 0;
 
           return (
             <div key={group.key} className={`border-b border-[#222] last:border-b-0 ${isPending ? '' : 'animate-fade-in'}`}>
-              {/* Header */}
+              {/* Header — single line for agent steps, expandable for video */}
               <div
-                className={`flex items-center gap-3 px-4 py-3 ${hasLogs && !isRunning && !isPending ? 'cursor-pointer hover:bg-[#0a0a0a]' : ''}`}
-                onClick={() => hasLogs && !isRunning && !isPending && toggleExpand(group.key)}
+                className={`flex items-center gap-3 px-4 py-2.5 ${hasShots && group.status === 'done' ? 'cursor-pointer hover:bg-[#0a0a0a]' : ''}`}
+                onClick={() => hasShots && group.status === 'done' && toggleExpand(group.key)}
               >
                 <div className="flex-shrink-0">
                   {isPending ? (
-                    <Circle className="h-4 w-4 text-[#333]" />
+                    <Circle className="h-3.5 w-3.5 text-[#333]" />
                   ) : group.status === 'error' ? (
-                    <AlertCircle className="h-4 w-4 text-[#ff4444]" />
+                    <AlertCircle className="h-3.5 w-3.5 text-[#ff4444]" />
                   ) : group.status === 'done' ? (
-                    <CheckCircle2 className="h-4 w-4 text-[#00cc88]" />
+                    <CheckCircle2 className="h-3.5 w-3.5 text-[#00cc88]" />
                   ) : (
-                    <Loader2 className="h-4 w-4 text-[#888] animate-spin" />
+                    <Loader2 className="h-3.5 w-3.5 text-[#888] animate-spin" />
                   )}
                 </div>
                 <div className="flex items-center gap-2 flex-1 min-w-0">
-                  <span className={`text-sm ${isPending ? 'text-[#444]' : 'text-[#ededed]'}`}>{group.label}</span>
-                  {!isPending && (
-                    <Badge variant={group.status === 'error' ? 'error' : group.status === 'done' ? 'success' : 'blue'}>
-                      {group.status === 'running' ? 'running' : group.status === 'done' ? 'done' : 'error'}
-                    </Badge>
-                  )}
-                  {group.message && (
-                    <span className="text-xs text-[#555] truncate ml-1">{group.message}</span>
+                  <span className={`text-xs ${isPending ? 'text-[#444]' : 'text-[#888]'}`}>{group.label}</span>
+                  {group.message && !isPending && (
+                    <span className="text-xs text-[#555] truncate">{group.message}</span>
                   )}
                 </div>
-                {hasLogs && !isRunning && !isPending && (
-                  <ChevronDown className={`h-3.5 w-3.5 text-[#555] transition-transform duration-300 flex-shrink-0 ${isExpanded ? 'rotate-180' : ''}`} />
+                {hasShots && group.status === 'done' && (
+                  <ChevronDown className={`h-3 w-3 text-[#555] transition-transform duration-300 flex-shrink-0 ${isExpanded ? 'rotate-180' : ''}`} />
                 )}
               </div>
 
-              {/* Collapsible logs */}
+              {/* Expandable content — only for video group */}
+              {isVideoGroup && (
               <div
-                className="overflow-hidden transition-all duration-1000 ease-in-out"
+                className="overflow-hidden transition-all duration-700 ease-in-out"
                 style={{
                   maxHeight: isExpanded ? '2000px' : '0px',
                   opacity: isExpanded ? 1 : 0,
                 }}
               >
-                {group.logs.map((log) => (
-                  <div
-                    key={log.key}
-                    className="flex items-start gap-2 px-4 py-1.5 border-t border-[#181818]"
-                  >
-                    <span className="text-[#333] font-mono text-[10px] flex-shrink-0 mt-0.5">&gt;</span>
-                    <p className="text-xs font-mono text-[#555]">{log.message}</p>
-                  </div>
-                ))}
                 {group.shots && group.shots.length > 0 && (
                   <div className="px-4 py-2 border-t border-[#181818] space-y-0.5">
                     {group.shots.map((shot) => (
@@ -396,6 +347,7 @@ export function ProgressTracker({ events, status, shotCount }: ProgressTrackerPr
                   </div>
                 )}
               </div>
+              )}
             </div>
           );
         })}
