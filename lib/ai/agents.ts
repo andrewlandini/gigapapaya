@@ -385,7 +385,15 @@ export async function generateCharacterPortraits(
     try {
       console.log(`🧑 Generating portrait for ${char.name}...`);
       const url = await geminiImage(
-        `Generate a photorealistic portrait of this EXACT person: ${char.description}. Visual style: ${style}. Mood: ${mood}. Cinematic lighting, clean background, character clearly visible from the chest up. This is the DEFINITIVE reference for this character — every detail of their face, hair, skin tone, build, and clothing must be locked in exactly as described. This portrait will be used to ensure this character looks IDENTICAL in every subsequent frame. Output only the image.`
+        `Cinematic character portrait. Shot on ARRI Alexa with an 85mm prime lens, shallow depth of field, f/1.8. ${style} lighting and color grade.
+
+Subject: ${char.description}
+
+Framing: Tight medium close-up from chest up. Subject fills the frame. Shallow bokeh background — out of focus, neutral tones. The face is the focal point, lit with intention — motivated key light, subtle fill, natural skin tones.
+
+This is a definitive character reference photograph for a film production. Every detail of their appearance (face, hair, skin, build, clothing) must be precisely rendered as described. This exact person must be recognizable in every subsequent frame.
+
+ABSOLUTELY NO text, captions, speech bubbles, labels, watermarks, overlays, or graphics of any kind. Clean photographic image only. Output only the image.`
       );
       if (url) {
         portraits[char.name] = url;
@@ -441,7 +449,13 @@ export async function generateGroupReferences(
 
       console.log(`👥 Generating group ref for ${key}...`);
       const url = await geminiImage(
-        `Generate a photorealistic cinematic medium shot of these EXACT characters together in the same frame: ${charDescs}. Visual style: ${style}. CRITICAL: Each character must look EXACTLY as described — same face, same hair, same skin tone, same build, same clothing. The ONLY differences between this image and their individual portraits should be the framing (now together) and natural interaction. Do not change any character's appearance. Output only the image.`
+        `Cinematic two-shot. Shot on ARRI Alexa with a 35mm anamorphic lens, wide aperture, ${style} color grade and lighting.
+
+Characters: ${charDescs}
+
+Framing: Medium shot, both characters clearly visible in frame with natural spatial relationship. Cinematic composition — rule of thirds, depth in the frame, motivated lighting. Each character looks EXACTLY as described in their reference — same face, same hair, same skin tone, same build, same clothing. No changes to appearance whatsoever.
+
+ABSOLUTELY NO text, captions, speech bubbles, labels, watermarks, overlays, or graphics of any kind. Clean photographic image only. Output only the image.`
       );
       if (url) {
         groupRefs[key] = url;
@@ -484,7 +498,13 @@ export async function generateSceneStoryboards(
 
       console.log(`🎬 Generating frame ${i + 1}/${scenes.length}...`);
       const url = await geminiImage(
-        `Generate a cinematic still frame for this shot: ${scene.prompt}. ${charContext}Visual style: ${style}. Mood: ${mood}. CRITICAL CHARACTER CONSISTENCY: Every character must look EXACTLY like their reference description — same face, same hair, same skin tone, same build, same clothing. The ONLY things that should change between scenes are: lighting (matching the scene's environment), camera angle, pose/action, and expression/emotion. Clothing only changes if the scene takes place at a different time or location where it would not make sense for them to wear the same outfit. Otherwise, same outfit every frame. Photorealistic production still. Output only the image.`
+        `Cinematic production still from a high-end film. ${style} visual style, ${mood} mood.
+
+Shot description: ${scene.prompt}
+
+${charContext ? `Characters in this frame: ${charContext}CRITICAL: Every character must look EXACTLY like their reference description — same face, same hair, same skin tone, same build, same clothing. The ONLY things that change between scenes are lighting (to match the environment), camera angle, pose/action, and facial expression. Clothing stays the same unless the scene takes place at a clearly different time or location.\n\n` : ''}This should look like a frame grab from a real film — deliberate composition, cinematic lens characteristics (shallow depth of field, anamorphic bokeh, lens breathing), motivated lighting, production-quality color grade. NOT corporate stock photography. NOT B-roll. Think Roger Deakins, Bradford Young, Hoyte van Hoytema. Every element in the frame should feel intentional.
+
+ABSOLUTELY NO text, captions, speech bubbles, dialogue text, subtitles, labels, watermarks, overlays, or graphics of any kind anywhere in the image. Clean photographic frame only. Output only the image.`
       );
       if (url) {
         results[i] = url;
