@@ -97,21 +97,19 @@ export async function POST(request: NextRequest) {
             sendEvent({ type: 'agent-log', agent: 'idea', status: `Key elements: ${ideaResult.keyElements.join(', ')}` });
             sendEvent({ type: 'agent-complete', agent: 'idea', result: ideaResult });
 
-            // Mood Board: Generate reference images from concept (beta)
+            // Mood Board: Generate reference images from concept
             let moodBoard: string[] = [];
-            if (options.useMoodBoard) {
-              sendEvent({ type: 'mood-board-start', status: 'Generating mood board images...' });
-              sendEvent({ type: 'agent-log', agent: 'mood-board', status: `Creating visual references for "${ideaResult.title}"` });
+            sendEvent({ type: 'mood-board-start', status: 'Generating mood board images...' });
+            sendEvent({ type: 'agent-log', agent: 'mood-board', status: `Creating visual references for "${ideaResult.title}"` });
 
-              try {
-                moodBoard = await executeMoodBoardAgent(ideaResult, options.referenceImages);
-                sendEvent({ type: 'agent-log', agent: 'mood-board', status: `Generated ${moodBoard.length} reference images` });
-                sendEvent({ type: 'mood-board-complete', moodBoard });
-              } catch (error) {
-                console.error('❌ Mood board generation failed:', error);
-                sendEvent({ type: 'agent-log', agent: 'mood-board', status: `Mood board failed — continuing without visual references` });
-                sendEvent({ type: 'mood-board-complete', moodBoard: [] });
-              }
+            try {
+              moodBoard = await executeMoodBoardAgent(ideaResult, options.referenceImages);
+              sendEvent({ type: 'agent-log', agent: 'mood-board', status: `Generated ${moodBoard.length} reference images` });
+              sendEvent({ type: 'mood-board-complete', moodBoard });
+            } catch (error) {
+              console.error('❌ Mood board generation failed:', error);
+              sendEvent({ type: 'agent-log', agent: 'mood-board', status: `Mood board failed — continuing without visual references` });
+              sendEvent({ type: 'mood-board-complete', moodBoard: [] });
             }
 
             // Agent 2: Scenes

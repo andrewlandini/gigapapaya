@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import { Lightbulb, Loader2, RotateCcw } from 'lucide-react';
 
 interface IdeaWizardProps {
@@ -56,7 +56,7 @@ export function IdeaWizard({ onSelectIdea, onActiveChange }: IdeaWizardProps) {
   const [loadingStep, setLoadingStep] = useState(false);
   const [optionsKey, setOptionsKey] = useState(0); // forces re-render for animations
   const [reaction, setReaction] = useState<string | null>(null);
-  const pickHeadline = useMemo(() => PICK_HEADLINES[Math.floor(Math.random() * PICK_HEADLINES.length)], []);
+  const [pickHeadline] = useState(() => PICK_HEADLINES[Math.floor(Math.random() * PICK_HEADLINES.length)]);
 
   const fetchFirstStep = async () => {
     setLoadingStep(true);
@@ -70,7 +70,7 @@ export function IdeaWizard({ onSelectIdea, onActiveChange }: IdeaWizardProps) {
       if (res.ok) {
         const data = await res.json();
         setCurrentQuestion(data.question);
-        setCurrentOptions(data.options?.slice(0, 3) || []);
+        setCurrentOptions(data.options?.slice(0, 5) || []);
         setOptionsKey(prev => prev + 1);
       }
     } catch {}
@@ -89,7 +89,7 @@ export function IdeaWizard({ onSelectIdea, onActiveChange }: IdeaWizardProps) {
       if (res.ok) {
         const data = await res.json();
         setCurrentQuestion(data.question);
-        setCurrentOptions(data.options?.slice(0, 3) || []);
+        setCurrentOptions(data.options?.slice(0, 5) || []);
         setOptionsKey(prev => prev + 1);
       }
     } catch {}

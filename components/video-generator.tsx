@@ -305,7 +305,7 @@ export function VideoGenerator() {
               </div>
 
               {/* Reference images (beta only) */}
-              {options.useMoodBoard && (options.referenceImages?.length || 0) > 0 && (
+              {(options.referenceImages?.length || 0) > 0 && (
                 <div className="flex items-center gap-2 flex-wrap">
                   {options.referenceImages!.map((img, i) => (
                     <div key={i} className="relative group/img">
@@ -332,7 +332,7 @@ export function VideoGenerator() {
                   </label>
                 </div>
               )}
-              {options.useMoodBoard && (options.referenceImages?.length || 0) === 0 && (
+              {(options.referenceImages?.length || 0) === 0 && (
                 <label className="flex items-center gap-2 h-9 px-3 rounded-lg border border-dashed border-[#333] cursor-pointer hover:border-[#555] transition-colors">
                   <ImagePlus className="h-3.5 w-3.5 text-[#555]" />
                   <span className="text-xs text-[#555]">Add reference images</span>
@@ -369,20 +369,6 @@ export function VideoGenerator() {
                 })}
               </div>
 
-              {/* Beta: Mood Board toggle */}
-              <button
-                title="Generate mood board reference images from your concept before video generation"
-                onClick={() => setOptions(prev => ({ ...prev, useMoodBoard: !prev.useMoodBoard }))}
-                className={`flex items-center gap-2 h-8 px-4 rounded-full border text-xs font-mono transition-all ${
-                  options.useMoodBoard
-                    ? 'border-[#0070f3]/40 bg-[#0070f3]/10 text-[#0070f3]'
-                    : 'border-[#333] bg-transparent text-[#555] hover:border-[#555] hover:text-[#888]'
-                }`}
-              >
-                <ImagePlus className="h-3 w-3" />
-                Mood Board
-                <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-[#333] text-[#888]">beta</span>
-              </button>
 
             </div>
           )}
@@ -563,90 +549,84 @@ export function VideoGenerator() {
               </Button>
             </div>
 
-            <div className="grid gap-3">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {state.editableScenes.map((scene, i) => (
                 <div
                   key={i}
-                  className="border border-[#222] rounded-xl overflow-hidden hover:border-[#333] transition-colors"
+                  className="border border-[#222] rounded-xl overflow-hidden hover:border-[#333] transition-colors flex flex-col"
                 >
-                  <div className="flex">
-                    {/* Left: Script */}
-                    <div className="flex-1 p-4 space-y-3">
-                      {/* Header */}
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <div className="flex-shrink-0 w-6 h-6 rounded-md bg-[#1a1a1a] border border-[#333] text-[#888] flex items-center justify-center text-xs font-mono">
-                            {i + 1}
-                          </div>
-                          <span className="text-xs font-mono text-[#555]">Shot {i + 1}</span>
-                          <span className="text-xs font-mono text-[#444]">{scene.duration}s</span>
-                          {scene.characters?.length > 0 && (
-                            <span className="text-xs font-mono text-[#555]">{scene.characters.join(', ')}</span>
-                          )}
+                  {/* 1. Image */}
+                  <div className="relative bg-[#0a0a0a]">
+                    {state.storyboardImages[i] ? (
+                      <>
+                        <img src={state.storyboardImages[i]} alt={`Shot ${i + 1}`} className="w-full aspect-video object-cover" />
+                        <button
+                          onClick={() => {
+                            const newPrompt = prompt('Edit image prompt:', scene.prompt.substring(0, 200));
+                            if (newPrompt) {
+                              console.log('Regenerate frame', i, newPrompt);
+                            }
+                          }}
+                          className="absolute bottom-2 right-2 flex items-center gap-1 px-2 py-1 rounded-md bg-black/60 text-[10px] font-mono text-[#888] hover:text-white transition-colors backdrop-blur-sm"
+                          title="Regenerate this storyboard frame"
+                        >
+                          <RotateCw className="h-2.5 w-2.5" />
+                          Edit
+                        </button>
+                      </>
+                    ) : (
+                      <div className="aspect-video flex items-center justify-center text-[#333] border-b border-[#222]">
+                        <div className="text-center space-y-1.5">
+                          <ImagePlus className="h-6 w-6 mx-auto" />
+                          <span className="text-xs font-mono block">Generating...</span>
                         </div>
-                        {state.editableScenes!.length > 1 && (
-                          <button
-                            onClick={() => removeScene(i)}
-                            className="p-1 rounded-md text-[#444] hover:text-[#ff4444] hover:bg-[#1a1a1a] transition-colors"
-                            title="Remove shot"
-                          >
-                            <X className="h-3.5 w-3.5" />
-                          </button>
-                        )}
                       </div>
-                      {/* Visual prompt */}
-                      <textarea
-                        value={scene.prompt}
-                        onChange={(e) => updateScenePrompt(i, e.target.value)}
-                        className="w-full bg-[#0a0a0a] border border-[#333] rounded-lg px-3 py-2 text-sm text-[#ccc] placeholder:text-[#555] focus:outline-none focus:border-[#555] focus:ring-1 focus:ring-white/10 resize-y leading-relaxed"
-                        style={{ fieldSizing: 'content' as any, minHeight: '3rem' }}
-                      />
-                      {/* Dialogue */}
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-1.5">
-                          <MessageSquare className="h-3 w-3 text-[#555]" />
-                          <label className="text-[11px] font-mono text-[#555]">dialogue</label>
-                        </div>
-                        <input
-                          type="text"
-                          value={scene.dialogue || ''}
-                          onChange={(e) => updateSceneDialogue(i, e.target.value)}
-                          placeholder="What does the character say?"
-                          className="w-full bg-[#111] border border-[#333] rounded-lg px-3 py-2.5 text-sm text-[#e0c866] placeholder:text-[#555] focus:outline-none focus:border-[#555] focus:ring-1 focus:ring-white/10 italic"
-                        />
+                    )}
+                    {/* Shot badge */}
+                    <div className="absolute top-2 left-2 flex items-center gap-2">
+                      <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-black/60 backdrop-blur-sm">
+                        <span className="text-xs font-mono font-medium text-white">Shot {i + 1}</span>
+                        <span className="text-xs font-mono text-[#888]">{scene.duration}s</span>
                       </div>
                     </div>
-                    {/* Right: Storyboard image */}
-                    <div className="flex-shrink-0 w-56 border-l border-[#222] bg-[#0a0a0a] flex flex-col items-center justify-center">
-                      {state.storyboardImages[i] ? (
-                        <div className="flex flex-col items-center justify-center flex-1 w-full">
-                          <img src={state.storyboardImages[i]} alt={`Shot ${i + 1}`} className="w-full aspect-video object-cover" />
-                          <div className="p-2 flex justify-center">
-                            <button
-                              onClick={() => {
-                                const newPrompt = prompt('Edit image prompt:', scene.prompt.substring(0, 200));
-                                if (newPrompt) {
-                                  // TODO: regenerate single storyboard image
-                                  console.log('Regenerate frame', i, newPrompt);
-                                }
-                              }}
-                              className="flex items-center gap-1.5 text-[10px] font-mono text-[#555] hover:text-[#888] transition-colors"
-                              title="Regenerate this storyboard frame with a new prompt"
-                            >
-                              <RotateCw className="h-3 w-3" />
-                              Edit image
-                            </button>
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="flex-1 flex items-center justify-center text-[#333]">
-                          <div className="text-center space-y-1">
-                            <ImagePlus className="h-5 w-5 mx-auto" />
-                            <span className="text-[10px] font-mono block">No preview</span>
-                          </div>
-                        </div>
+                    {state.editableScenes!.length > 1 && (
+                      <button
+                        onClick={() => removeScene(i)}
+                        className="absolute top-2 right-2 p-1 rounded-md bg-black/60 text-[#888] hover:text-[#ff4444] transition-colors backdrop-blur-sm"
+                        title="Remove shot"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    )}
+                  </div>
+
+                  {/* 2. Dialogue */}
+                  <div className="px-3 pt-3 pb-2">
+                    <div className="flex items-center gap-1.5 mb-1.5">
+                      <MessageSquare className="h-3 w-3 text-[#555]" />
+                      <label className="text-[10px] font-mono text-[#555] uppercase tracking-wider">dialogue</label>
+                      {scene.characters?.length > 0 && (
+                        <span className="text-[10px] font-mono text-[#444] ml-auto">{scene.characters.join(', ')}</span>
                       )}
                     </div>
+                    <input
+                      type="text"
+                      value={scene.dialogue || ''}
+                      onChange={(e) => updateSceneDialogue(i, e.target.value)}
+                      placeholder="What does the character say?"
+                      className="w-full bg-[#111] border border-[#333] rounded-lg px-3 py-2 text-sm text-[#e0c866] placeholder:text-[#555] focus:outline-none focus:border-[#555] focus:ring-1 focus:ring-white/10 italic"
+                    />
+                  </div>
+
+                  {/* 3. Description */}
+                  <div className="px-3 pb-3">
+                    <label className="text-[10px] font-mono text-[#555] uppercase tracking-wider mb-1.5 block">description</label>
+                    <textarea
+                      value={scene.prompt}
+                      onChange={(e) => updateScenePrompt(i, e.target.value)}
+                      className="w-full bg-[#0a0a0a] border border-[#333] rounded-lg px-3 py-2 text-xs text-[#999] placeholder:text-[#555] focus:outline-none focus:border-[#555] focus:ring-1 focus:ring-white/10 resize-y leading-relaxed"
+                      style={{ fieldSizing: 'content' as any, minHeight: '3rem' }}
+                    />
                   </div>
                 </div>
               ))}
