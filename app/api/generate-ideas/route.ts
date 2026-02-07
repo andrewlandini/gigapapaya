@@ -65,7 +65,7 @@ const nextStepSchema = z.object({
   options: z.array(z.object({
     text: z.string().describe('The answer option text'),
     reaction: z.string().describe('A short 2-5 word enthusiastic reaction if the user picks this option, like "Oh that\'s sick" or "Now we\'re talking"'),
-  })).min(3).max(3).describe('3 unique, creative answer options with pre-generated reactions'),
+  })).min(5).max(5).describe('5 unique, creative answer options with pre-generated reactions'),
 });
 
 export async function POST(request: NextRequest) {
@@ -94,10 +94,10 @@ Ask ONE opening question that kicks off the creative direction. Rules:
 - Think like: "Where are we?", "Who's in the scene?", "What just happened?", "What kind of day is it?"
 - Keep it under 8 words. Make it feel natural and inviting.
 
-Generate 3 answer options. Rules:
+Generate 5 answer options. Rules:
 - Each option should be a specific, grounded, REAL scenario (5-12 words)
 - Think real life but cinematic — a tense family dinner, two strangers stuck in an elevator, a chef who just burned the main course, a couple arguing in a parked car, a kid performing for an empty auditorium
-- Each option should feel like a different GENRE of movie — one comedy, one drama, one thriller/tense
+- Cover a range of genres — comedy, drama, thriller, absurd, heartfelt
 - They should make someone go "oh I can picture that exactly"
 - Keep it grounded — real people in real places doing real things, but make the moment INTERESTING
 
@@ -136,7 +136,7 @@ Question rules:
 - NEVER ask about feelings or emotions. Stay in the world of the concept.
 
 Answer options rules:
-- 3 options, each 5-12 words
+- 5 options, each 5-12 words
 - Each should be a specific, vivid creative choice that builds on the concept so far
 - They should add detail, characters, conflict, or visual flavor to the world being built
 - Each option takes the video in a completely different direction
