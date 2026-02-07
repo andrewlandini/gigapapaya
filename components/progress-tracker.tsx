@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useRef, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { CheckCircle2, Loader2, AlertCircle, ChevronDown, Circle } from 'lucide-react';
 import type { ProgressEvent } from '@/lib/types';
 
@@ -275,15 +275,21 @@ export function ProgressTracker({ events, status, shotCount }: ProgressTrackerPr
         {groups.map((group) => {
           const isPending = group.status === 'pending';
           const isVideoGroup = group.type === 'video';
+          const debugLogs = group.logs.filter(l => l.message.startsWith('[DEBUG]'));
+          const hasDebug = debugLogs.length > 0;
           const isExpanded = isVideoGroup && (group.status === 'running' || group.status === 'error' || expanded.has(group.key));
+          const isDebugExpanded = hasDebug && expanded.has(`${group.key}-debug`);
           const hasShots = isVideoGroup && group.shots && group.shots.length > 0;
 
           return (
             <div key={group.key} className={`border-b border-[#222] last:border-b-0 ${isPending ? '' : 'animate-fade-in'}`}>
-              {/* Header — single line for agent steps, expandable for video */}
+              {/* Header — single line for agent steps, expandable for video or debug */}
               <div
-                className={`flex items-center gap-3 px-4 py-2.5 ${hasShots && group.status === 'done' ? 'cursor-pointer hover:bg-[#0a0a0a]' : ''}`}
-                onClick={() => hasShots && group.status === 'done' && toggleExpand(group.key)}
+                className={`flex items-center gap-3 px-4 py-2.5 ${(hasShots && group.status === 'done') || hasDebug ? 'cursor-pointer hover:bg-[#0a0a0a]' : ''}`}
+                onClick={() => {
+                  if (hasShots && group.status === 'done') toggleExpand(group.key);
+                  else if (hasDebug) toggleExpand(`${group.key}-debug`);
+                }}
               >
                 <div className="flex-shrink-0">
                   {isPending ? (
@@ -304,6 +310,9 @@ export function ProgressTracker({ events, status, shotCount }: ProgressTrackerPr
                 </div>
                 {hasShots && group.status === 'done' && (
                   <ChevronDown className={`h-3 w-3 text-[#555] transition-transform duration-300 flex-shrink-0 ${isExpanded ? 'rotate-180' : ''}`} />
+                )}
+                {!hasShots && hasDebug && (
+                  <ChevronDown className={`h-3 w-3 text-[#555] transition-transform duration-300 flex-shrink-0 ${isDebugExpanded ? 'rotate-180' : ''}`} />
                 )}
               </div>
 
@@ -349,6 +358,23 @@ export function ProgressTracker({ events, status, shotCount }: ProgressTrackerPr
                     ))}
                   </div>
                 )}
+              </div>
+              )}
+
+              {/* Debug log panel — only rendered when [DEBUG] logs are present (admin users) */}
+              {hasDebug && (
+              <div
+                className="overflow-hidden transition-all duration-700 ease-in-out"
+                style={{
+                  maxHeight: isDebugExpanded ? '10000px' : '0px',
+                  opacity: isDebugExpanded ? 1 : 0,
+                }}
+              >
+                <div className="px-4 py-2 border-t border-[#181818] bg-[#060606]">
+                  <pre className="text-[10px] font-mono text-[#555] whitespace-pre-wrap break-all leading-relaxed max-h-[400px] overflow-y-auto">
+                    {debugLogs.map(l => l.message.replace('[DEBUG] ', '')).join('\n')}
+                  </pre>
+                </div>
               </div>
               )}
             </div>

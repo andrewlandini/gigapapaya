@@ -48,6 +48,13 @@ export async function POST(request: NextRequest) {
           controller.enqueue(encoder.encode(message));
         };
 
+        // Verbose debug log — only streamed to admin users
+        const isAdmin = user?.isAdmin === true;
+        const debug = (msg: string) => {
+          if (!isAdmin) return;
+          sendEvent({ type: 'agent-log', agent: 'videos', status: `[DEBUG] ${msg}` });
+        };
+
         try {
           const videos: any[] = [];
 
@@ -56,6 +63,11 @@ export async function POST(request: NextRequest) {
 
           sendEvent({ type: 'agent-log', agent: 'videos', status: `Starting video generation for ${scenes.length} shots (using storyboard frames as reference)` });
           sendEvent({ type: 'agent-log', agent: 'videos', status: `Config: ${options.aspectRatio} / ${options.duration === 'auto' ? 'auto' : options.duration + 's'} / model: veo-3.1-generate-001` });
+          debug(`User: ${user?.username || 'unknown'} (admin: ${isAdmin})`);
+          debug(`Session ID: ${sessionId}`);
+          debug(`Storyboard images provided: ${storyboardImages?.filter(Boolean).length || 0}/${scenes.length}`);
+          debug(`Mood board images provided: ${moodBoard?.length || 0}`);
+          debug(`Character portraits provided: ${Object.keys(characterPortraits || {}).length}`);
 
           for (let i = 0; i < scenes.length; i++) {
             const scene = scenes[i] as { prompt: string; dialogue?: string; duration: number };
@@ -88,8 +100,17 @@ export async function POST(request: NextRequest) {
             // Reference image priority (must be JPEG/PNG — Veo 3.1 image-to-video rejects video files):
             // 1. Current shot's storyboard frame (character-consistent pre-generated image)
             // 2. Mood board fallback
-            const refImage = (storyboardImages?.[i] && storyboardImages[i] !== '' ? storyboardImages[i] : undefined)
-              || (moodBoard?.length ? moodBoard[i % moodBoard.length] : undefined);
+            const storyboardRef = storyboardImages?.[i] && storyboardImages[i] !== '' ? storyboardImages[i] : undefined;
+            const moodBoardRef = moodBoard?.length ? moodBoard[i % moodBoard.length] : undefined;
+            const refImage = storyboardRef || moodBoardRef;
+
+            debug(`--- Shot ${i + 1}/${scenes.length} ---`);
+            debug(`Duration: ${shotDuration}s | Aspect: ${shotOptions.aspectRatio}`);
+            debug(`Original prompt (${scene.prompt.length} chars): ${scene.prompt}`);
+            if (scene.dialogue) debug(`Dialogue: "${scene.dialogue}"`);
+            debug(`Final prompt after dialogue merge (${finalPrompt.length} chars): ${finalPrompt}`);
+            debug(`Ref image source: ${storyboardRef ? 'storyboard frame' : moodBoardRef ? 'mood board' : 'NONE'}`);
+            if (refImage) debug(`Ref image URL: ${refImage}`);
 
             sendEvent({ type: 'agent-log', agent: 'videos', status: `Sending shot ${i + 1}/${scenes.length} to Veo 3.1 (${shotDuration}s)${refImage ? ' — with reference image' : ''}` });
             sendEvent({
@@ -97,11 +118,13 @@ export async function POST(request: NextRequest) {
               status: `Generating video ${i + 1}/${scenes.length}...`,
             });
 
+            const shotStartTime = Date.now();
             try {
-
               const video = await executeVideoAgent(
                 finalPrompt, style, mood, shotOptions, i, refImage
               );
+              const shotElapsed = ((Date.now() - shotStartTime) / 1000).toFixed(1);
+              debug(`Shot ${i + 1} succeeded in ${shotElapsed}s — ${(video.size / (1024 * 1024)).toFixed(2)} MB — ${video.url}`);
 
               await saveVideoRecord({
                 id: video.id, generationId: sessionId, userId,
@@ -113,11 +136,24 @@ export async function POST(request: NextRequest) {
               sendEvent({ type: 'agent-log', agent: 'videos', status: `Shot ${i + 1} complete — ${(video.size / (1024 * 1024)).toFixed(1)} MB uploaded` });
               sendEvent({ type: 'video-complete', sceneIndex: i, videoId: video.id, video });
             } catch (error) {
+              const shotElapsed = ((Date.now() - shotStartTime) / 1000).toFixed(1);
               console.error(`❌ Failed to generate video ${i + 1}:`, error);
-              sendEvent({ type: 'agent-log', agent: 'videos', status: `Shot ${i + 1} failed: ${error instanceof Error ? error.message : 'Unknown error'}` });
+              const errMsg = error instanceof Error ? error.message : 'Unknown error';
+              const errStack = error instanceof Error ? error.stack : String(error);
+              debug(`Shot ${i + 1} FAILED after ${shotElapsed}s`);
+              debug(`Error message: ${errMsg}`);
+              debug(`Error stack: ${errStack}`);
+              if (error && typeof error === 'object' && 'cause' in error) {
+                debug(`Error cause: ${JSON.stringify((error as any).cause, null, 2)}`);
+              }
+              if (error && typeof error === 'object') {
+                const keys = Object.keys(error).filter(k => !['message', 'stack', 'name'].includes(k));
+                if (keys.length > 0) debug(`Extra error fields: ${JSON.stringify(Object.fromEntries(keys.map(k => [k, (error as any)[k]])))}`);
+              }
+              sendEvent({ type: 'agent-log', agent: 'videos', status: `Shot ${i + 1} failed: ${errMsg}` });
               sendEvent({
                 type: 'error',
-                message: `Failed to generate video ${i + 1}: ${error instanceof Error ? error.message : 'Unknown error'}`,
+                message: `Failed to generate video ${i + 1}: ${errMsg}`,
                 sceneIndex: i,
               });
               // Don't break — continue to next shot, falling back to storyboard frame
