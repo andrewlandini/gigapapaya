@@ -602,16 +602,17 @@ export function VideoGenerator() {
                         style={{ fieldSizing: 'content' as any, minHeight: '3rem' }}
                       />
                       {/* Dialogue */}
-                      <div className="relative">
-                        <div className="absolute left-3 top-2.5">
-                          <MessageSquare className="h-3.5 w-3.5 text-[#444]" />
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-1.5">
+                          <MessageSquare className="h-3 w-3 text-[#555]" />
+                          <label className="text-[11px] font-mono text-[#555]">dialogue</label>
                         </div>
                         <input
                           type="text"
                           value={scene.dialogue || ''}
                           onChange={(e) => updateSceneDialogue(i, e.target.value)}
-                          placeholder="No dialogue"
-                          className="w-full bg-[#0d0d0d] border border-[#2a2a2a] rounded-lg pl-9 pr-3 py-2 text-sm text-[#e0c866] placeholder:text-[#444] focus:outline-none focus:border-[#555] focus:ring-1 focus:ring-white/10 italic"
+                          placeholder="What does the character say?"
+                          className="w-full bg-[#111] border border-[#333] rounded-lg px-3 py-2.5 text-sm text-[#e0c866] placeholder:text-[#555] focus:outline-none focus:border-[#555] focus:ring-1 focus:ring-white/10 italic"
                         />
                       </div>
                     </div>
