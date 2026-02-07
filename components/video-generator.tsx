@@ -570,12 +570,7 @@ export function VideoGenerator() {
                   className="border border-[#222] rounded-xl overflow-hidden hover:border-[#333] transition-colors"
                 >
                   <div className="flex">
-                    {/* Storyboard thumbnail */}
-                    {state.storyboardImages[i] && (
-                      <div className="flex-shrink-0 w-40">
-                        <img src={state.storyboardImages[i]} alt={`Shot ${i + 1}`} className="w-full h-full object-cover" />
-                      </div>
-                    )}
+                    {/* Left: Script */}
                     <div className="flex-1 p-4 space-y-3">
                       {/* Header */}
                       <div className="flex items-center justify-between">
@@ -585,6 +580,9 @@ export function VideoGenerator() {
                           </div>
                           <span className="text-xs font-mono text-[#555]">Shot {i + 1}</span>
                           <span className="text-xs font-mono text-[#444]">{scene.duration}s</span>
+                          {scene.characters?.length > 0 && (
+                            <span className="text-xs font-mono text-[#555]">{scene.characters.join(', ')}</span>
+                          )}
                         </div>
                         {state.editableScenes!.length > 1 && (
                           <button
@@ -616,6 +614,37 @@ export function VideoGenerator() {
                           className="w-full bg-[#0d0d0d] border border-[#2a2a2a] rounded-lg pl-9 pr-3 py-2 text-sm text-[#e0c866] placeholder:text-[#444] focus:outline-none focus:border-[#555] focus:ring-1 focus:ring-white/10 italic"
                         />
                       </div>
+                    </div>
+                    {/* Right: Storyboard image */}
+                    <div className="flex-shrink-0 w-56 border-l border-[#222] bg-[#0a0a0a] flex flex-col">
+                      {state.storyboardImages[i] ? (
+                        <>
+                          <img src={state.storyboardImages[i]} alt={`Shot ${i + 1}`} className="w-full aspect-video object-cover" />
+                          <div className="p-2 flex justify-center">
+                            <button
+                              onClick={() => {
+                                const newPrompt = prompt('Edit image prompt:', scene.prompt.substring(0, 200));
+                                if (newPrompt) {
+                                  // TODO: regenerate single storyboard image
+                                  console.log('Regenerate frame', i, newPrompt);
+                                }
+                              }}
+                              className="flex items-center gap-1.5 text-[10px] font-mono text-[#555] hover:text-[#888] transition-colors"
+                              title="Regenerate this storyboard frame with a new prompt"
+                            >
+                              <RotateCw className="h-3 w-3" />
+                              Edit image
+                            </button>
+                          </div>
+                        </>
+                      ) : (
+                        <div className="flex-1 flex items-center justify-center text-[#333]">
+                          <div className="text-center space-y-1">
+                            <ImagePlus className="h-5 w-5 mx-auto" />
+                            <span className="text-[10px] font-mono block">No preview</span>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>

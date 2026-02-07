@@ -1,10 +1,10 @@
 import {
   generateObject,
+  generateText,
   experimental_generateVideo as generateVideo,
-  experimental_generateImage as generateImage,
 } from 'ai';
 import { z } from 'zod';
-import { getTextModel, getVideoModel, getImageModel } from './provider';
+import { getTextModel, getVideoModel } from './provider';
 import { IDEA_AGENT_PROMPT, SCENES_AGENT_PROMPT } from '../prompts';
 import { saveVideo } from './video-storage';
 import type { VideoIdea, ScenesResult, Video, GenerationOptions, Character } from '../types';
@@ -333,27 +333,19 @@ Create a photorealistic, cinematic reference image that captures the visual styl
 
   const results: string[] = [];
 
-  // Generate 3 mood board images
+  // Generate 3 mood board images using Gemini multimodal
   for (let i = 0; i < 3; i++) {
     try {
       console.log(`🖼️  Generating mood board image ${i + 1}/3...`);
-      const result = await generateImage({
-        model: getImageModel('google/gemini-3-pro-image'),
-        prompt: moodBoardPrompt,
-        n: 1,
-        aspectRatio: '16:9',
-      });
-
-      if (result.images && result.images.length > 0) {
-        const img = result.images[0];
-        const base64 = Buffer.from(img.uint8Array).toString('base64');
-        const mediaType = (img as any).mimeType || (img as any).mediaType || 'image/png';
-        const dataUrl = `data:${mediaType};base64,${base64}`;
-        results.push(dataUrl);
+      const url = await geminiImage(moodBoardPrompt + ' Output only the image.');
+      if (url) {
+        results.push(url);
         console.log(`✅ Mood board image ${i + 1} generated`);
+      } else {
+        console.error(`❌ No image returned for mood board ${i + 1}`);
       }
     } catch (error) {
-      console.error(`❌ Failed to generate mood board image ${i + 1}:`, error);
+      console.error(`❌ Failed to generate mood board image ${i + 1}:`, error instanceof Error ? error.message : error);
     }
   }
 
@@ -362,15 +354,20 @@ Create a photorealistic, cinematic reference image that captures the visual styl
 }
 
 // ── Storyboard Pipeline: Character Portraits → Group Refs → Scene Frames ──
+// Uses generateText with Gemini multimodal output (same approach as avatar generation)
 
-function imageFromResult(result: any): string {
-  if (result.images && result.images.length > 0) {
-    const img = result.images[0];
-    const base64 = Buffer.from(img.uint8Array).toString('base64');
-    const mediaType = (img as any).mimeType || (img as any).mediaType || 'image/png';
-    return `data:${mediaType};base64,${base64}`;
-  }
-  return '';
+async function geminiImage(prompt: string): Promise<string> {
+  const result = await generateText({
+    model: getTextModel('google/gemini-2.5-flash-image'),
+    providerOptions: {
+      google: { responseModalities: ['TEXT', 'IMAGE'] },
+    },
+    prompt,
+  });
+  const imageFile = result.files?.find(f => f.mediaType.startsWith('image/'));
+  if (!imageFile) return '';
+  const base64 = Buffer.from(imageFile.uint8Array).toString('base64');
+  return `data:${imageFile.mediaType};base64,${base64}`;
 }
 
 /**
@@ -387,16 +384,14 @@ export async function generateCharacterPortraits(
   const promises = characters.map(async (char) => {
     try {
       console.log(`🧑 Generating portrait for ${char.name}...`);
-      const result = await generateImage({
-        model: getImageModel('google/gemini-3-pro-image'),
-        prompt: `Photorealistic portrait of ${char.description}. Style: ${style}. Mood: ${mood}. Cinematic lighting, clean background, character clearly visible. This is a character reference sheet for video production.`,
-        n: 1,
-        aspectRatio: '1:1',
-      });
-      const url = imageFromResult(result);
+      const url = await geminiImage(
+        `Generate a photorealistic portrait of this person: ${char.description}. Visual style: ${style}. Mood: ${mood}. Cinematic lighting, clean background, character clearly visible from the chest up. This is a character reference for video production. Output only the image.`
+      );
       if (url) {
         portraits[char.name] = url;
         console.log(`✅ Portrait for ${char.name} generated`);
+      } else {
+        console.error(`❌ No image returned for ${char.name}`);
       }
     } catch (error) {
       console.error(`❌ Failed to generate portrait for ${char.name}:`, error instanceof Error ? error.message : error);
@@ -439,31 +434,20 @@ export async function generateGroupReferences(
 
   const promises = Array.from(combos.entries()).map(async ([key, names]) => {
     try {
-      // Collect portraits for these characters
-      const refImages = names.map(n => portraits[n]).filter(Boolean);
       const charDescs = names.map(n => {
         const c = characters.find(ch => ch.name === n);
         return c ? `${c.name}: ${c.description}` : n;
       }).join('. ');
 
-      const prompt = refImages.length > 0
-        ? {
-            images: refImages,
-            text: `These characters together in the same frame: ${charDescs}. Style: ${style}. Cinematic medium shot showing both characters clearly. This is a reference image for video production.`,
-          }
-        : `Two characters together: ${charDescs}. Style: ${style}. Cinematic medium shot.`;
-
       console.log(`👥 Generating group ref for ${key}...`);
-      const result = await generateImage({
-        model: getImageModel('google/gemini-3-pro-image'),
-        prompt,
-        n: 1,
-        aspectRatio: '16:9',
-      });
-      const url = imageFromResult(result);
+      const url = await geminiImage(
+        `Generate a photorealistic cinematic medium shot of these characters together in the same frame: ${charDescs}. Visual style: ${style}. Both characters clearly visible and recognizable. This is a reference image for video production. Output only the image.`
+      );
       if (url) {
         groupRefs[key] = url;
         console.log(`✅ Group ref for ${key} generated`);
+      } else {
+        console.error(`❌ No image returned for group ${key}`);
       }
     } catch (error) {
       console.error(`❌ Failed to generate group ref for ${key}:`, error instanceof Error ? error.message : error);
@@ -491,32 +475,24 @@ export async function generateSceneStoryboards(
 
   const promises = scenes.map(async (scene, i) => {
     try {
-      // Pick the right reference image
-      let refImage: string | undefined;
+      // Build character context for the prompt
+      let charContext = '';
       if (scene.characters.length >= 2) {
         const key = [...scene.characters].sort().join('+');
-        refImage = groupRefs[key];
-      } else if (scene.characters.length === 1) {
-        refImage = portraits[scene.characters[0]];
+        if (groupRefs[key]) charContext = 'Use the same characters from the group reference. ';
+      } else if (scene.characters.length === 1 && portraits[scene.characters[0]]) {
+        charContext = `The character is: ${characters.find(c => c.name === scene.characters[0])?.description || scene.characters[0]}. `;
       }
 
-      const sceneText = `Cinematic still frame: ${scene.prompt}. Style: ${style}. Mood: ${mood}. Match the camera angle, lighting, and composition described. Photorealistic production still.`;
-
-      const prompt = refImage
-        ? { images: [refImage], text: sceneText }
-        : sceneText;
-
       console.log(`🎬 Generating frame ${i + 1}/${scenes.length}...`);
-      const result = await generateImage({
-        model: getImageModel('google/gemini-3-pro-image'),
-        prompt,
-        n: 1,
-        aspectRatio: '16:9',
-      });
-      const url = imageFromResult(result);
+      const url = await geminiImage(
+        `Generate a cinematic still frame for this shot: ${scene.prompt}. ${charContext}Visual style: ${style}. Mood: ${mood}. Match the camera angle, lighting, and composition described. Photorealistic production still. Output only the image.`
+      );
       if (url) {
         results[i] = url;
         console.log(`✅ Frame ${i + 1} generated`);
+      } else {
+        console.error(`❌ No image returned for frame ${i + 1}`);
       }
     } catch (error) {
       console.error(`❌ Failed to generate frame ${i + 1}:`, error instanceof Error ? error.message : error);
