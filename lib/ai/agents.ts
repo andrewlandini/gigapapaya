@@ -114,18 +114,34 @@ Style references that consistently deliver:
 - "[Movie] cinematography" (use the SAME film reference for all scenes)
 - Specific color grading terms (use the SAME grade for all scenes)
 
+PERFORMANCE DIRECTION (CRITICAL — THIS IS WHAT SEPARATES REAL FROM AI):
+These are not AI-generated characters. These are REAL PEOPLE performing. Think about who this person is when the camera is off. They woke up this morning. They have rent to pay. They are an actor — maybe struggling, maybe established — and this role matters to them. They are giving this performance everything they have.
+
+WHAT MAKES A PERFORMANCE FEEL REAL:
+- MICRO-EXPRESSIONS: A flicker of doubt before they commit to the line. A slight swallow before speaking. Eyes that dart to the side for a fraction of a second. The face does ten things before the mouth opens.
+- BREATH: Real people breathe. They inhale before a big line. They exhale with relief or exhaustion. Specify breathing — "takes a slow breath before speaking," "exhales through their nose, composing themselves."
+- IMPERFECTION: Nobody delivers lines perfectly. They restart. They search for the word. They say "I mean—" and correct themselves. A slight stammer on a hard consonant. A pause where they lose their train of thought and recover.
+- EYES: The eyes tell the real story. "Eyes bright but tired" is a whole character. "Looking at the other person but not really seeing them" is a performance. Specify what the eyes are doing — they carry the subtext.
+- WEIGHT: Real people carry physical weight — exhaustion in their shoulders, tension in their jaw, the way they hold their hands when they are nervous. Not "standing confidently" — "standing with their weight shifted to one foot, arms crossed but loose, like they have been waiting too long."
+- THE THING UNDERNEATH: Every line has a surface meaning and a real meaning. "I'm fine" means "I'm not fine." "Whatever you want" means "I have a strong opinion." Write the surface line but describe the performance that reveals what is underneath.
+
+BAD (AI announcer): A man stands confidently and delivers his line with a warm smile, speaking clearly and engagingly to camera.
+GOOD (real person): A man in his late 30s, slight bags under his eyes, manages a half-smile that does not quite reach his eyes, clears his throat softly before speaking, his voice steady but with a slight crack on the first word that he covers by pressing on, hands fidgeting with a pen he picked up without thinking about it.
+
+The first one looks like stock footage. The second one looks like a human being you want to keep watching.
+
 DIALOGUE RULES (MANDATORY):
 - Almost ALL videos should feature talking unless the concept genuinely has no speaking characters (pure nature, abstract, etc.)
 - Put dialogue in the SEPARATE "dialogue" field — NOT in the "prompt" field. The prompt field is for visual/technical description only. The dialogue field is for the exact spoken words only, without surrounding quotes.
 - If a shot has no dialogue, set the dialogue field to an empty string.
-- Write dialogue as SPOKEN WORDS — conversational, not literary. Use contractions always, natural pauses, filler words where they fit. Real people don't speak in complete, grammatically perfect sentences.
-- Match dialogue to the mood: tense scenes = clipped, urgent. Calm scenes = wandering, trailing off. Comedy = matter-of-fact about absurd things.
+- Write dialogue the way people ACTUALLY talk — not the way they talk in commercials. Real people trail off. They start sentences and abandon them. They say "like" and "honestly" and "I don't know" as filler. They repeat themselves when they are nervous. They speak in fragments, not complete sentences. They mumble the ends of sentences when they lose confidence in what they are saying.
+- Match dialogue to the character's emotional state, not just the scene's mood. A character who is putting on a brave face sounds DIFFERENT from a character who is genuinely brave. Write the performance, not the archetype.
 - Dialogue across scenes should feel like one continuous conversation — each scene picks up roughly where the last left off.
 - HARD WORD COUNT LIMIT: A person speaks ~2.5 words per second. For the scene duration, count the words in your dialogue and MAKE SURE they fit. An 8-second scene = MAX 15-18 words of dialogue (leave room for pauses and breathing). A 6-second scene = MAX 12 words. A 4-second scene = MAX 8 words. If your dialogue is longer than this, CUT IT DOWN. The video will literally cut off mid-sentence if you write too much. Shorter is always better — one punchy line beats a paragraph that gets cut off.
 - BANNED WORDS: NEVER use "subtitle", "subtitles", "subtitled", "caption", "captions", or "text overlay" in any prompt. Veo 3.1 will render literal subtitle text on screen if these words appear. Write dialogue directly in quotes instead.
 
 DIALOGUE FORMATTING (VEO 3.1 SPEECH MODEL):
-- NEVER write dialogue in ALL CAPS — the speech model will try to yell everything. Use normal sentence case, even if the character is shouting. Convey intensity through word choice and stage direction ("shouting", "voice cracking"), not capitalization.
+- NEVER write dialogue in ALL CAPS — the speech model will try to yell everything. Use normal sentence case, even if the character is shouting. Convey intensity through word choice and stage direction ("voice cracking," "barely above a whisper"), not capitalization.
 - NEVER use unusual/phonetic spellings for accents ("watcha doin'", "git outta here"). Write standard English with natural contractions. The speech model needs clean text to sound natural.
 
 SELF-CONTAINED PROMPTS (CRITICAL — VEO 3.1 HAS ZERO MEMORY):
