@@ -616,9 +616,9 @@ export function VideoGenerator() {
                       </div>
                     </div>
                     {/* Right: Storyboard image */}
-                    <div className="flex-shrink-0 w-56 border-l border-[#222] bg-[#0a0a0a] flex flex-col">
+                    <div className="flex-shrink-0 w-56 border-l border-[#222] bg-[#0a0a0a] flex flex-col items-center justify-center">
                       {state.storyboardImages[i] ? (
-                        <>
+                        <div className="flex flex-col items-center justify-center flex-1 w-full">
                           <img src={state.storyboardImages[i]} alt={`Shot ${i + 1}`} className="w-full aspect-video object-cover" />
                           <div className="p-2 flex justify-center">
                             <button
@@ -636,7 +636,7 @@ export function VideoGenerator() {
                               Edit image
                             </button>
                           </div>
-                        </>
+                        </div>
                       ) : (
                         <div className="flex-1 flex items-center justify-center text-[#333]">
                           <div className="text-center space-y-1">

@@ -385,7 +385,7 @@ export async function generateCharacterPortraits(
     try {
       console.log(`🧑 Generating portrait for ${char.name}...`);
       const url = await geminiImage(
-        `Generate a photorealistic portrait of this person: ${char.description}. Visual style: ${style}. Mood: ${mood}. Cinematic lighting, clean background, character clearly visible from the chest up. This is a character reference for video production. Output only the image.`
+        `Generate a photorealistic portrait of this EXACT person: ${char.description}. Visual style: ${style}. Mood: ${mood}. Cinematic lighting, clean background, character clearly visible from the chest up. This is the DEFINITIVE reference for this character — every detail of their face, hair, skin tone, build, and clothing must be locked in exactly as described. This portrait will be used to ensure this character looks IDENTICAL in every subsequent frame. Output only the image.`
       );
       if (url) {
         portraits[char.name] = url;
@@ -441,7 +441,7 @@ export async function generateGroupReferences(
 
       console.log(`👥 Generating group ref for ${key}...`);
       const url = await geminiImage(
-        `Generate a photorealistic cinematic medium shot of these characters together in the same frame: ${charDescs}. Visual style: ${style}. Both characters clearly visible and recognizable. This is a reference image for video production. Output only the image.`
+        `Generate a photorealistic cinematic medium shot of these EXACT characters together in the same frame: ${charDescs}. Visual style: ${style}. CRITICAL: Each character must look EXACTLY as described — same face, same hair, same skin tone, same build, same clothing. The ONLY differences between this image and their individual portraits should be the framing (now together) and natural interaction. Do not change any character's appearance. Output only the image.`
       );
       if (url) {
         groupRefs[key] = url;
@@ -477,16 +477,14 @@ export async function generateSceneStoryboards(
     try {
       // Build character context for the prompt
       let charContext = '';
-      if (scene.characters.length >= 2) {
-        const key = [...scene.characters].sort().join('+');
-        if (groupRefs[key]) charContext = 'Use the same characters from the group reference. ';
-      } else if (scene.characters.length === 1 && portraits[scene.characters[0]]) {
-        charContext = `The character is: ${characters.find(c => c.name === scene.characters[0])?.description || scene.characters[0]}. `;
+      const sceneChars = scene.characters.map(n => characters.find(c => c.name === n)).filter(Boolean);
+      if (sceneChars.length > 0) {
+        charContext = sceneChars.map(c => `${c!.name}: ${c!.description}`).join('. ') + '. ';
       }
 
       console.log(`🎬 Generating frame ${i + 1}/${scenes.length}...`);
       const url = await geminiImage(
-        `Generate a cinematic still frame for this shot: ${scene.prompt}. ${charContext}Visual style: ${style}. Mood: ${mood}. Match the camera angle, lighting, and composition described. Photorealistic production still. Output only the image.`
+        `Generate a cinematic still frame for this shot: ${scene.prompt}. ${charContext}Visual style: ${style}. Mood: ${mood}. CRITICAL CHARACTER CONSISTENCY: Every character must look EXACTLY like their reference description — same face, same hair, same skin tone, same build, same clothing. The ONLY things that should change between scenes are: lighting (matching the scene's environment), camera angle, pose/action, and expression/emotion. Clothing only changes if the scene takes place at a different time or location where it would not make sense for them to wear the same outfit. Otherwise, same outfit every frame. Photorealistic production still. Output only the image.`
       );
       if (url) {
         results[i] = url;
