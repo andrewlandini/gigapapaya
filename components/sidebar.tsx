@@ -2,8 +2,9 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Play, Zap, User, FileVideo, Shield } from 'lucide-react';
+import { Play, Zap, User, FileVideo, Shield, Bug } from 'lucide-react';
 import { useGeneration } from './generation-context';
+import { useDebug } from './debug-context';
 import { cn } from '@/lib/utils';
 
 interface SidebarProps {
@@ -13,6 +14,7 @@ interface SidebarProps {
 export function Sidebar({ user }: SidebarProps) {
   const pathname = usePathname();
   const { activeDraftCount } = useGeneration();
+  const { debugMode, toggleDebugMode } = useDebug();
 
   const links = [
     { href: '/', icon: Play, label: 'Feed' },
@@ -84,6 +86,21 @@ export function Sidebar({ user }: SidebarProps) {
           >
             <Shield className="h-5 w-5" />
           </Link>
+        )}
+        {/* Debug toggle — only visible to admins */}
+        {user?.isAdmin && (
+          <button
+            onClick={toggleDebugMode}
+            title={debugMode ? 'Disable debug log' : 'Enable debug log'}
+            className={cn(
+              'w-10 h-10 rounded-lg flex items-center justify-center transition-colors',
+              debugMode
+                ? 'bg-[#331a00] text-[#ff8800]'
+                : 'text-[#555] hover:text-white hover:bg-[#111]'
+            )}
+          >
+            <Bug className="h-5 w-5" />
+          </button>
         )}
       </nav>
 

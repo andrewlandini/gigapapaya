@@ -3,6 +3,7 @@
 import { createContext, useContext, useState, useCallback, useRef, useEffect, type ReactNode } from 'react';
 import type { GenerationState, GenerationOptions, SSEMessage, ProgressEvent, AgentConfig } from '@/lib/types';
 import { GENERATION_MODES, getModeById } from '@/lib/generation-modes';
+import { useDebug } from './debug-context';
 
 const HISTORY_KEY = 'gp_storyboard_history';
 const CUSTOM_PROMPTS_KEY = 'gp_custom_prompts';
@@ -64,6 +65,12 @@ export function useStoryboard() {
 }
 
 export function StoryboardProvider({ children }: { children: ReactNode }) {
+  const { debugMode, pushLog, clearLogs } = useDebug();
+  const debugRef = useRef(debugMode);
+  debugRef.current = debugMode;
+  const pushLogRef = useRef(pushLog);
+  pushLogRef.current = pushLog;
+
   const [state, setState] = useState<GenerationState>({
     status: 'idle',
     idea: '',
@@ -222,8 +229,8 @@ export function StoryboardProvider({ children }: { children: ReactNode }) {
     }));
   }, []);
 
-  // SSE stream reader
-  const readSSEStream = async (response: Response, onEvent: (data: SSEMessage) => void) => {
+  // SSE stream reader — also pushes to debug log when debug mode is on
+  const readSSEStream = async (response: Response, onEvent: (data: SSEMessage) => void, source: 'generate' | 'generate-videos' | 'rerun' = 'generate') => {
     const reader = response.body?.getReader();
     if (!reader) throw new Error('No response body');
 
@@ -241,6 +248,9 @@ export function StoryboardProvider({ children }: { children: ReactNode }) {
       for (const line of lines) {
         if (line.startsWith('data: ')) {
           const data = JSON.parse(line.slice(6)) as SSEMessage;
+          if (debugRef.current) {
+            pushLogRef.current({ timestamp: Date.now(), source, raw: data as unknown as Record<string, unknown> });
+          }
           onEvent(data);
         }
       }
@@ -394,7 +404,7 @@ export function StoryboardProvider({ children }: { children: ReactNode }) {
         fetch('/api/generate-videos', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ sessionId: sid, scenes, style, mood, options: currentOptions, moodBoard: currentMoodBoard, storyboardImages: currentStoryboard, characterPortraits: currentPortraits }),
+          body: JSON.stringify({ sessionId: sid, scenes, style, mood, options: currentOptions, moodBoard: currentMoodBoard, storyboardImages: currentStoryboard, characterPortraits: currentPortraits, verbose: debugRef.current }),
           signal: controller.signal,
         })
           .then(async (response) => {

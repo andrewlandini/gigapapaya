@@ -4,6 +4,7 @@ import { GeistMono } from 'geist/font/mono';
 import { Sidebar } from '@/components/sidebar';
 import { UserMenu } from '@/components/user-menu';
 import { Providers } from '@/components/providers';
+import { DebugDrawer } from '@/components/debug-drawer';
 import { getSession } from '@/lib/auth/session';
 import './globals.css';
 
@@ -50,6 +51,7 @@ export default async function RootLayout({
         <Providers initialAvatarUrl={user?.avatarUrl}>
           <Sidebar user={user} />
           <UserMenu user={user} />
+          <DebugDrawer />
           <div className="ml-[60px]">
             {children}
           </div>

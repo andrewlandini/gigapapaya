@@ -25,7 +25,7 @@ export async function POST(request: NextRequest) {
     const user = await getSession();
     const userId = user?.id;
 
-    const { sessionId, scenes, style, mood, options, moodBoard, storyboardImages, characterPortraits } = body as {
+    const { sessionId, scenes, style, mood, options, moodBoard, storyboardImages, characterPortraits, verbose } = body as {
       sessionId: string;
       scenes: { prompt: string; dialogue?: string; duration: number }[];
       style: string;
@@ -34,6 +34,7 @@ export async function POST(request: NextRequest) {
       moodBoard?: string[];
       storyboardImages?: string[];
       characterPortraits?: Record<string, string>;
+      verbose?: boolean;
     };
 
     console.log(`📝 Session: ${sessionId}`);
@@ -48,10 +49,9 @@ export async function POST(request: NextRequest) {
           controller.enqueue(encoder.encode(message));
         };
 
-        // Verbose debug log — only streamed to admin users
-        const isAdmin = user?.isAdmin === true;
+        // Verbose debug log — only streamed when client requests it (debug mode toggle)
         const debug = (msg: string) => {
-          if (!isAdmin) return;
+          if (!verbose) return;
           sendEvent({ type: 'agent-log', agent: 'videos', status: `[DEBUG] ${msg}` });
         };
 
@@ -63,7 +63,7 @@ export async function POST(request: NextRequest) {
 
           sendEvent({ type: 'agent-log', agent: 'videos', status: `Starting video generation for ${scenes.length} shots (using storyboard frames as reference)` });
           sendEvent({ type: 'agent-log', agent: 'videos', status: `Config: ${options.aspectRatio} / ${options.duration === 'auto' ? 'auto' : options.duration + 's'} / model: veo-3.1-generate-001` });
-          debug(`User: ${user?.username || 'unknown'} (admin: ${isAdmin})`);
+          debug(`User: ${user?.username || 'unknown'}`);
           debug(`Session ID: ${sessionId}`);
           debug(`Storyboard images provided: ${storyboardImages?.filter(Boolean).length || 0}/${scenes.length}`);
           debug(`Mood board images provided: ${moodBoard?.length || 0}`);

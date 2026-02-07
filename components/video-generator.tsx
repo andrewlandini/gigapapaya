@@ -575,13 +575,10 @@ export function VideoGenerator() {
                         <img src={state.storyboardImages[i]} alt={`Shot ${i + 1}`} className="w-full aspect-video object-cover" />
                         <button
                           onClick={() => {
-                            const newPrompt = prompt('Edit image prompt:', scene.prompt.substring(0, 200));
-                            if (newPrompt) {
-                              console.log('Regenerate frame', i, newPrompt);
-                            }
+                            // TODO: implement frame regeneration
                           }}
                           className="absolute bottom-2 right-2 flex items-center gap-1 px-2 py-1 rounded-md bg-black/60 text-[10px] font-mono text-[#888] hover:text-white transition-colors backdrop-blur-sm"
-                          title="Regenerate this storyboard frame"
+                          title="Regenerate this storyboard frame (coming soon)"
                         >
                           <RotateCw className="h-2.5 w-2.5" />
                           Edit
