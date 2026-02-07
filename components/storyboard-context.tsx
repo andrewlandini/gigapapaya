@@ -370,6 +370,7 @@ export function StoryboardProvider({ children }: { children: ReactNode }) {
       const sid = sessionIdRef.current;
       const currentOptions = options;
       const currentMoodBoard = prev.moodBoard;
+      const currentStoryboard = prev.storyboardImages;
 
       // Start fetch in a microtask so we can return the state update first
       setTimeout(() => {
@@ -380,7 +381,7 @@ export function StoryboardProvider({ children }: { children: ReactNode }) {
         fetch('/api/generate-videos', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ sessionId: sid, scenes, style, mood, options: currentOptions, moodBoard: currentMoodBoard }),
+          body: JSON.stringify({ sessionId: sid, scenes, style, mood, options: currentOptions, moodBoard: currentMoodBoard, storyboardImages: currentStoryboard }),
           signal: controller.signal,
         })
           .then(async (response) => {

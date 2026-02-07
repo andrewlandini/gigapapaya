@@ -356,14 +356,28 @@ Create a photorealistic, cinematic reference image that captures the visual styl
 // ── Storyboard Pipeline: Character Portraits → Group Refs → Scene Frames ──
 // Uses generateText with Gemini multimodal output (same approach as avatar generation)
 
-async function geminiImage(prompt: string): Promise<string> {
-  const result = await generateText({
-    model: getTextModel('google/gemini-2.5-flash-image'),
-    providerOptions: {
-      google: { responseModalities: ['TEXT', 'IMAGE'] },
-    },
-    prompt,
-  });
+async function geminiImage(prompt: string, referenceImages?: string[]): Promise<string> {
+  let result;
+  if (referenceImages && referenceImages.length > 0) {
+    // Multimodal: pass reference images + text prompt
+    const content: any[] = referenceImages.map(img => ({ type: 'image' as const, image: img }));
+    content.push({ type: 'text' as const, text: prompt });
+    result = await generateText({
+      model: getTextModel('google/gemini-2.5-flash-image'),
+      providerOptions: {
+        google: { responseModalities: ['TEXT', 'IMAGE'] },
+      },
+      messages: [{ role: 'user' as const, content }],
+    });
+  } else {
+    result = await generateText({
+      model: getTextModel('google/gemini-2.5-flash-image'),
+      providerOptions: {
+        google: { responseModalities: ['TEXT', 'IMAGE'] },
+      },
+      prompt,
+    });
+  }
   const imageFile = result.files?.find(f => f.mediaType.startsWith('image/'));
   if (!imageFile) return '';
   const base64 = Buffer.from(imageFile.uint8Array).toString('base64');
@@ -447,15 +461,21 @@ export async function generateGroupReferences(
         return c ? `${c.name}: ${c.description}` : n;
       }).join('. ');
 
-      console.log(`👥 Generating group ref for ${key}...`);
+      // Collect portrait images as visual references
+      const refImages = names.map(n => portraits[n]).filter(Boolean);
+
+      console.log(`👥 Generating group ref for ${key} (with ${refImages.length} portrait ref(s))...`);
       const url = await geminiImage(
-        `Cinematic two-shot. Shot on ARRI Alexa with a 35mm anamorphic lens, wide aperture, ${style} color grade and lighting.
+        `The attached images are character reference portraits. Generate a NEW image placing these EXACT same people together in one cinematic frame.
+
+Cinematic two-shot. Shot on ARRI Alexa with a 35mm anamorphic lens, wide aperture, ${style} color grade and lighting.
 
 Characters: ${charDescs}
 
-Framing: Medium shot, both characters clearly visible in frame with natural spatial relationship. Cinematic composition — rule of thirds, depth in the frame, motivated lighting. Each character looks EXACTLY as described in their reference — same face, same hair, same skin tone, same build, same clothing. No changes to appearance whatsoever.
+Framing: Medium shot, both characters clearly visible in frame with natural spatial relationship. Cinematic composition — rule of thirds, depth in the frame, motivated lighting. Each character must look IDENTICAL to their reference portrait — same face, same hair, same skin tone, same build, same clothing.
 
-ABSOLUTELY NO text, captions, speech bubbles, labels, watermarks, overlays, or graphics of any kind. Clean photographic image only. Output only the image.`
+ABSOLUTELY NO text, captions, speech bubbles, labels, watermarks, overlays, or graphics of any kind. Clean photographic image only. Output only the image.`,
+        refImages
       );
       if (url) {
         groupRefs[key] = url;
@@ -489,22 +509,34 @@ export async function generateSceneStoryboards(
 
   const promises = scenes.map(async (scene, i) => {
     try {
-      // Build character context for the prompt
+      // Build character context and collect reference images
       let charContext = '';
+      const refImages: string[] = [];
       const sceneChars = scene.characters.map(n => characters.find(c => c.name === n)).filter(Boolean);
+
       if (sceneChars.length > 0) {
         charContext = sceneChars.map(c => `${c!.name}: ${c!.description}`).join('. ') + '. ';
       }
 
-      console.log(`🎬 Generating frame ${i + 1}/${scenes.length}...`);
+      // Use group ref if available, otherwise individual portraits
+      if (scene.characters.length >= 2) {
+        const key = [...scene.characters].sort().join('+');
+        if (groupRefs[key]) refImages.push(groupRefs[key]);
+        else scene.characters.forEach(n => { if (portraits[n]) refImages.push(portraits[n]); });
+      } else if (scene.characters.length === 1 && portraits[scene.characters[0]]) {
+        refImages.push(portraits[scene.characters[0]]);
+      }
+
+      console.log(`🎬 Generating frame ${i + 1}/${scenes.length} (with ${refImages.length} ref image(s))...`);
       const url = await geminiImage(
-        `Cinematic production still from a high-end film. ${style} visual style, ${mood} mood.
+        `${refImages.length > 0 ? 'The attached images are character reference portraits. The characters in the generated image must look IDENTICAL to these references — same face, same hair, same skin tone, same build, same clothing. The ONLY things that change are lighting, camera angle, pose, and expression. Clothing stays the same unless the scene is at a clearly different time or location.\n\n' : ''}Cinematic production still from a high-end film. ${style} visual style, ${mood} mood.
 
 Shot description: ${scene.prompt}
 
-${charContext ? `Characters in this frame: ${charContext}CRITICAL: Every character must look EXACTLY like their reference description — same face, same hair, same skin tone, same build, same clothing. The ONLY things that change between scenes are lighting (to match the environment), camera angle, pose/action, and facial expression. Clothing stays the same unless the scene takes place at a clearly different time or location.\n\n` : ''}This should look like a frame grab from a real film — deliberate composition, cinematic lens characteristics (shallow depth of field, anamorphic bokeh, lens breathing), motivated lighting, production-quality color grade. NOT corporate stock photography. NOT B-roll. Think Roger Deakins, Bradford Young, Hoyte van Hoytema. Every element in the frame should feel intentional.
+${charContext ? `Characters in this frame: ${charContext}\n` : ''}This should look like a frame grab from a real film — deliberate composition, cinematic lens characteristics (shallow depth of field, anamorphic bokeh, lens breathing), motivated lighting, production-quality color grade. NOT corporate stock photography. NOT B-roll. Think Roger Deakins, Bradford Young, Hoyte van Hoytema. Every element in the frame should feel intentional.
 
-ABSOLUTELY NO text, captions, speech bubbles, dialogue text, subtitles, labels, watermarks, overlays, or graphics of any kind anywhere in the image. Clean photographic frame only. Output only the image.`
+ABSOLUTELY NO text, captions, speech bubbles, dialogue text, subtitles, labels, watermarks, overlays, or graphics of any kind anywhere in the image. Clean photographic frame only. Output only the image.`,
+        refImages.length > 0 ? refImages : undefined
       );
       if (url) {
         results[i] = url;
