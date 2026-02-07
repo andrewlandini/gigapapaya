@@ -594,14 +594,10 @@ export async function executeVideoAgent(
     // Generate video via AI Gateway using Veo 3.1
     const videoDuration = typeof options.duration === 'number' ? options.duration : 8;
 
-    // If a reference image is provided, use image-to-video mode
-    const videoPrompt = referenceImage
-      ? { image: referenceImage, text: enhancedPrompt }
-      : enhancedPrompt;
-
+    // Text-to-video only — image-to-video via the AI Gateway returns empty errors
     const { videos } = await generateVideo({
       model: getVideoModel('google/veo-3.1-generate-001'),
-      prompt: videoPrompt,
+      prompt: enhancedPrompt,
       aspectRatio: options.aspectRatio,
       duration: videoDuration,
     });
