@@ -59,9 +59,30 @@ export async function POST(request: NextRequest) {
           // Launch all shots in parallel
           const shotPromises = scenes.map(async (scene: { prompt: string; dialogue?: string; duration: number }, i: number) => {
             // Recombine visual prompt + dialogue for Veo 3.1
-            const finalPrompt = scene.dialogue
-              ? `${scene.prompt}, saying "${scene.dialogue}"`
-              : scene.prompt;
+            // Dialogue must be woven in BEFORE style/camera specs since Veo weights early tokens more
+            let finalPrompt = scene.prompt;
+            if (scene.dialogue) {
+              // Insert dialogue after the action/subject description, before camera/style specs
+              // Look for common style markers to insert before
+              const styleMarkers = [', shot on ', ', Shot on ', '. Shot on ', ', filmed on ', ', ARRI ', ', RED ', ', Sony '];
+              let insertIdx = -1;
+              for (const marker of styleMarkers) {
+                const idx = finalPrompt.indexOf(marker);
+                if (idx !== -1) { insertIdx = idx; break; }
+              }
+              if (insertIdx !== -1) {
+                finalPrompt = `${finalPrompt.slice(0, insertIdx)}, saying "${scene.dialogue}"${finalPrompt.slice(insertIdx)}`;
+              } else {
+                // No style marker found — insert before the last third of the prompt
+                const splitPoint = Math.floor(finalPrompt.length * 0.6);
+                const lastComma = finalPrompt.lastIndexOf(', ', splitPoint);
+                if (lastComma > finalPrompt.length * 0.3) {
+                  finalPrompt = `${finalPrompt.slice(0, lastComma)}, saying "${scene.dialogue}"${finalPrompt.slice(lastComma)}`;
+                } else {
+                  finalPrompt = `${finalPrompt}, saying "${scene.dialogue}"`;
+                }
+              }
+            }
             const shotDuration = perShotDurations[i];
             const shotOptions = { ...options, duration: shotDuration };
 

@@ -7,6 +7,8 @@ import { z } from 'zod';
 import { getTextModel, getVideoModel } from './provider';
 import { IDEA_AGENT_PROMPT, SCENES_AGENT_PROMPT } from '../prompts';
 import { saveVideo } from './video-storage';
+import { put } from '@vercel/blob';
+import crypto from 'crypto';
 import type { VideoIdea, ScenesResult, Video, GenerationOptions, Character } from '../types';
 
 // Zod schemas for structured output validation
@@ -95,6 +97,14 @@ Rules:
 - Specific > Creative — "Walking sadly" < "shuffling with hunched shoulders"
 - Audio cues are essential — give the video a realistic feel
 - ALWAYS include full character descriptions — never use "the character" or "the person", always redescribe them
+
+WITHIN-SHOT PACING:
+- Describe what happens WHEN in the shot. An 8-second shot has a beginning, middle, and end. "He enters the room, pauses at the doorway, then crosses to the window" has internal rhythm. "He stands in a room" is a still photo.
+- Specify what changes during the shot — a shift in expression, a hand moving, a light changing, someone entering frame. Static shots where nothing evolves feel like AI stills, not film.
+
+SILENCE AS A CHOICE:
+- Not every shot needs dialogue. Sometimes the most powerful moment is a character who CHOOSES not to speak. If a scene has no dialogue, the visual prompt should describe what the character is doing and feeling INSTEAD of speaking — the fidgeting, the stare, the exhale. Silence should feel intentional, not empty.
+- Set the dialogue field to an empty string for silent shots, but make the visual prompt carry the emotional weight.
 
 Camera movements that work:
 - Slow push/pull (dolly in/out)
@@ -380,8 +390,15 @@ async function geminiImage(prompt: string, referenceImages?: string[]): Promise<
   }
   const imageFile = result.files?.find(f => f.mediaType.startsWith('image/'));
   if (!imageFile) return '';
-  const base64 = Buffer.from(imageFile.uint8Array).toString('base64');
-  return `data:${imageFile.mediaType};base64,${base64}`;
+
+  // Upload to Blob Storage instead of returning huge base64 data URLs
+  const buffer = Buffer.from(imageFile.uint8Array);
+  const ext = imageFile.mediaType === 'image/jpeg' ? 'jpg' : 'png';
+  const blob = await put(`storyboard/${crypto.randomUUID()}.${ext}`, buffer, {
+    access: 'public',
+    contentType: imageFile.mediaType,
+  });
+  return blob.url;
 }
 
 /**
@@ -399,15 +416,15 @@ export async function generateCharacterPortraits(
     try {
       console.log(`🧑 Generating portrait for ${char.name}...`);
       const url = await geminiImage(
-        `Cinematic character portrait. Shot on ARRI Alexa with an 85mm prime lens, shallow depth of field, f/1.8. ${style} lighting and color grade.
+        `Cinematic character portrait. ${style} visual style and color grade. Shallow depth of field, motivated lighting.
 
 Subject: ${char.description}
 
-Framing: Tight medium close-up from chest up. Subject fills the frame. Shallow bokeh background — out of focus, neutral tones. The face is the focal point, lit with intention — motivated key light, subtle fill, natural skin tones.
+Framing: Tight medium close-up from chest up. Subject fills the frame. Bokeh background — neutral tones. The face is the focal point, lit with intention — key light with subtle fill, natural skin tones.
 
 This is a definitive character reference photograph for a film production. Every detail of their appearance (face, hair, skin, build, clothing) must be precisely rendered as described. This exact person must be recognizable in every subsequent frame.
 
-NO overlay graphics, captions, speech bubbles, subtitles, labels, watermarks, or post-production text of any kind. Screens that exist IN the scene (phones, laptops, TVs, monitors) can show content — that is part of the shot. But nothing should be composited OVER the image. Clean photographic image only. Output only the image.`
+NO overlay graphics, captions, speech bubbles, subtitles, labels, or watermarks. Clean photographic image only. Output only the image.`
       );
       if (url) {
         portraits[char.name] = url;
@@ -468,13 +485,13 @@ export async function generateGroupReferences(
       const url = await geminiImage(
         `The attached images are character reference portraits. Generate a NEW image placing these EXACT same people together in one cinematic frame.
 
-Cinematic two-shot. Shot on ARRI Alexa with a 35mm anamorphic lens, wide aperture, ${style} color grade and lighting.
+Cinematic two-shot. ${style} visual style and color grade. Wide aperture, motivated lighting.
 
 Characters: ${charDescs}
 
-Framing: Medium shot, both characters clearly visible in frame with natural spatial relationship. Cinematic composition — rule of thirds, depth in the frame, motivated lighting. Each character must look IDENTICAL to their reference portrait — same face, same hair, same skin tone, same build, same clothing.
+Framing: Medium shot, both characters clearly visible with natural spatial relationship. Cinematic composition — rule of thirds, depth in frame. Each character must look IDENTICAL to their reference portrait — same face, same hair, same skin tone, same build, same clothing.
 
-NO overlay graphics, captions, speech bubbles, subtitles, labels, watermarks, or post-production text of any kind. Screens that exist IN the scene (phones, laptops, TVs, monitors) can show content — that is part of the shot. But nothing should be composited OVER the image. Clean photographic image only. Output only the image.`,
+NO overlay graphics, captions, speech bubbles, subtitles, labels, or watermarks. Clean photographic image only. Output only the image.`,
         refImages
       );
       if (url) {
@@ -529,13 +546,13 @@ export async function generateSceneStoryboards(
 
       console.log(`🎬 Generating frame ${i + 1}/${scenes.length} (with ${refImages.length} ref image(s))...`);
       const url = await geminiImage(
-        `${refImages.length > 0 ? 'The attached images are character reference portraits. The characters in the generated image must look IDENTICAL to these references — same face, same hair, same skin tone, same build, same clothing. The ONLY things that change are lighting, camera angle, pose, and expression. Clothing stays the same unless the scene is at a clearly different time or location.\n\n' : ''}Cinematic production still from a high-end film. ${style} visual style, ${mood} mood.
+        `${refImages.length > 0 ? 'The attached images are character reference portraits. The characters in the generated image must look IDENTICAL to these references — same face, hair, skin tone, build, clothing. Only lighting, angle, pose, and expression change. Clothing stays the same unless the scene is at a clearly different time or location.\n\n' : ''}Cinematic production still. ${style} visual style, ${mood} mood.
 
 Shot description: ${scene.prompt}
 
-${charContext ? `Characters in this frame: ${charContext}\n` : ''}This should look like a frame grab from a real film — deliberate composition, cinematic lens characteristics (shallow depth of field, anamorphic bokeh, lens breathing), motivated lighting, production-quality color grade. NOT corporate stock photography. NOT B-roll. Think Roger Deakins, Bradford Young, Hoyte van Hoytema. Every element in the frame should feel intentional.
+${charContext ? `Characters in this frame: ${charContext}\n` : ''}Render this exactly as described — match the camera, lens, and framing from the shot description. Do not override the camera specs. This should look like a frame grab from a real film. NOT stock photography. NOT B-roll. Every element in the frame should feel intentional.
 
-NO overlay graphics, captions, speech bubbles, dialogue text, subtitles, labels, watermarks, or post-production text of any kind anywhere in the image. Screens that exist IN the scene (phones, laptops, TVs, monitors) can show content — that is a legitimate part of the shot. But nothing should be composited OVER the image. Clean photographic frame only. Output only the image.`,
+NO overlay graphics, captions, speech bubbles, dialogue text, subtitles, labels, or watermarks. Diegetic screens (phones, laptops, TVs) can show content. Clean photographic frame only. Output only the image.`,
         refImages.length > 0 ? refImages : undefined
       );
       if (url) {
