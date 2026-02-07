@@ -222,7 +222,7 @@ export function VideoGenerator() {
                   className="w-full bg-transparent px-5 pt-4 pb-2 text-[15px] text-[#ededed] placeholder:text-[#555] focus:outline-none resize-none leading-relaxed"
                 />
                 <div className="flex items-center gap-4 px-4 pb-3">
-                  <div className="flex items-center gap-1.5">
+                  <div className="flex items-center gap-1.5" title="Video aspect ratio — 16:9 landscape, 9:16 vertical/TikTok, 4:3 classic, 1:1 square">
                     <label className="text-[11px] font-mono text-[#444]">ratio</label>
                     <select
                       value={options.aspectRatio}
@@ -235,7 +235,7 @@ export function VideoGenerator() {
                       <option value="1:1">1:1</option>
                     </select>
                   </div>
-                  <div className="flex items-center gap-1.5">
+                  <div className="flex items-center gap-1.5" title="Length of each shot in seconds — auto lets the AI pick the best duration per scene">
                     <label className="text-[11px] font-mono text-[#444]">duration</label>
                     <select
                       value={options.duration}
@@ -257,7 +257,7 @@ export function VideoGenerator() {
                     </select>
                   </div>
                   {options.duration === 'auto' && (
-                    <div className="flex items-center gap-1.5">
+                    <div className="flex items-center gap-1.5" title="Target total video length — only used when duration is set to auto">
                       <label className="text-[11px] font-mono text-[#444]">length</label>
                       <select
                         value={options.totalLength || 'auto'}
@@ -275,7 +275,7 @@ export function VideoGenerator() {
                       </select>
                     </div>
                   )}
-                  <div className="flex items-center gap-1.5">
+                  <div className="flex items-center gap-1.5" title="Number of scenes to generate — auto lets the AI decide based on the story">
                     <label className="text-[11px] font-mono text-[#444]">shots</label>
                     <select
                       value={options.numScenes || 'auto'}
@@ -292,7 +292,7 @@ export function VideoGenerator() {
                       <option value={5}>5</option>
                     </select>
                   </div>
-                  <div className="flex items-center gap-1.5 ml-auto">
+                  <div className="flex items-center gap-1.5 ml-auto" title="AI-generated background music — turn off if you'll add your own in post">
                     <label className="text-[11px] font-mono text-[#444]">music</label>
                     <button
                       onClick={() => setOptions(prev => ({ ...prev, noMusic: !prev.noMusic }))}
@@ -371,6 +371,7 @@ export function VideoGenerator() {
 
               {/* Beta: Mood Board toggle */}
               <button
+                title="Generate mood board reference images from your concept before video generation"
                 onClick={() => setOptions(prev => ({ ...prev, useMoodBoard: !prev.useMoodBoard }))}
                 className={`flex items-center gap-2 h-8 px-4 rounded-full border text-xs font-mono transition-all ${
                   options.useMoodBoard

@@ -73,7 +73,7 @@ DIALOGUE: Write dialogue the way real people talk under extreme stress — short
   {
     id: 'comedy',
     label: 'Comedy',
-    description: 'TV commercial energy. Absurd setups, perfect punchlines.',
+    description: 'Find the game. Specificity is funny. Subvert expectations.',
     icon: '😂',
     ideaPrompt: `You are a comedy writer's room. Not an AI trying to be funny — an actual room of sharp, experienced comedy writers who understand WHY things are funny.
 
@@ -143,7 +143,7 @@ DIALOGUE: Write dialogue that sounds like actual human beings — not sitcom qui
   {
     id: 'deadpan',
     label: 'Deadpan',
-    description: 'Bone-dry delivery. The less they react, the funnier it gets.',
+    description: 'Bureaucratic sincerity. The mundane response to the absurd.',
     icon: '😐',
     ideaPrompt: `You are a deadpan comedy writer. Think like Nathan Fielder, think like the people who write I Think You Should Leave, think like Yorgos Lanthimos writes dialogue. You understand that the funniest comedy comes from TOTAL SINCERITY about something insane.
 
@@ -273,7 +273,7 @@ DIALOGUE: Include natural spoken dialogue in quotes. Write like people actually 
   {
     id: 'unhinged',
     label: 'Unhinged',
-    description: 'Spicy. Push limits. Action meets dad jokes.',
+    description: 'Wrong genre, full commitment. Tone mismatch as comedy.',
     icon: '🤪',
     ideaPrompt: `You are a comedy writer who has lost all fear. You write like someone who got fired from a TV show for going too far and now has nothing to lose. You understand that the funniest comedy comes from COMMITMENT to ideas that should not work.
 
