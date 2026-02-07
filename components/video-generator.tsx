@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { RotateCcw, Play, X, Clock, ChevronDown, Settings2, RotateCw, AlertCircle, Loader2, ImagePlus, MessageSquare } from 'lucide-react';
 
 const HEADLINES = [
@@ -71,7 +71,11 @@ export function VideoGenerator() {
   const [generatingHeadline, setGeneratingHeadline] = useState('');
   const [headlineFade, setHeadlineFade] = useState(true);
   const lastPhaseRef = useRef('');
-  const [headline] = useState(() => HEADLINES[Math.floor(Math.random() * HEADLINES.length)]);
+  const [headline, setHeadline] = useState(HEADLINES[0]);
+
+  useEffect(() => {
+    setHeadline(HEADLINES[Math.floor(Math.random() * HEADLINES.length)]);
+  }, []);
 
   const settingsMode = getModeById(settingsTab);
   const isActive = state.status !== 'idle';

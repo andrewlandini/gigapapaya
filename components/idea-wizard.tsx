@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Lightbulb, Loader2, RotateCcw } from 'lucide-react';
 
 interface IdeaWizardProps {
@@ -56,7 +56,11 @@ export function IdeaWizard({ onSelectIdea, onActiveChange }: IdeaWizardProps) {
   const [loadingStep, setLoadingStep] = useState(false);
   const [optionsKey, setOptionsKey] = useState(0); // forces re-render for animations
   const [reaction, setReaction] = useState<string | null>(null);
-  const [pickHeadline] = useState(() => PICK_HEADLINES[Math.floor(Math.random() * PICK_HEADLINES.length)]);
+  const [pickHeadline, setPickHeadline] = useState(PICK_HEADLINES[0]);
+
+  useEffect(() => {
+    setPickHeadline(PICK_HEADLINES[Math.floor(Math.random() * PICK_HEADLINES.length)]);
+  }, []);
 
   const fetchFirstStep = async () => {
     setLoadingStep(true);
