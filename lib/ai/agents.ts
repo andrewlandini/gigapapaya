@@ -23,7 +23,7 @@ const videoIdeaSchema = z.object({
 const sceneSchema = z.object({
   index: z.number().describe('Shot number'),
   prompt: z.string().describe('Veo 3.1-ready VISUAL prompt: [SHOT TYPE] + [SUBJECT with full description] + [ACTION] + [STYLE/CAMERA/LENS] + [CAMERA MOVEMENT] + [AUDIO]. Do NOT include dialogue here — dialogue goes in the separate dialogue field. Must be fully self-contained — Veo 3.1 has zero context between shots.'),
-  dialogue: z.string().describe('The exact spoken words for this shot, without surrounding quotes. Natural conversational speech. Empty string if no one speaks in this shot.'),
+  dialogue: z.string().describe('REQUIRED: The exact spoken words for this shot. Write what the character ACTUALLY SAYS out loud — short, punchy, conversational. NOT a description of what they might say. The actual words. Almost every shot should have dialogue. Only empty string for pure environment shots with no people.'),
   characters: z.array(z.string()).describe('Short consistent names of characters appearing in this scene (e.g. ["Mike", "Sarah"]). Use the same name across all scenes for the same character. Empty array if no characters.'),
   duration: z.number().describe('Duration in seconds (2, 4, 6, or 8)'),
   notes: z.string().describe('What happens narratively in this shot and how it connects to the next'),
@@ -102,9 +102,10 @@ WITHIN-SHOT PACING:
 - Describe what happens WHEN in the shot. An 8-second shot has a beginning, middle, and end. "He enters the room, pauses at the doorway, then crosses to the window" has internal rhythm. "He stands in a room" is a still photo.
 - Specify what changes during the shot — a shift in expression, a hand moving, a light changing, someone entering frame. Static shots where nothing evolves feel like AI stills, not film.
 
-SILENCE AS A CHOICE:
-- Not every shot needs dialogue. Sometimes the most powerful moment is a character who CHOOSES not to speak. If a scene has no dialogue, the visual prompt should describe what the character is doing and feeling INSTEAD of speaking — the fidgeting, the stare, the exhale. Silence should feel intentional, not empty.
-- Set the dialogue field to an empty string for silent shots, but make the visual prompt carry the emotional weight.
+DIALOGUE IS NOT OPTIONAL:
+- If there is a person in the shot, they should almost certainly be TALKING. Veo 3.1's speech model is one of its strongest features — USE IT. A character who is present but silent wastes the most powerful tool you have.
+- The ONLY time dialogue should be empty is a pure environment shot with no people, or a rare dramatic beat where silence is the entire point of the shot (max 1 silent shot per video).
+- When in doubt: give them something to say. Even a sigh, a muttered "okay," or a half-sentence they abandon is better than nothing.
 
 Camera movements that work:
 - Slow push/pull (dolly in/out)
@@ -124,28 +125,23 @@ Style references that consistently deliver:
 - "[Movie] cinematography" (use the SAME film reference for all scenes)
 - Specific color grading terms (use the SAME grade for all scenes)
 
-PERFORMANCE DIRECTION (CRITICAL — THIS IS WHAT SEPARATES REAL FROM AI):
-These are not AI-generated characters. These are REAL PEOPLE performing. Think about who this person is when the camera is off. They woke up this morning. They have rent to pay. They are an actor — maybe struggling, maybe established — and this role matters to them. They are giving this performance everything they have.
+PERFORMANCE DIRECTION:
+These are real people, not stock footage models. Write them like humans — tired eyes, nervous hands, a cleared throat before speaking. One or two specific physical details per character per scene is enough. Do not write a novel about their micro-expressions.
 
-WHAT MAKES A PERFORMANCE FEEL REAL:
-- MICRO-EXPRESSIONS: A flicker of doubt before they commit to the line. A slight swallow before speaking. Eyes that dart to the side for a fraction of a second. The face does ten things before the mouth opens.
-- BREATH: Real people breathe. They inhale before a big line. They exhale with relief or exhaustion. Specify breathing — "takes a slow breath before speaking," "exhales through their nose, composing themselves."
-- IMPERFECTION: Nobody delivers lines perfectly. They restart. They search for the word. They say "I mean—" and correct themselves. A slight stammer on a hard consonant. A pause where they lose their train of thought and recover.
-- EYES: The eyes tell the real story. "Eyes bright but tired" is a whole character. "Looking at the other person but not really seeing them" is a performance. Specify what the eyes are doing — they carry the subtext.
-- WEIGHT: Real people carry physical weight — exhaustion in their shoulders, tension in their jaw, the way they hold their hands when they are nervous. Not "standing confidently" — "standing with their weight shifted to one foot, arms crossed but loose, like they have been waiting too long."
-- THE THING UNDERNEATH: Every line has a surface meaning and a real meaning. "I'm fine" means "I'm not fine." "Whatever you want" means "I have a strong opinion." Write the surface line but describe the performance that reveals what is underneath.
+BAD: "A man stands confidently and delivers his line with a warm smile"
+GOOD: "A man in his late 30s, slight bags under his eyes, half-smile that doesn't quite land, fidgeting with a pen"
 
-BAD (AI announcer): A man stands confidently and delivers his line with a warm smile, speaking clearly and engagingly to camera.
-GOOD (real person): A man in his late 30s, slight bags under his eyes, manages a half-smile that does not quite reach his eyes, clears his throat softly before speaking, his voice steady but with a slight crack on the first word that he covers by pressing on, hands fidgeting with a pen he picked up without thinking about it.
-
-The first one looks like stock footage. The second one looks like a human being you want to keep watching.
+Keep the visual prompt CONCISE. The prompt is technical direction for a camera and a model, not prose. Short sentences. Specific details. No essays.
 
 DIALOGUE RULES (MANDATORY):
-- Almost ALL videos should feature talking unless the concept genuinely has no speaking characters (pure nature, abstract, etc.)
-- Put dialogue in the SEPARATE "dialogue" field — NOT in the "prompt" field. The prompt field is for visual/technical description only. The dialogue field is for the exact spoken words only, without surrounding quotes.
-- If a shot has no dialogue, set the dialogue field to an empty string.
-- Write dialogue the way people ACTUALLY talk — not the way they talk in commercials. Real people trail off. They start sentences and abandon them. They say "like" and "honestly" and "I don't know" as filler. They repeat themselves when they are nervous. They speak in fragments, not complete sentences. They mumble the ends of sentences when they lose confidence in what they are saying.
-- Match dialogue to the character's emotional state, not just the scene's mood. A character who is putting on a brave face sounds DIFFERENT from a character who is genuinely brave. Write the performance, not the archetype.
+- EVERY SCENE WITH A PERSON MUST HAVE DIALOGUE. This is non-negotiable. If someone is in the frame, they are talking. The dialogue field must contain their actual words.
+- Put dialogue in the SEPARATE "dialogue" field — NOT in the "prompt" field. The prompt field is VISUAL ONLY. The dialogue field is the ACTUAL WORDS SPOKEN, nothing else.
+- The dialogue field should contain ONLY the words that come out of the character's mouth. Not a description of what they say. Not stage directions. THE ACTUAL WORDS.
+  - BAD dialogue field: "He expresses concern about the situation and mentions that they should probably leave"
+  - GOOD dialogue field: "Yeah, no, we should — I think we should go. Like, now."
+- Write SHORT. Real people do not give speeches. They say 5-10 words and pause. They say one sentence and wait for a reaction. In an 8-second shot, one or two short lines is perfect. Do not write a paragraph.
+- Write MESSY. Real people say "um" and "like" and "I mean" and "you know what I mean?" They trail off mid-sentence. They start over. They say "wait, what?" They speak in fragments.
+- COMEDY DIALOGUE IS CASUAL. Funny people do not announce their jokes. They say things matter-of-factly. The humor is in WHAT they choose to say, not in HOW cleverly they say it. Deadpan, flat, understated.
 - Dialogue across scenes should feel like one continuous conversation — each scene picks up roughly where the last left off.
 - HARD WORD COUNT LIMIT: A person speaks ~2.5 words per second. For the scene duration, count the words in your dialogue and MAKE SURE they fit. An 8-second scene = MAX 15-18 words of dialogue (leave room for pauses and breathing). A 6-second scene = MAX 12 words. A 4-second scene = MAX 8 words. If your dialogue is longer than this, CUT IT DOWN. The video will literally cut off mid-sentence if you write too much. Shorter is always better — one punchy line beats a paragraph that gets cut off.
 - BANNED WORDS: NEVER use "subtitle", "subtitles", "subtitled", "caption", "captions", or "text overlay" in any prompt. Veo 3.1 will render literal subtitle text on screen if these words appear. Write dialogue directly in quotes instead.
