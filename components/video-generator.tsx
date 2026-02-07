@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { RotateCcw, Play, X, Clock, ChevronDown, Settings2, RotateCw, AlertCircle, Loader2, ImagePlus, MessageSquare } from 'lucide-react';
+import { formatCost, estimateGenerateVideosCost, estimateVideoCost, STORYBOARD_PIPELINE_COST } from '@/lib/costs';
 
 const HEADLINES = [
   "What should we cook, chef?",
@@ -364,6 +365,7 @@ export function VideoGenerator() {
                       >
                         <span className="text-base">{mode.icon}</span>
                         <span className="text-sm text-[#ededed]">{mode.label}</span>
+                        <span className="text-[10px] font-mono text-[#555]">{formatCost(STORYBOARD_PIPELINE_COST)}</span>
                       </button>
                       <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-1.5 rounded-lg bg-[#222] border border-[#333] text-xs text-[#ccc] whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
                         {mode.description}
@@ -547,10 +549,17 @@ export function VideoGenerator() {
           <div className="space-y-4 animate-fade-in">
             <div className="flex items-center justify-between">
               <h2 className="text-sm font-medium text-[#ededed]">Review Shots</h2>
-              <Button onClick={handleGenerateVideos} className="gap-2">
-                <Play className="h-4 w-4" />
-                Generate Videos
-              </Button>
+              <div className="flex items-center gap-3">
+                <Button onClick={handleGenerateVideos} className="gap-2">
+                  <Play className="h-4 w-4" />
+                  Generate Videos
+                </Button>
+                {state.editableScenes && (
+                  <span className="text-[11px] font-mono text-[#555]">
+                    {formatCost(estimateGenerateVideosCost(state.editableScenes))}
+                  </span>
+                )}
+              </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -669,17 +678,24 @@ export function VideoGenerator() {
                         <span className="text-xs font-mono text-[#ff4444]">Shot {idx + 1}</span>
                         <span className="text-xs font-mono text-[#444]">{scene.duration}s</span>
                       </div>
-                      <button
-                        onClick={() => rerunShot(idx)}
-                        disabled={isRerunning}
-                        className="flex items-center gap-2 h-8 px-3 text-xs font-medium rounded-lg border border-[#333] bg-transparent text-[#ededed] hover:bg-[#111] hover:border-[#555] transition-all disabled:opacity-40 disabled:cursor-not-allowed"
-                      >
-                        {isRerunning ? (
-                          <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Re-running...</>
-                        ) : (
-                          <><RotateCw className="h-3.5 w-3.5" /> Re-run</>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => rerunShot(idx)}
+                          disabled={isRerunning}
+                          className="flex items-center gap-2 h-8 px-3 text-xs font-medium rounded-lg border border-[#333] bg-transparent text-[#ededed] hover:bg-[#111] hover:border-[#555] transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                        >
+                          {isRerunning ? (
+                            <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Re-running...</>
+                          ) : (
+                            <><RotateCw className="h-3.5 w-3.5" /> Re-run</>
+                          )}
+                        </button>
+                        {!isRerunning && (
+                          <span className="text-[10px] font-mono text-[#555]">
+                            {formatCost(estimateVideoCost(scene.duration, Boolean(scene.dialogue?.trim())))}
+                          </span>
                         )}
-                      </button>
+                      </div>
                     </div>
                     <textarea
                       value={scene.prompt}

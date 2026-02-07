@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Lightbulb, Loader2, RotateCcw } from 'lucide-react';
+import { formatCost, IDEA_WIZARD_COST } from '@/lib/costs';
 
 interface IdeaWizardProps {
   onSelectIdea: (idea: string) => void;
@@ -172,6 +173,7 @@ export function IdeaWizard({ onSelectIdea, onActiveChange }: IdeaWizardProps) {
         <span className="text-[15px] font-medium text-white group-hover:text-white/80 transition-colors">
           Spark an idea for me
         </span>
+        <span className="text-[10px] font-mono text-[#555]">{formatCost(IDEA_WIZARD_COST)}</span>
       </button>
     );
   }

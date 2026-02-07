@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { Sparkles, Loader2, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { formatCost, AVATAR_COST } from '@/lib/costs';
 import { FeedGrid } from '@/components/feed-grid';
 import { PromptBar } from '@/components/prompt-bar';
 import { AvatarCropper } from '@/components/avatar-cropper';
@@ -178,7 +179,7 @@ export default function ProfilePage() {
                         Generating...
                       </>
                     ) : (
-                      'Generate avatar'
+                      <>Generate avatar <span className="ml-1.5 text-[10px] font-mono opacity-60">{formatCost(AVATAR_COST)}</span></>
                     )}
                   </Button>
                   {user.avatarUrl && (
