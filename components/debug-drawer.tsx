@@ -7,13 +7,12 @@ import { useDebug } from './debug-context';
 export function DebugDrawer() {
   const { debugMode, toggleDebugMode, logs, clearLogs } = useDebug();
   const [minimized, setMinimized] = useState(false);
-  const bottomRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Auto-scroll to bottom on new logs
+  // Auto-scroll to bottom on new logs (scoped to container)
   useEffect(() => {
-    if (!minimized && bottomRef.current) {
-      bottomRef.current.scrollIntoView({ behavior: 'smooth' });
+    if (!minimized && containerRef.current && logs.length > 0) {
+      containerRef.current.scrollTop = containerRef.current.scrollHeight;
     }
   }, [logs.length, minimized]);
 
@@ -68,7 +67,6 @@ export function DebugDrawer() {
               </div>
             );
           })}
-          <div ref={bottomRef} />
         </div>
       )}
     </div>

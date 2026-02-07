@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useState, useCallback, useRef, type ReactNode } from 'react';
+import { createContext, useContext, useState, useCallback, useEffect, useRef, type ReactNode } from 'react';
 
 const STORAGE_KEY = 'gp_debug_mode';
 
@@ -27,11 +27,15 @@ export function useDebug() {
 }
 
 export function DebugProvider({ children }: { children: ReactNode }) {
-  const [debugMode, setDebugMode] = useState(() => {
-    if (typeof window === 'undefined') return false;
-    try { return localStorage.getItem(STORAGE_KEY) === '1'; } catch { return false; }
-  });
+  const [debugMode, setDebugMode] = useState(false);
   const [logs, setLogs] = useState<DebugLogEntry[]>([]);
+
+  // Read persisted state after mount to avoid hydration mismatch
+  useEffect(() => {
+    try {
+      if (localStorage.getItem(STORAGE_KEY) === '1') setDebugMode(true);
+    } catch {}
+  }, []);
   // Keep a ref so pushLog callback never goes stale
   const logsRef = useRef(logs);
   logsRef.current = logs;

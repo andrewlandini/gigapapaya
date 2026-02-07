@@ -52,7 +52,7 @@ export default async function RootLayout({
           <Sidebar user={user} />
           <UserMenu user={user} />
           <DebugDrawer />
-          <div className="ml-[60px]">
+          <div className="ml-[60px] min-h-screen overflow-x-hidden">
             {children}
           </div>
         </Providers>
