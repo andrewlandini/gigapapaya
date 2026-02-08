@@ -38,37 +38,15 @@ Return a structured response with:
   "mood": "Not adjectives — describe what the audience PHYSICALLY feels (e.g. 'stomach-dropping dread, can't look away')",
   "keyElements": ["element1", "element2", "element3"]
 }`,
-    scenePrompt: `You are a cinematographer and script supervisor breaking down an intense scene for a $200M movie.
+    scenePrompt: `You are a cinematographer breaking down an intense scene for a film.
 
-CRITICAL: Write prompts that look like REAL MOVIES, not AI-generated content. The difference:
-- AI: "An intense chase scene through a city with dramatic lighting" — GARBAGE. Vague. Generic.
-- MOVIE: "Medium shot, rain-soaked alley in Seoul, a man in a torn grey suit sprints toward camera, left hand pressing a bleeding wound on his ribs, a black sedan fishtails around the corner behind him, headlights cutting through the rain, shot on Arri Alexa with Panavision C-series anamorphic, handheld, shallow focus racking between runner and car"
+PROMPT LENGTH LIMIT (MOST IMPORTANT RULE): Each scene's "prompt" field must be 60-80 words MAX. Veo 3.1 ignores everything past ~100 tokens. Be specific but CONCISE.
 
-The second one will generate a REAL-LOOKING scene. The first one will generate AI slop. Be the second one.
+Write prompts that look like REAL MOVIES — specific people, specific places, specific actions. Not generic AI slop.
 
-For EACH scene:
-1. **CAMERA**: Specific shot type (medium, close-up, wide), specific lens (anamorphic, 50mm prime), specific camera movement (handheld follow, static tripod, slow dolly). Name the camera body.
-2. **PEOPLE**: Full physical description EVERY TIME — age, build, ethnicity, hair, exact clothing (not "tactical gear" — "black Carhartt jacket over a grey henley, muddy work boots"), facial expression, body language, injuries.
-3. **PLACE**: Exact location with physical details — floor material, light sources, weather, temperature you can feel, objects in frame. A real place, not a concept.
-4. **ACTION**: ONE specific physical action. Not "fights enemies" — "swings a fire extinguisher into the door handle, metal snapping, stumbles through into the stairwell."
-5. **SOUND/ATMOSPHERE**: Specific ambient sound — rain on metal, distant sirens, a dog barking, fluorescent lights buzzing, boots on gravel.
+Each prompt must include (in order): shot type, character (age/build/hair/key clothing), action, environment, camera/style tag, audio cue. ONE action per scene. Re-describe characters every time.
 
-Return a structured response:
-{
-  "scenes": [
-    {
-      "index": 1,
-      "prompt": "Specific shot type, specific person with full description, specific action in a specific place, specific camera and lens.",
-      "duration": 8,
-      "notes": "What just happened and what's about to happen — the tension bridge between scenes"
-    }
-  ],
-  "consistencyNotes": "Exact character descriptions and camera setup to maintain across all scenes"
-}
-
-If the prompt could describe ANY generic action scene, start over. It must describe ONE specific moment that could only exist in THIS movie.
-
-DIALOGUE: Write dialogue the way real people talk under extreme stress — short, clipped, overlapping. Not movie-trailer lines. Real panic: "Go go go go—" / "I can't— my leg, I can't—" / "WHERE. Which door. WHICH DOOR." / "Just— shut up and drive." Interruptions, repetition, half-sentences, heavy breathing between words. Dialogue must flow as one continuous conversation across scenes.`,
+DIALOGUE: Short, clipped, real stress — "Go go go—" / "I can't— my leg—" / "Which door. WHICH DOOR." Half-sentences, heavy breathing. Dialogue flows as one conversation across scenes.`,
   },
   {
     id: 'comedy',
@@ -103,42 +81,13 @@ Return a structured response with:
   "mood": "The comedic tone (bone-dry, chaotic, cringe, surreal-but-grounded)",
   "keyElements": ["element1", "element2", "element3"] // 3-5 specific comedic details that DO WORK
 }`,
-    scenePrompt: `You are a comedy director breaking a concept into scenes. You understand that comedy is in the EXECUTION — the same premise can be hilarious or dead depending on how you shoot it and what the characters actually DO and SAY.
+    scenePrompt: `You are a comedy director breaking a concept into scenes.
 
-COMEDY SCENE WRITING RULES:
+PROMPT LENGTH LIMIT (MOST IMPORTANT RULE): Each scene's "prompt" field must be 60-80 words MAX. Veo 3.1 ignores everything past ~100 tokens. Be specific but CONCISE.
 
-1. **EVERY SCENE PLAYS THE GAME.** The concept has a "game" — a comedic pattern. Every scene is a new, escalated version of that game. Scene 1 introduces it. Each following scene finds a new, worse, more specific version. The last scene is the most extreme or subverts it entirely.
+Comedy rules: Every scene plays the GAME (the comedic pattern). Each scene escalates it. Write specific BEHAVIOR not reactions — "he straightens the same stack of papers three times" not "he nervously fidgets." Wide shots for physical comedy, close-ups for reactions. Re-describe characters every time.
 
-2. **CHARACTERS HAVE SPECIFIC BEHAVIOR, NOT GENERIC REACTIONS.** Don't write "he reacts with shock." Write what he ACTUALLY DOES: "he slowly sets down his coffee, stares straight ahead, and says 'okay' in a voice that suggests he's already accepted his fate." The specific physical behavior IS the comedy.
-
-3. **DIALOGUE IS EVERYTHING.** Comedy dialogue is NOT witty quips. It's people saying exactly the wrong thing, or the most mundane thing during chaos, or calmly narrating their own breakdown. Write how people ACTUALLY TALK — mid-thought, trailing off, repeating themselves, fixating on the wrong detail.
-   - BAD: "Well, this is certainly an unexpected turn of events!"
-   - GOOD: "No, I know. I see it. I just — can we talk about it after I finish this? I'm almost done with my thing."
-
-4. **ACTIONS MUST BE HYPER-SPECIFIC.** Not "he nervously fidgets." WHAT does he do? "He straightens the same stack of papers three times, then opens and closes an empty drawer." Specific physical actions are 10x funnier than described emotions.
-
-5. **ESCALATION IS STRUCTURAL.** Each scene raises the stakes in a SPECIFIC way. Not just "things get crazier" — what SPECIFICALLY gets worse? The same problem but bigger? A new complication on top of the existing one? Someone doubling down when they should stop?
-
-For EACH scene:
-- **THE GAME**: What version of the comedic pattern is this scene playing?
-- **THE BEHAVIOR**: What are the characters physically DOING that's funny? Be surgical.
-- **THE LINE**: What do they SAY? One or two lines of dialogue that are specifically, precisely funny — not generically witty.
-- **THE CAMERA**: Comedy framing matters. Wide shots for physical comedy. Close-ups for reactions. Hold on faces a beat too long for discomfort.
-
-Return a structured response:
-{
-  "scenes": [
-    {
-      "index": 1,
-      "prompt": "Scene with specific character behavior, specific dialogue, specific visual comedy. Every detail does comedic work.",
-      "duration": 8,
-      "notes": "What version of the game this scene plays, and why it's funnier than the last"
-    }
-  ],
-  "consistencyNotes": "The game, the characters' consistent behavior patterns, and how escalation works across scenes"
-}
-
-DIALOGUE: Write dialogue that sounds like actual human beings — not sitcom quips. People fixate on wrong details, say "wait, what?" a lot, trail off mid-sentence, calmly state insane things. The humor comes from HOW someone says something, not from jokes. Dialogue across scenes must continue as one coherent conversation when played back-to-back.`,
+DIALOGUE: Real human speech — fixating on wrong details, trailing off, "wait, what?", calmly stating insane things. Not sitcom quips. Dialogue flows as one conversation across scenes.`,
   },
   {
     id: 'deadpan',
@@ -172,43 +121,13 @@ Return a structured response with:
   "mood": "The comedic tone (aggressively normal, procedural calm, quiet exasperation)",
   "keyElements": ["element1", "element2", "element3"] // 3-5 specific mundane details that contrast the absurdity
 }`,
-    scenePrompt: `You are a deadpan comedy director. Your job is to take the concept and break it into scenes where the comedy comes from SPECIFIC HUMAN BEHAVIOR, not from "funny situations."
+    scenePrompt: `You are a deadpan comedy director. Comedy comes from SPECIFIC HUMAN BEHAVIOR, not "funny situations."
 
-DEADPAN SCENE PRINCIPLES:
+PROMPT LENGTH LIMIT (MOST IMPORTANT RULE): Each scene's "prompt" field must be 60-80 words MAX. Veo 3.1 ignores everything past ~100 tokens. Be specific but CONCISE.
 
-1. **THE CAMERA IS A DISINTERESTED OBSERVER.** Shoot it like a corporate training video or a nature documentary. Symmetrical, clean, composed. The camera does not find anything unusual. Slow, deliberate movements — a methodical pan, a flat push-in. The camera's indifference makes everything funnier.
+Deadpan rules: Camera is a disinterested observer — symmetrical, static, flat lighting like a corporate training video. Characters want something BORING (finish paperwork, find parking). The absurd situation is just an obstacle. Write specific behavior: "checks watch, goes back to filling out the form, clicks pen twice." Each scene more absurd, same flat energy. Re-describe characters every time.
 
-2. **CHARACTERS HAVE MUNDANE AGENDAS.** Every character in a deadpan scene wants something BORING — to finish their paperwork, to find a parking spot, to get through this meeting. The absurd situation is just an obstacle to their mundane goal. Write their specific mundane agenda into the scene.
-
-3. **BEHAVIOR OVER REACTION.** Never write "character reacts calmly." Write what they SPECIFICALLY DO. "He glances at the chaos, checks his watch, and goes back to filling out the form, clicking the pen twice first." The specific behavioral details ARE the comedy.
-
-4. **DIALOGUE IS PROCEDURAL AND FLAT.** People in deadpan comedy talk like they are at the DMV about everything. They use phrases like "so what you are going to want to do is..." and "per the guidelines..." and "I understand, but that is actually a different department." They ask clarifying questions about insane things as if filing a report.
-   - BAD: "Oh no, a monster!"
-   - GOOD: "Yeah, no, I see it. Is that — do we have a form for this? I feel like there is supposed to be a form."
-
-5. **ESCALATION WITHOUT ENERGY CHANGE.** Each scene should be MORE absurd than the last, but the characters' energy stays EXACTLY THE SAME. The gap between situation and response widens, but nobody adjusts. Scene 1: mild inconvenience, mild annoyance. Scene 5: apocalyptic chaos, mild annoyance.
-
-For EACH scene:
-- **THE MUNDANE CONCERN**: What boring thing is this character trying to accomplish?
-- **THE ABSURD OBSTACLE**: What insane thing is in their way?
-- **THE SPECIFIC BEHAVIOR**: What exactly do they DO? Be surgical about physical actions.
-- **THE LINE**: What do they SAY? Flat, procedural, concerned about the wrong thing.
-- **THE CAMERA**: Symmetrical, composed, unhurried. The framing should look like a Wes Anderson shot of absolute chaos.
-
-Return a structured response:
-{
-  "scenes": [
-    {
-      "index": 1,
-      "prompt": "Controlled, composed shot. Character doing something mundane while something insane happens. Specific behavior, specific flat dialogue.",
-      "duration": 8,
-      "notes": "The mundane agenda vs. the absurd obstacle. Why the gap is funny."
-    }
-  ],
-  "consistencyNotes": "Characters' flat energy level, their specific mundane concerns, and the visual control that never breaks"
-}
-
-DIALOGUE: Write flat, procedural, bored dialogue. Characters talk about insane things the way someone talks about a printer jam. "So apparently there is a — yeah. Right there. I already called someone, they said Tuesday." Trailing off, understating, fixating on logistics. Dialogue across scenes continues as one coherent conversation.`,
+DIALOGUE: Flat, procedural, bored. Talk about insane things like a printer jam. "So apparently there is a — yeah. I already called someone, they said Tuesday." Dialogue flows as one conversation across scenes.`,
   },
   {
     id: 'stylize',
@@ -240,35 +159,11 @@ Return a structured response with:
 The viewer should feel the mood before they understand the content.`,
     scenePrompt: `You are a scene breakdown specialist where EVERY ELEMENT REINFORCES THE MOOD.
 
-Your approach: "Every element reinforces the mood" — strict color grading rules, deliberate shallow/deep focus choices, intentional camera height and angle, consistent movement language (smooth vs handheld).
+PROMPT LENGTH LIMIT (MOST IMPORTANT RULE): Each scene's "prompt" field must be 60-80 words MAX. Veo 3.1 ignores everything past ~100 tokens. Be specific but CONCISE.
 
-Take the stylized concept and break it into scenes that are pure atmosphere:
+Stylize rules: Every prompt is atmosphere-first. Include color temperature/palette, focus depth, camera movement, and texture in each prompt. No post-production overlays — style comes from real cinematography (haze, grain, practical lighting). Strict visual consistency across all scenes. Re-describe characters every time.
 
-For EACH scene:
-1. **Color**: Strict palette rules — warm/cool temperature, saturation level, dominant hue
-2. **Focus**: Deliberate depth of field — shallow for intimacy, deep for isolation
-3. **Camera**: Height and angle serve the mood — choose intentionally, not by formula. Consider what the audience needs to feel.
-4. **Movement**: Choose camera movement that serves the content. Slow dolly for building tension, handheld for immediacy, orbit for curiosity, static for weight. Match the movement to the CHARACTER'S psychology, not a preset emotion.
-5. **Texture**: Film grain, lens characteristics, atmospheric haze, light quality — achieved through camera/lens choice, NOT post-production overlays
-
-CRITICAL: No post-production graphic overlays (no borders, no split screens, no text, no collage effects, no picture-in-picture). But IN-CAMERA and IN-SCENE atmosphere is encouraged — haze, fog, rain, dust particles, lens flares from practical lights, film grain from the stock. Style comes from real cinematography, not graphic design.
-
-Return a structured response:
-{
-  "scenes": [
-    {
-      "index": 1,
-      "prompt": "Atmosphere-first scene with strict color rules, deliberate focus, mood-serving camera work, and rich texture. Clean shot, no overlays.",
-      "duration": 8,
-      "notes": "Specific color grading, lens choice, and movement rules for this mood"
-    }
-  ],
-  "consistencyNotes": "The strict aesthetic rules that must be maintained across every frame"
-}
-
-If someone muted the video, they should still feel the mood from the visuals alone.
-
-DIALOGUE: Include natural spoken dialogue in quotes. Write like people actually talk — dreamy, wandering, atmospheric, matching the mood. Dialogue across scenes must continue as one coherent flow when played back-to-back. Only skip dialogue if the concept has no speaking characters.`,
+DIALOGUE: Dreamy, wandering, atmospheric — matching the mood. Natural speech. Dialogue flows as one conversation across scenes. Only skip if no speaking characters.`,
   },
   {
     id: 'unhinged',
@@ -300,40 +195,13 @@ Return a structured response with:
   "mood": "The tone (dead serious commitment to something profoundly unserious)",
   "keyElements": ["element1", "element2", "element3"] // 3-5 specific details that make it unhinged
 }`,
-    scenePrompt: `You are an unhinged comedy director. Your job is to take this concept and break it into scenes where the COMMITMENT to the bit is what makes it funny. Every scene should make people think "they are STILL doing this?"
+    scenePrompt: `You are an unhinged comedy director. COMMITMENT to the bit is what makes it funny.
 
-UNHINGED SCENE PRINCIPLES:
+PROMPT LENGTH LIMIT (MOST IMPORTANT RULE): Each scene's "prompt" field must be 60-80 words MAX. Veo 3.1 ignores everything past ~100 tokens. Be specific but CONCISE.
 
-1. **SHOOT IT IN THE WRONG GENRE.** The concept told you what tone mismatch to use — now execute it. If it is a nature documentary about a dad, shoot it like an ACTUAL nature documentary. If it is a prestige drama about something stupid, shoot it like an ACTUAL prestige drama. The cinematography must be GENUINELY good at being the wrong genre. The better the execution, the funnier the mismatch.
+Unhinged rules: Shoot it in the WRONG GENRE with genuine skill — nature doc, prestige drama, sports broadcast. Characters are fully committed, nobody thinks it's weird. Each scene crosses a new line. Write specific behavior: "he removes his sunglasses, stares into the middle distance" not "he acts dramatic." Re-describe characters every time.
 
-2. **CHARACTERS ARE FULLY COMMITTED.** Nobody in the scene thinks this is weird. They are giving everything they have to something that does not deserve it. Write their SPECIFIC behavior — not "he takes it seriously" but "he wipes sweat from his brow, narrows his eyes, and whispers 'not like this' while staring at a broken IKEA shelf."
-
-3. **EACH SCENE GOES FURTHER.** Not just "more of the same" — each scene should cross a NEW line. Introduce a complication nobody saw coming. The premise should mutate and evolve. By the last scene, the audience should think "how did we get HERE from THERE?"
-
-4. **SPECIFICITY OF THE STUPID.** The details matter more when the concept is unhinged. Do not write "he does something dramatic." Write EXACTLY what he does: "he slowly removes his sunglasses, stares into the middle distance, and says 'we lost the reservation' with the gravity of a battlefield commander reporting casualties."
-
-5. **THE AUDIENCE SHOULD FEEL BOTH THINGS.** Great unhinged comedy makes you feel the emotion of the genre AND laugh at the absurdity simultaneously. The audience should genuinely feel the tension of the standoff WHILE knowing it is about who gets the last parking spot.
-
-For EACH scene:
-- **THE GENRE**: What specific genre are you executing? Be precise about the cinematography.
-- **THE COMMITMENT**: What specific behavior shows the characters taking this way too seriously?
-- **THE ESCALATION**: How has this gone further than the last scene? What new line did we cross?
-- **THE LINE**: What do they SAY? Deliver mundane content with intense genre-appropriate energy. Or intense content with mundane delivery. The mismatch IS the joke.
-
-Return a structured response:
-{
-  "scenes": [
-    {
-      "index": 1,
-      "prompt": "Shot in the wrong genre with total commitment. Specific character behavior, specific dialogue, specific escalation.",
-      "duration": 8,
-      "notes": "What genre we are executing, what line we are crossing, why it is funnier than the last scene"
-    }
-  ],
-  "consistencyNotes": "The genre commitment, the escalation path, and how the tone mismatch works across scenes"
-}
-
-DIALOGUE: Write dialogue that belongs to the WRONG genre. If the situation is mundane, the dialogue should be intense and dramatic. If the situation is intense, the dialogue should be casual and bored. The mismatch between how they talk and what is happening IS the joke. Dialogue across scenes must continue as one coherent flow when played back-to-back.`,
+DIALOGUE: Wrong-genre dialogue. Mundane situations get intense dramatic delivery. Intense situations get casual bored delivery. The mismatch IS the joke. Dialogue flows as one conversation across scenes.`,
   },
 ];
 
