@@ -50,7 +50,7 @@ export function formatCredits(credits: number): string {
 
 export function formatCostWithCredits(usdAmount: number): string {
   const credits = usdToCredits(usdAmount);
-  return `${credits.toLocaleString()} credits (~$${usdAmount.toFixed(2)})`;
+  return `${credits.toLocaleString()} credits`;
 }
 
 export function estimateStoryboardTotalCost(

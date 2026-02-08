@@ -144,7 +144,7 @@ export default function AdminPage() {
                       <span className="text-xs font-mono text-[#888]">has {r.credits.toLocaleString()} credits</span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className="text-sm font-mono text-[#00DC82]">+{r.amount.toLocaleString()} credits</span>
+                      <span className="text-sm font-mono text-[#FF0000]">+{r.amount.toLocaleString()} credits</span>
                       <span className="text-xs text-[#666]">{r.reason}</span>
                     </div>
                     <span className="text-[10px] font-mono text-[#444]">{new Date(r.created_at).toLocaleString()}</span>
@@ -152,7 +152,7 @@ export default function AdminPage() {
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() => handleRequest(r.id, 'approve')}
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-[#00DC82]/10 text-[#00DC82] border border-[#00DC82]/20 hover:bg-[#00DC82]/20 transition-colors"
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-[#FF0000]/10 text-[#FF0000] border border-[#FF0000]/20 hover:bg-[#FF0000]/20 transition-colors"
                     >
                       <Check className="h-3 w-3" />
                       Approve
@@ -216,7 +216,7 @@ export default function AdminPage() {
                         />
                         <button
                           onClick={() => adjustCredits(u.id)}
-                          className="text-[#00DC82] hover:text-[#00DC82]/80 transition-colors"
+                          className="text-[#FF0000] hover:text-[#FF0000]/80 transition-colors"
                         >
                           <Check className="h-3 w-3" />
                         </button>
@@ -230,7 +230,7 @@ export default function AdminPage() {
                     ) : (
                       <button
                         onClick={() => { setEditingCredits(u.id); setCreditInput(String(u.credits ?? 0)); }}
-                        className="text-xs font-mono text-[#00DC82] hover:underline cursor-pointer"
+                        className="text-xs font-mono text-[#FF0000] hover:underline cursor-pointer"
                       >
                         {(u.credits ?? 0).toLocaleString()}
                       </button>

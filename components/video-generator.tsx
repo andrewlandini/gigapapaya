@@ -358,7 +358,7 @@ export function VideoGenerator() {
               {/* Cost estimate */}
               <div className="flex items-center justify-center gap-2 text-xs text-[#555]">
                 <span className="font-mono">
-                  Estimated cost: <span className="text-[#00DC82]">{formatCostWithCredits(estimateStoryboardTotalCost(
+                  Cost: <span className="text-[#FF0000]">{formatCostWithCredits(estimateStoryboardTotalCost(
                     options.numScenes || 3,
                     typeof options.duration === 'number' ? options.duration : 8
                   ))}</span>
@@ -566,7 +566,7 @@ export function VideoGenerator() {
                 <h2 className="text-sm font-medium text-[#ededed]">Review Shots</h2>
                 {state.editableScenes && (
                   <p className="text-xs text-[#555] mt-1 font-mono">
-                    {state.editableScenes.length} {state.editableScenes.length === 1 ? 'shot' : 'shots'} · {state.editableScenes.reduce((sum, s) => sum + s.duration, 0)}s total · <span className="text-[#00DC82]">{formatCostWithCredits(estimateGenerateVideosCost(state.editableScenes))}</span> estimated
+                    {state.editableScenes.length} {state.editableScenes.length === 1 ? 'shot' : 'shots'} · {state.editableScenes.reduce((sum, s) => sum + s.duration, 0)}s total · <span className="text-[#FF0000]">{formatCostWithCredits(estimateGenerateVideosCost(state.editableScenes))}</span>
                   </p>
                 )}
               </div>
@@ -574,7 +574,7 @@ export function VideoGenerator() {
                 <Play className="h-4 w-4" />
                 Generate {state.editableScenes?.length === 1 ? 'Video' : 'Videos'}
                 {state.editableScenes && (
-                  <span className="text-[#00DC82] font-mono text-xs ml-1">
+                  <span className="text-[#FF0000] font-mono text-xs ml-1">
                     {formatCostWithCredits(estimateGenerateVideosCost(state.editableScenes))}
                   </span>
                 )}
@@ -707,7 +707,7 @@ export function VideoGenerator() {
                           )}
                         </button>
                         {!isRerunning && (
-                          <span className="text-[10px] font-mono text-[#00DC82]">
+                          <span className="text-[10px] font-mono text-[#FF0000]">
                             {formatCostWithCredits(estimateVideoCost(scene.duration, Boolean(scene.dialogue?.trim())))}
                           </span>
                         )}

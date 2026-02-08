@@ -110,7 +110,7 @@ export function Sidebar({ user }: SidebarProps) {
       <div className="flex flex-col items-center gap-1">
         {user && credits !== null && (
           <div className="text-center px-1 mb-2">
-            <span className="text-[10px] font-mono text-[#00DC82] block">{credits.toLocaleString()}</span>
+            <span className="text-[10px] font-mono text-[#FF0000] block">{credits.toLocaleString()}</span>
             <span className="text-[8px] font-mono text-[#444]">credits</span>
           </div>
         )}

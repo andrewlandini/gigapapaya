@@ -146,7 +146,7 @@ export function UserMenu({ user }: UserMenuProps) {
               <p className="text-sm text-[#ededed] font-medium">{user.name}</p>
               <p className="text-xs text-[#555] font-mono">@{user.username}</p>
               {credits !== null && (
-                <p className="text-xs font-mono text-[#00DC82] mt-1">{credits.toLocaleString()} credits</p>
+                <p className="text-xs font-mono text-[#FF0000] mt-1">{credits.toLocaleString()} credits</p>
               )}
             </div>
 
@@ -263,7 +263,7 @@ export function UserMenu({ user }: UserMenuProps) {
               {credits !== null && (
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-[#888]">Current balance</span>
-                  <span className="font-mono text-[#00DC82]">{credits.toLocaleString()} credits</span>
+                  <span className="font-mono text-[#FF0000]">{credits.toLocaleString()} credits</span>
                 </div>
               )}
               <div className="space-y-3">
@@ -305,7 +305,7 @@ export function UserMenu({ user }: UserMenuProps) {
                     <div key={r.id} className="flex items-center justify-between text-xs">
                       <span className="font-mono text-[#888]">{r.amount.toLocaleString()} credits</span>
                       <span className={`font-mono ${
-                        r.status === 'approved' ? 'text-[#00DC82]' :
+                        r.status === 'approved' ? 'text-[#FF0000]' :
                         r.status === 'denied' ? 'text-[#ff4444]' :
                         'text-[#888]'
                       }`}>

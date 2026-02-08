@@ -280,7 +280,7 @@ export function PromptBar({ isAuthenticated }: PromptBarProps) {
                 {modelLabel}
                 <ChevronUp className={`h-3 w-3 transition-transform ${showPopup ? '' : 'rotate-180'}`} />
               </button>
-              <span className="text-xs font-mono text-[#00DC82]">
+              <span className="text-xs font-mono text-[#FF0000]">
                 {formatCostWithCredits(estimateQuickGenerateCost(duration))}
               </span>
               <button
