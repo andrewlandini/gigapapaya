@@ -35,6 +35,7 @@ interface StoryboardContextValue {
   updateSceneDialogue: (index: number, dialogue: string) => void;
   removeScene: (index: number) => void;
   startModeGeneration: (modeId: string) => void;
+  startDirectGeneration: () => void;
   handleGenerateVideos: () => void;
   handleReset: () => void;
   clearGeneration: () => void;
@@ -388,6 +389,96 @@ export function StoryboardProvider({ children }: { children: ReactNode }) {
       });
   }, [state.idea, options, addToHistory, getAgentConfigForMode]);
 
+  const startDirectGeneration = useCallback(() => {
+    const idea = state.idea.trim();
+    if (!idea) return;
+
+    addToHistory(idea);
+
+    setState(prev => ({
+      ...prev,
+      status: 'generating',
+      generatedIdea: null,
+      scenes: null,
+      editableScenes: null,
+      videos: [],
+      progress: [],
+      error: null,
+      failedShots: new Set(),
+      moodBoard: [],
+      storyboardImages: [],
+      characterPortraits: {},
+    }));
+
+    const currentOptions = {
+      ...options,
+      mode: 'direct' as const,
+      numScenes: 1,
+    };
+
+    if (abortRef.current) abortRef.current.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+
+    fetch('/api/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ idea, options: currentOptions }),
+      signal: controller.signal,
+    })
+      .then(async (response) => {
+        if (response.status === 402) {
+          const data = await response.json();
+          setState(prev => ({
+            ...prev,
+            status: 'error',
+            error: `Insufficient credits. Need ${data.required?.toLocaleString()}, have ${data.available?.toLocaleString()}. Request more from an admin.`,
+          }));
+          return;
+        }
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+        await readSSEStream(response, (data) => {
+          const progressEvent: ProgressEvent = {
+            type: data.type,
+            timestamp: new Date(),
+            agent: data.agent as any,
+            status: data.status,
+            result: data.result,
+            sceneIndex: data.sceneIndex,
+            videoId: data.videoId,
+            prompt: data.prompt,
+            message: data.message,
+          };
+
+          setState(prev => ({ ...prev, progress: [...prev.progress, progressEvent] }));
+
+          switch (data.type) {
+            case 'video-complete':
+              if (data.video) {
+                setState(prev => ({ ...prev, videos: [...prev.videos, data.video!] }));
+              }
+              break;
+            case 'complete':
+              setState(prev => ({ ...prev, status: 'complete', videos: data.videos || prev.videos }));
+              window.dispatchEvent(new Event('credits-changed'));
+              break;
+            case 'error':
+              setState(prev => ({ ...prev, status: 'error', error: data.message || 'Unknown error' }));
+              break;
+          }
+        });
+      })
+      .catch((error) => {
+        if (error instanceof DOMException && error.name === 'AbortError') return;
+        setState(prev => ({
+          ...prev,
+          status: 'error',
+          error: error instanceof Error ? error.message : 'Unknown error',
+        }));
+      });
+  }, [state.idea, options, addToHistory]);
+
   const handleGenerateVideos = useCallback(() => {
     setState(prev => {
       if (!prev.editableScenes) return prev;
@@ -572,7 +663,7 @@ export function StoryboardProvider({ children }: { children: ReactNode }) {
     <StoryboardContext.Provider value={{
       state, options, sessionId: sessionIdRef.current,
       setIdea, setOptions, updateScenePrompt, updateSceneDialogue, removeScene,
-      startModeGeneration, handleGenerateVideos, handleReset, clearGeneration,
+      startModeGeneration, startDirectGeneration, handleGenerateVideos, handleReset, clearGeneration,
       isGenerating,
       rerunShot, rerunningShots,
       addReferenceImage, removeReferenceImage,

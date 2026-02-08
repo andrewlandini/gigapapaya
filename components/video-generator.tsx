@@ -58,7 +58,7 @@ import { GENERATION_MODES, getModeById } from '@/lib/generation-modes';
 export function VideoGenerator() {
   const {
     state, options, sessionId, setIdea, setOptions,
-    updateScenePrompt, updateSceneDialogue, removeScene, startModeGeneration, handleGenerateVideos, handleReset, clearGeneration,
+    updateScenePrompt, updateSceneDialogue, removeScene, startModeGeneration, startDirectGeneration, handleGenerateVideos, handleReset, clearGeneration,
     isGenerating,
     rerunShot, rerunningShots,
     addReferenceImage, removeReferenceImage,
@@ -395,6 +395,18 @@ export function VideoGenerator() {
                     </div>
                   );
                 })}
+                <div className="relative group">
+                  <button
+                    onClick={() => { if (state.idea.trim()) { setGeneratingHeadline(pickRandom(PHASE_HEADLINES.video)); setHeadlineFade(true); lastPhaseRef.current = ''; startDirectGeneration(); } }}
+                    className={`flex items-center gap-2 h-11 px-5 rounded-full border border-[#555] bg-[#0a0a0a] transition-all ${!state.idea.trim() ? 'opacity-30' : 'hover:border-[#888] hover:bg-[#111] cursor-pointer'}`}
+                  >
+                    <span className="text-base">⚡</span>
+                    <span className="text-sm text-[#ededed]">Raw</span>
+                  </button>
+                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-1.5 rounded-lg bg-[#222] border border-[#333] text-xs text-[#ccc] whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                    Skip agents. Send your prompt directly to Veo.
+                  </div>
+                </div>
               </div>
 
 
