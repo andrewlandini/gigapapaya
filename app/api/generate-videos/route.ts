@@ -105,29 +105,13 @@ export async function POST(request: NextRequest) {
               }
             }
 
-            // Recombine visual prompt + dialogue for Veo 3.1
-            // Dialogue must be woven in BEFORE style/camera specs since Veo weights early tokens more
-            let finalPrompt = visualDescription
-              ? `[VISUAL REFERENCE: ${visualDescription}] ${scene.prompt}`
-              : scene.prompt;
+            // Build final Veo prompt — dialogue FIRST (token position 0 = highest weight)
+            let finalPrompt = scene.prompt;
+            if (visualDescription) {
+              finalPrompt = `[VISUAL REFERENCE: ${visualDescription}] ${finalPrompt}`;
+            }
             if (scene.dialogue) {
-              const styleMarkers = [', shot on ', ', Shot on ', '. Shot on ', ', filmed on ', ', ARRI ', ', RED ', ', Sony '];
-              let insertIdx = -1;
-              for (const marker of styleMarkers) {
-                const idx = finalPrompt.indexOf(marker);
-                if (idx !== -1) { insertIdx = idx; break; }
-              }
-              if (insertIdx !== -1) {
-                finalPrompt = `${finalPrompt.slice(0, insertIdx)}, saying "${scene.dialogue}"${finalPrompt.slice(insertIdx)}`;
-              } else {
-                const splitPoint = Math.floor(finalPrompt.length * 0.6);
-                const lastComma = finalPrompt.lastIndexOf(', ', splitPoint);
-                if (lastComma > finalPrompt.length * 0.3) {
-                  finalPrompt = `${finalPrompt.slice(0, lastComma)}, saying "${scene.dialogue}"${finalPrompt.slice(lastComma)}`;
-                } else {
-                  finalPrompt = `${finalPrompt}, saying "${scene.dialogue}"`;
-                }
-              }
+              finalPrompt = `The character says: "${scene.dialogue}". ${finalPrompt}`;
             }
             const shotDuration = perShotDurations[i];
             const shotOptions = { ...options, duration: shotDuration };

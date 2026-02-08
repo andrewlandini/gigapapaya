@@ -279,6 +279,7 @@ export function StoryboardProvider({ children }: { children: ReactNode }) {
     const currentOptions = {
       ...options,
       mode: 'agents' as const,
+      modeId,
       ideaAgent: agentConfig.ideaAgent,
       sceneAgent: agentConfig.sceneAgent,
     };

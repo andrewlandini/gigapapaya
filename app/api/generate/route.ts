@@ -184,7 +184,7 @@ export async function POST(request: NextRequest) {
               if (chars.length > 0) {
                 sendEvent({ type: 'agent-log', agent: 'mood-board', status: `Generating ${chars.length} character portrait(s)...` });
                 try {
-                  characterPortraits = await generateCharacterPortraits(chars, ideaResult.style, ideaResult.mood);
+                  characterPortraits = await generateCharacterPortraits(chars, ideaResult.style, ideaResult.mood, options.modeId);
                   sendEvent({ type: 'agent-log', agent: 'mood-board', status: `${Object.keys(characterPortraits).length} portrait(s) ready` });
                 } catch (e) {
                   sendEvent({ type: 'agent-log', agent: 'mood-board', status: `Portrait generation failed: ${e instanceof Error ? e.message : 'Unknown error'}` });
@@ -208,7 +208,7 @@ export async function POST(request: NextRequest) {
               sendEvent({ type: 'agent-log', agent: 'mood-board', status: `Generating ${scenesResult.scenes.length} scene frames...` });
               try {
                 storyboardImages = await generateSceneStoryboards(
-                  scenesResult.scenes, chars, characterPortraits, groupRefs, ideaResult.style, ideaResult.mood,
+                  scenesResult.scenes, chars, characterPortraits, groupRefs, ideaResult.style, ideaResult.mood, options.modeId,
                 );
                 sendEvent({ type: 'agent-log', agent: 'mood-board', status: `${storyboardImages.filter(Boolean).length}/${scenesResult.scenes.length} storyboard frames ready` });
               } catch (e) {

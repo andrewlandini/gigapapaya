@@ -97,6 +97,7 @@ export interface GenerationOptions {
   mode: 'agents' | 'direct';
   ideaAgent?: AgentConfig;
   sceneAgent?: AgentConfig;
+  modeId?: string; // generation mode (action, comedy, deadpan, stylize, unhinged)
   referenceImages?: string[]; // user-uploaded reference image data URLs
   useMoodBoard?: boolean; // beta: enable mood board generation + reference images
 }

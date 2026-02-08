@@ -11,6 +11,15 @@ import { put } from '@vercel/blob';
 import crypto from 'crypto';
 import type { VideoIdea, ScenesResult, Video, GenerationOptions, Character } from '../types';
 
+// Mode-specific visual tone overrides for storyboard image generation
+const STORYBOARD_TONE_OVERRIDES: Record<string, string> = {
+  deadpan: 'Flat institutional lighting, symmetrical static composition, fluorescent overhead, no dramatic shadows, mundane environment, DMV/waiting-room aesthetic, slightly overexposed',
+  comedy: 'Bright natural lighting, warm tones, slightly messy lived-in environment, casual framing',
+  unhinged: 'Match the wrong-genre aesthetic from the concept — if it says nature documentary, shoot it like a nature documentary. If prestige drama, make it look like prestige drama',
+  action: 'High contrast, dynamic shadows, handheld energy, desaturated with pops of color',
+  stylize: 'Follow the specific style direction from the concept exactly — this mode is artist-directed',
+};
+
 // Zod schemas for structured output validation
 const videoIdeaSchema = z.object({
   title: z.string().describe('A concise, descriptive title for the video concept'),
@@ -85,22 +94,27 @@ SHOT VARIETY (CRITICAL — NO JUMP CUTS):
 - Think like an EDITOR cutting a scene together. When these clips play back-to-back, each cut should show a meaningfully different framing. Same angle + same framing = jump cut = amateur.
 - Example for 3 scenes: Scene 1: wide shot, static → Scene 2: close-up on face, slow push → Scene 3: over-shoulder medium, handheld
 
-CRITICAL PROMPT STRUCTURE FOR EACH SCENE:
-[SHOT TYPE] + [SUBJECT with full physical description] + [PRIMARY ACTION + natural body language] + [STYLE - identical across scenes] + [CAMERA MOVEMENT] + [AUDIO CUES]
+PROMPT LENGTH (HARD LIMIT — THIS IS THE MOST IMPORTANT RULE):
+Each scene's "prompt" field must be 60-80 words MAX. Veo 3.1 deprioritizes everything past ~100 tokens — long prompts mean most of your details get IGNORED. Shorter prompts generate better videos.
 
-Example: Medium shot, cyberpunk hacker (male, mid-30s, shaved head, black hoodie, pale skin, cybernetic arm) typing frantically, neon reflections on face, blade runner aesthetic, shot on ARRI Alexa with anamorphic lens, teal and orange color grade, slow push in, Audio: mechanical keyboard clicks, distant sirens
+Structure each prompt in this order (most important first):
+1. Shot type + subject with key identifiers (15-20 words)
+2. Primary action + body language (10-15 words)
+3. Environment essentials (10-15 words)
+4. Camera/lens + style tag (10-15 words)
+5. Audio cue (5-10 words)
+
+Cut everything that doesn't change the generated video. Skip floor materials, exact Kelvin temperatures, fabric weave. Keep character descriptions to the essentials that make them RECOGNIZABLE: age, build, hair, key clothing.
+
+Example (74 words): Medium shot, cyberpunk hacker (male, mid-30s, shaved head, black hoodie, pale skin, cybernetic arm) typing frantically at a cluttered desk, neon reflections on his face, sweat on his brow. Dark server room, blue monitor glow, cables everywhere. Shot on ARRI Alexa, anamorphic lens, teal and orange color grade, slow push in. Audio: mechanical keyboard clicks, distant sirens, humming servers.
 
 Rules:
-- Front-load the important stuff — Veo 3 weights early words more heavily
-- Lock down the "what" then iterate on the "how"
-- ONE primary action per scene — the reason this shot exists. But allow natural secondary behavior within it (breathing, glancing, wincing, adjusting grip). "A man runs" is too simple. "A man runs while pressing a bleeding wound on his ribs" is one action with subtext.
+- Front-load the important stuff — Veo 3.1 weights early words more heavily
+- ONE primary action per scene with natural secondary behavior (breathing, glancing, fidgeting)
 - Specific > Creative — "Walking sadly" < "shuffling with hunched shoulders"
-- Audio cues are essential — give the video a realistic feel
-- ALWAYS include full character descriptions — never use "the character" or "the person", always redescribe them
-
-WITHIN-SHOT PACING:
-- Describe what happens WHEN in the shot. An 8-second shot has a beginning, middle, and end. "He enters the room, pauses at the doorway, then crosses to the window" has internal rhythm. "He stands in a room" is a still photo.
-- Specify what changes during the shot — a shift in expression, a hand moving, a light changing, someone entering frame. Static shots where nothing evolves feel like AI stills, not film.
+- Audio cues are essential
+- ALWAYS re-describe characters — never use "the character" or "the person"
+- Describe what CHANGES during the shot — a shift in expression, a hand moving, someone entering frame
 
 DIALOGUE IS NOT OPTIONAL:
 - If there is a person in the shot, they should almost certainly be TALKING. Veo 3.1's speech model is one of its strongest features — USE IT. A character who is present but silent wastes the most powerful tool you have.
@@ -131,7 +145,7 @@ These are real people, not stock footage models. Write them like humans — tire
 BAD: "A man stands confidently and delivers his line with a warm smile"
 GOOD: "A man in his late 30s, slight bags under his eyes, half-smile that doesn't quite land, fidgeting with a pen"
 
-Keep the visual prompt CONCISE. The prompt is technical direction for a camera and a model, not prose. Short sentences. Specific details. No essays.
+REMEMBER: 60-80 words MAX per prompt. Count them. If you're over 80, cut. Short sentences. Specific details. No essays.
 
 DIALOGUE RULES (MANDATORY):
 - EVERY SCENE WITH A PERSON MUST HAVE DIALOGUE. This is non-negotiable. If someone is in the frame, they are talking. The dialogue field must contain their actual words.
@@ -404,6 +418,7 @@ export async function generateCharacterPortraits(
   characters: Character[],
   style: string,
   mood: string,
+  modeId?: string,
 ): Promise<Record<string, string>> {
   console.log(`\n🧑 PORTRAITS: Generating ${characters.length} character portraits...`);
   const portraits: Record<string, string> = {};
@@ -516,6 +531,7 @@ export async function generateSceneStoryboards(
   groupRefs: Record<string, string>,
   style: string,
   mood: string,
+  modeId?: string,
 ): Promise<string[]> {
   console.log(`\n🎬 STORYBOARD: Generating ${scenes.length} scene frames...`);
   const results = new Array<string>(scenes.length).fill('');
@@ -542,7 +558,7 @@ export async function generateSceneStoryboards(
 
       console.log(`🎬 Generating frame ${i + 1}/${scenes.length} (with ${refImages.length} ref image(s))...`);
       const url = await geminiImage(
-        `${refImages.length > 0 ? 'The attached images are character reference portraits. The characters in the generated image must look IDENTICAL to these references — same face, hair, skin tone, build, clothing. Only lighting, angle, pose, and expression change. Clothing stays the same unless the scene is at a clearly different time or location.\n\n' : ''}Cinematic production still. ${style} visual style, ${mood} mood.
+        `${refImages.length > 0 ? 'The attached images are character reference portraits. The characters in the generated image must look IDENTICAL to these references — same face, hair, skin tone, build, clothing. Only lighting, angle, pose, and expression change. Clothing stays the same unless the scene is at a clearly different time or location.\n\n' : ''}Cinematic production still. ${modeId && STORYBOARD_TONE_OVERRIDES[modeId] ? STORYBOARD_TONE_OVERRIDES[modeId] + '.' : `${style} visual style, ${mood} mood.`}
 
 Shot description: ${scene.prompt}
 
@@ -583,19 +599,15 @@ export async function describeStoryboardFrame(
     messages: [
       {
         role: 'system' as const,
-        content: `You are a cinematography reference analyst. Given a storyboard frame, output an EXTREMELY detailed visual description that a text-to-video model can use to recreate this exact image as a moving shot.
+        content: `You are a cinematography reference analyst. Given a storyboard frame, output a CONCISE visual description (40-60 words max) that a text-to-video model can use to match this image's look.
 
-DESCRIBE WITH OBSESSIVE PRECISION:
-- Every person: exact position in frame (left/center/right, foreground/mid/background), body posture, head angle and tilt, eye direction, mouth state, facial expression micro-details, skin tone (Fitzpatrick scale + undertone), hair color/length/style/texture, clothing items with colors and materials and fit, any accessories, visible body language
-- Environment: every object and its spatial position relative to subjects, furniture placement, wall colors and textures, floor material, ceiling details, windows and what's visible through them, plants/decorations/props
-- Lighting: direction of key light (clock position), fill ratio, color temperature in Kelvin, hard vs soft shadows, any practicals (lamps, screens, windows as light sources), rim/back lighting, ambient light quality
-- Color palette: dominant colors as hex codes, color temperature, contrast level, saturation level, any color grading (teal-orange, warm amber, cool blue, etc.)
-- Camera: estimated focal length, depth of field (what's sharp vs blurred), lens characteristics (anamorphic, spherical), camera height, angle (eye level, low, high), framing (wide, medium, close-up, etc.)
-- Composition: rule of thirds placement, leading lines, negative space, foreground/background relationship
-- Texture and materials: fabric weave, wood grain, metal finish, skin texture, hair texture
-- Atmosphere: haze, dust, moisture, time of day implied by light
+Focus on what matters most for visual matching:
+- People: position, build, hair, key clothing, expression
+- Environment: location type, key objects, lighting quality
+- Color/mood: overall palette, warm/cool, contrast level
+- Framing: shot type, camera angle
 
-Output a SINGLE DENSE PARAGRAPH. No bullet points, no headers, no line breaks. Pack maximum visual information into flowing prose. This description will be injected directly into a video generation prompt.`,
+Output a SINGLE SHORT PARAGRAPH. No bullet points. Keep it under 60 words — the video model ignores long descriptions.`,
       },
       {
         role: 'user' as const,
