@@ -5,7 +5,11 @@ import {
   initDb,
   updateGenerationStatus,
   saveVideoRecord,
+  getUserCredits,
+  deductCredits,
+  isUserAdmin,
 } from '@/lib/db';
+import { usdToCredits, estimateGenerateVideosCost, estimateVideoCost } from '@/lib/costs';
 import type { GenerationOptions, SSEMessage } from '@/lib/types';
 
 export const runtime = 'nodejs';
@@ -38,6 +42,19 @@ export async function POST(request: NextRequest) {
 
     console.log(`📝 Session: ${sessionId}`);
     console.log(`📹 Scenes: ${scenes.length}`);
+
+    // Credit check (admins bypass)
+    const isAdmin = userId ? await isUserAdmin(userId) : false;
+    if (userId && !isAdmin) {
+      const { credits } = await getUserCredits(userId);
+      const estimatedCredits = usdToCredits(estimateGenerateVideosCost(scenes));
+      if (credits < estimatedCredits) {
+        return new Response(
+          JSON.stringify({ error: 'Insufficient credits', required: estimatedCredits, available: credits }),
+          { status: 402, headers: { 'Content-Type': 'application/json' } }
+        );
+      }
+    }
 
     const encoder = new TextEncoder();
     const stream = new ReadableStream({
@@ -149,6 +166,12 @@ export async function POST(request: NextRequest) {
                 blobUrl: video.url, prompt: video.prompt, duration: video.duration,
                 aspectRatio: video.aspectRatio, size: video.size, sceneIndex: i,
               });
+
+              // Deduct credits for this video
+              if (userId && !isAdmin) {
+                const actualCredits = usdToCredits(estimateVideoCost(video.duration, Boolean(scene.dialogue?.trim())));
+                await deductCredits(userId, actualCredits);
+              }
 
               videos.push(video);
               sendEvent({ type: 'agent-log', agent: 'videos', status: `Shot ${i + 1} complete — ${(video.size / (1024 * 1024)).toFixed(1)} MB uploaded` });

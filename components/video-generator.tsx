@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { RotateCcw, Play, X, Clock, ChevronDown, Settings2, RotateCw, AlertCircle, Loader2, ImagePlus, MessageSquare } from 'lucide-react';
-import { formatCost, estimateGenerateVideosCost, estimateVideoCost, STORYBOARD_PIPELINE_COST, estimateStoryboardTotalCost } from '@/lib/costs';
+import { formatCostWithCredits, estimateGenerateVideosCost, estimateVideoCost, estimateStoryboardTotalCost } from '@/lib/costs';
 
 const HEADLINES = [
   "What should we cook, chef?",
@@ -358,7 +358,7 @@ export function VideoGenerator() {
               {/* Cost estimate */}
               <div className="flex items-center justify-center gap-2 text-xs text-[#555]">
                 <span className="font-mono">
-                  Estimated cost: <span className="text-[#00DC82]">{formatCost(estimateStoryboardTotalCost(
+                  Estimated cost: <span className="text-[#00DC82]">{formatCostWithCredits(estimateStoryboardTotalCost(
                     options.numScenes || 3,
                     typeof options.duration === 'number' ? options.duration : 8
                   ))}</span>
@@ -566,7 +566,7 @@ export function VideoGenerator() {
                 <h2 className="text-sm font-medium text-[#ededed]">Review Shots</h2>
                 {state.editableScenes && (
                   <p className="text-xs text-[#555] mt-1 font-mono">
-                    {state.editableScenes.length} {state.editableScenes.length === 1 ? 'shot' : 'shots'} · {state.editableScenes.reduce((sum, s) => sum + s.duration, 0)}s total · <span className="text-[#00DC82]">{formatCost(estimateGenerateVideosCost(state.editableScenes))}</span> estimated
+                    {state.editableScenes.length} {state.editableScenes.length === 1 ? 'shot' : 'shots'} · {state.editableScenes.reduce((sum, s) => sum + s.duration, 0)}s total · <span className="text-[#00DC82]">{formatCostWithCredits(estimateGenerateVideosCost(state.editableScenes))}</span> estimated
                   </p>
                 )}
               </div>
@@ -575,7 +575,7 @@ export function VideoGenerator() {
                 Generate {state.editableScenes?.length === 1 ? 'Video' : 'Videos'}
                 {state.editableScenes && (
                   <span className="text-[#00DC82] font-mono text-xs ml-1">
-                    {formatCost(estimateGenerateVideosCost(state.editableScenes))}
+                    {formatCostWithCredits(estimateGenerateVideosCost(state.editableScenes))}
                   </span>
                 )}
               </Button>
@@ -708,7 +708,7 @@ export function VideoGenerator() {
                         </button>
                         {!isRerunning && (
                           <span className="text-[10px] font-mono text-[#00DC82]">
-                            {formatCost(estimateVideoCost(scene.duration, Boolean(scene.dialogue?.trim())))}
+                            {formatCostWithCredits(estimateVideoCost(scene.duration, Boolean(scene.dialogue?.trim())))}
                           </span>
                         )}
                       </div>

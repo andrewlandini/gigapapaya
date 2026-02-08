@@ -34,6 +34,25 @@ export function estimateQuickGenerateCost(durationSec: number): number {
   return durationSec * VIDEO_PRICE_PER_SEC_WITH_AUDIO;
 }
 
+// ── Credit conversion (1 credit = $0.01) ────────────
+
+export function usdToCredits(usd: number): number {
+  return Math.ceil(usd * 100);
+}
+
+export function creditsToUsd(credits: number): number {
+  return credits / 100;
+}
+
+export function formatCredits(credits: number): string {
+  return `${credits.toLocaleString()} credits`;
+}
+
+export function formatCostWithCredits(usdAmount: number): string {
+  const credits = usdToCredits(usdAmount);
+  return `${credits.toLocaleString()} credits (~$${usdAmount.toFixed(2)})`;
+}
+
 export function estimateStoryboardTotalCost(
   numScenes: number,
   durationPerScene: number,

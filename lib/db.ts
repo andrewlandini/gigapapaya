@@ -69,6 +69,22 @@ export async function initDb() {
   try { await sql`ALTER TABLE videos ADD COLUMN IF NOT EXISTS title TEXT`; } catch {}
   try { await sql`ALTER TABLE videos ADD COLUMN IF NOT EXISTS description TEXT`; } catch {}
   try { await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS is_admin BOOLEAN DEFAULT FALSE`; } catch {}
+  try { await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS credits INTEGER DEFAULT 10000`; } catch {}
+  try { await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS credits_reset_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()`; } catch {}
+
+  await sql`
+    CREATE TABLE IF NOT EXISTS credit_requests (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      amount INTEGER NOT NULL,
+      reason TEXT,
+      status TEXT NOT NULL DEFAULT 'pending',
+      admin_note TEXT,
+      reviewed_by TEXT,
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+      reviewed_at TIMESTAMP WITH TIME ZONE
+    )
+  `;
 
   // Promote initial admin
   try { await sql`UPDATE users SET is_admin = TRUE WHERE email = 'andrew.landini@vercel.com'`; } catch {}
@@ -349,7 +365,7 @@ export async function isUserAdmin(userId: string): Promise<boolean> {
 export async function getAllUsers() {
   const sql = getDb();
   return sql`
-    SELECT id, username, name, email, avatar_url, is_admin, created_at,
+    SELECT id, username, name, email, avatar_url, is_admin, credits, created_at,
       (SELECT COUNT(*) FROM videos WHERE user_id = users.id) as video_count
     FROM users
     ORDER BY created_at DESC
@@ -365,4 +381,98 @@ export async function deleteVideo(videoId: string) {
   const sql = getDb();
   await sql`DELETE FROM hearts WHERE video_id = ${videoId}`;
   await sql`DELETE FROM videos WHERE id = ${videoId}`;
+}
+
+// ── Credits ──────────────────────────────────────────
+
+const WEEKLY_CREDITS = 10_000;
+const CREDITS_RESET_INTERVAL_DAYS = 7;
+
+export async function getUserCredits(userId: string): Promise<{ credits: number; creditsResetAt: string }> {
+  const sql = getDb();
+  const rows = await sql`SELECT credits, credits_reset_at FROM users WHERE id = ${userId}`;
+  if (!rows[0]) throw new Error('User not found');
+
+  const resetAt = new Date(rows[0].credits_reset_at);
+  const now = new Date();
+  const daysSinceReset = (now.getTime() - resetAt.getTime()) / (1000 * 60 * 60 * 24);
+
+  if (daysSinceReset >= CREDITS_RESET_INTERVAL_DAYS) {
+    await sql`UPDATE users SET credits = ${WEEKLY_CREDITS}, credits_reset_at = NOW() WHERE id = ${userId}`;
+    return { credits: WEEKLY_CREDITS, creditsResetAt: now.toISOString() };
+  }
+
+  return { credits: rows[0].credits ?? WEEKLY_CREDITS, creditsResetAt: rows[0].credits_reset_at };
+}
+
+export async function deductCredits(userId: string, amount: number): Promise<boolean> {
+  const sql = getDb();
+  const result = await sql`
+    UPDATE users SET credits = credits - ${amount}
+    WHERE id = ${userId} AND credits >= ${amount}
+    RETURNING credits
+  `;
+  return result.length > 0;
+}
+
+export async function addCredits(userId: string, amount: number) {
+  const sql = getDb();
+  await sql`UPDATE users SET credits = credits + ${amount} WHERE id = ${userId}`;
+}
+
+export async function setUserCredits(userId: string, amount: number) {
+  const sql = getDb();
+  await sql`UPDATE users SET credits = ${amount} WHERE id = ${userId}`;
+}
+
+// ── Credit Requests ─────────────────────────────────
+
+export async function createCreditRequest(id: string, userId: string, amount: number, reason: string) {
+  const sql = getDb();
+  await sql`
+    INSERT INTO credit_requests (id, user_id, amount, reason)
+    VALUES (${id}, ${userId}, ${amount}, ${reason})
+  `;
+}
+
+export async function getPendingCreditRequests() {
+  const sql = getDb();
+  return sql`
+    SELECT cr.*, u.username, u.name, u.email, u.credits
+    FROM credit_requests cr
+    JOIN users u ON cr.user_id = u.id
+    WHERE cr.status = 'pending'
+    ORDER BY cr.created_at ASC
+  `;
+}
+
+export async function getUserCreditRequests(userId: string) {
+  const sql = getDb();
+  return sql`
+    SELECT * FROM credit_requests
+    WHERE user_id = ${userId}
+    ORDER BY created_at DESC
+    LIMIT 20
+  `;
+}
+
+export async function reviewCreditRequest(
+  requestId: string,
+  adminId: string,
+  approved: boolean,
+  adminNote?: string
+) {
+  const sql = getDb();
+  const status = approved ? 'approved' : 'denied';
+  await sql`
+    UPDATE credit_requests
+    SET status = ${status}, reviewed_by = ${adminId}, admin_note = ${adminNote || null}, reviewed_at = NOW()
+    WHERE id = ${requestId}
+  `;
+  if (approved) {
+    const rows = await sql`SELECT user_id, amount FROM credit_requests WHERE id = ${requestId}`;
+    if (rows[0]) {
+      await sql`UPDATE users SET credits = credits + ${rows[0].amount} WHERE id = ${rows[0].user_id}`;
+    }
+  }
 }

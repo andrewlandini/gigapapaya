@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { Plus, ArrowUp, ArrowLeft, ChevronRight, ChevronUp, Monitor, Smartphone, Square, Clock, Film, Layers } from 'lucide-react';
 import { useGeneration } from './generation-context';
 import { useToast } from './toast';
-import { formatCost, estimateQuickGenerateCost } from '@/lib/costs';
+import { formatCostWithCredits, estimateQuickGenerateCost } from '@/lib/costs';
 
 interface PromptBarProps {
   isAuthenticated: boolean;
@@ -281,7 +281,7 @@ export function PromptBar({ isAuthenticated }: PromptBarProps) {
                 <ChevronUp className={`h-3 w-3 transition-transform ${showPopup ? '' : 'rotate-180'}`} />
               </button>
               <span className="text-xs font-mono text-[#00DC82]">
-                {formatCost(estimateQuickGenerateCost(duration))}
+                {formatCostWithCredits(estimateQuickGenerateCost(duration))}
               </span>
               <button
                 onClick={handleSubmit}

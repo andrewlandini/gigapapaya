@@ -293,6 +293,15 @@ export function StoryboardProvider({ children }: { children: ReactNode }) {
       signal: controller.signal,
     })
       .then(async (response) => {
+        if (response.status === 402) {
+          const data = await response.json();
+          setState(prev => ({
+            ...prev,
+            status: 'error',
+            error: `Insufficient credits. Need ${data.required?.toLocaleString()}, have ${data.available?.toLocaleString()}. Request more from an admin.`,
+          }));
+          return;
+        }
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
         await readSSEStream(response, (data) => {
@@ -355,6 +364,7 @@ export function StoryboardProvider({ children }: { children: ReactNode }) {
               break;
             case 'complete':
               setState(prev => ({ ...prev, status: 'complete', videos: data.videos || [] }));
+              window.dispatchEvent(new Event('credits-changed'));
               break;
             case 'error':
               if (!data.sceneIndex && data.sceneIndex !== 0) {
@@ -404,6 +414,15 @@ export function StoryboardProvider({ children }: { children: ReactNode }) {
           signal: controller.signal,
         })
           .then(async (response) => {
+            if (response.status === 402) {
+              const data = await response.json();
+              setState(p => ({
+                ...p,
+                status: 'error',
+                error: `Insufficient credits. Need ${data.required?.toLocaleString()}, have ${data.available?.toLocaleString()}. Request more from an admin.`,
+              }));
+              return;
+            }
             if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
             await readSSEStream(response, (data) => {
@@ -425,6 +444,7 @@ export function StoryboardProvider({ children }: { children: ReactNode }) {
                 case 'video-complete':
                   if (data.video) {
                     setState(p => ({ ...p, videos: [...p.videos, data.video!] }));
+                    window.dispatchEvent(new Event('credits-changed'));
                   }
                   break;
                 case 'complete':

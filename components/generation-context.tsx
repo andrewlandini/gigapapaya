@@ -68,6 +68,17 @@ export function GenerationProvider({ children }: { children: ReactNode }) {
       signal: controller.signal,
     })
       .then(async (response) => {
+        if (response.status === 402) {
+          const data = await response.json();
+          setDrafts(prev =>
+            prev.map(d =>
+              d.id === id
+                ? { ...d, status: 'error' as const, error: `Insufficient credits. Need ${data.required?.toLocaleString()}, have ${data.available?.toLocaleString()}.` }
+                : d
+            )
+          );
+          return;
+        }
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
         const reader = response.body?.getReader();
@@ -96,6 +107,7 @@ export function GenerationProvider({ children }: { children: ReactNode }) {
                       : d
                   )
                 );
+                window.dispatchEvent(new Event('credits-changed'));
               } else if (data.type === 'error' && !data.sceneIndex && data.sceneIndex !== 0) {
                 setDrafts(prev =>
                   prev.map(d =>

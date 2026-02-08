@@ -9,7 +9,11 @@ import {
   updateGenerationScenes,
   updateGenerationStatus,
   saveVideoRecord,
+  getUserCredits,
+  deductCredits,
+  isUserAdmin,
 } from '@/lib/db';
+import { usdToCredits, estimateQuickGenerateCost, STORYBOARD_PIPELINE_COST } from '@/lib/costs';
 import type { GenerationOptions, SSEMessage } from '@/lib/types';
 
 export const runtime = 'nodejs';
@@ -43,6 +47,37 @@ export async function POST(request: NextRequest) {
     const user = await getSession();
     const userId = user?.id;
 
+    // Credit check (admins bypass)
+    if (userId && !(await isUserAdmin(userId))) {
+      const { credits } = await getUserCredits(userId);
+
+      if (mode === 'direct') {
+        const duration = typeof options.duration === 'number' ? options.duration : 8;
+        const estimatedCredits = usdToCredits(estimateQuickGenerateCost(duration));
+        if (credits < estimatedCredits) {
+          return new Response(
+            JSON.stringify({ error: 'Insufficient credits', required: estimatedCredits, available: credits }),
+            { status: 402, headers: { 'Content-Type': 'application/json' } }
+          );
+        }
+      } else {
+        const pipelineCredits = usdToCredits(STORYBOARD_PIPELINE_COST);
+        if (credits < pipelineCredits) {
+          return new Response(
+            JSON.stringify({ error: 'Insufficient credits', required: pipelineCredits, available: credits }),
+            { status: 402, headers: { 'Content-Type': 'application/json' } }
+          );
+        }
+        const ok = await deductCredits(userId, pipelineCredits);
+        if (!ok) {
+          return new Response(
+            JSON.stringify({ error: 'Insufficient credits' }),
+            { status: 402, headers: { 'Content-Type': 'application/json' } }
+          );
+        }
+      }
+    }
+
     const encoder = new TextEncoder();
     const stream = new ReadableStream({
       async start(controller) {
@@ -75,6 +110,13 @@ export async function POST(request: NextRequest) {
               blobUrl: video.url, prompt: video.prompt, duration: video.duration,
               aspectRatio: video.aspectRatio, size: video.size, sceneIndex: 0,
             });
+
+            // Deduct credits for direct mode video
+            if (userId && !(user?.isAdmin)) {
+              const { estimateVideoCost } = await import('@/lib/costs');
+              const actualCredits = usdToCredits(estimateVideoCost(video.duration, true));
+              await deductCredits(userId, actualCredits);
+            }
 
             sendEvent({ type: 'agent-log', agent: 'system', status: `Video uploaded to Blob Storage (${(video.size / (1024 * 1024)).toFixed(1)} MB)` });
             sendEvent({ type: 'video-complete', sceneIndex: 0, videoId: video.id });
