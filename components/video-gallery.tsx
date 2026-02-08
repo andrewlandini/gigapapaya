@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useRef } from 'react';
 import { Download, Play, ExternalLink, RotateCw, Loader2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import type { Video } from '@/lib/types';
@@ -10,6 +11,67 @@ interface VideoGalleryProps {
   sessionId?: string;
   onRerunShot?: (index: number) => void;
   rerunningShots?: Set<number>;
+}
+
+function HoverVideo({ video, isRerunning }: { video: Video; isRerunning: boolean }) {
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const [playing, setPlaying] = useState(false);
+
+  const handleMouseEnter = () => {
+    if (!videoRef.current) return;
+    setPlaying(true);
+    videoRef.current.play().catch(() => {});
+  };
+
+  const handleMouseLeave = () => {
+    if (!videoRef.current) return;
+    setPlaying(false);
+    videoRef.current.pause();
+    videoRef.current.currentTime = 0;
+  };
+
+  return (
+    <div
+      className="aspect-video bg-[#0a0a0a] relative"
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+    >
+      {isRerunning && (
+        <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className="flex items-center gap-2">
+            <Loader2 className="h-4 w-4 text-[#0070f3] animate-spin" />
+            <span className="text-xs font-mono text-[#888]">re-generating...</span>
+          </div>
+        </div>
+      )}
+      {/* Poster image — always visible when not playing */}
+      {video.thumbnailUrl && !playing && (
+        <img
+          src={video.thumbnailUrl}
+          alt=""
+          className="absolute inset-0 w-full h-full object-cover"
+        />
+      )}
+      {/* Video — only loads src on hover */}
+      <video
+        ref={videoRef}
+        src={playing ? video.url : undefined}
+        muted
+        loop
+        playsInline
+        preload="none"
+        className="w-full h-full object-contain"
+      />
+      {/* Play icon overlay */}
+      {!playing && (
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="w-12 h-12 rounded-full bg-white/10 backdrop-blur-sm flex items-center justify-center">
+            <Play className="h-5 w-5 text-white ml-0.5" />
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }
 
 export function VideoGallery({ videos, sessionId, onRerunShot, rerunningShots }: VideoGalleryProps) {
@@ -42,29 +104,7 @@ export function VideoGallery({ videos, sessionId, onRerunShot, rerunningShots }:
               className={`border rounded-xl overflow-hidden transition-colors group animate-fade-in ${isRerunning ? 'border-[#0070f3]/40' : 'border-[#222] hover:border-[#333]'}`}
               style={{ animationDelay: `${i * 100}ms` }}
             >
-              <div className="aspect-video bg-[#0a0a0a] relative">
-                {isRerunning && (
-                  <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-                    <div className="flex items-center gap-2">
-                      <Loader2 className="h-4 w-4 text-[#0070f3] animate-spin" />
-                      <span className="text-xs font-mono text-[#888]">re-generating...</span>
-                    </div>
-                  </div>
-                )}
-                <video
-                  src={video.url}
-                  controls
-                  className="w-full h-full object-contain"
-                  preload="metadata"
-                >
-                  Your browser does not support the video tag.
-                </video>
-                <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity">
-                  <div className="w-12 h-12 rounded-full bg-white/10 backdrop-blur-sm flex items-center justify-center">
-                    <Play className="h-5 w-5 text-white ml-0.5" />
-                  </div>
-                </div>
-              </div>
+              <HoverVideo video={video} isRerunning={!!isRerunning} />
               <div className="p-4 space-y-3">
                 <div className="flex items-center gap-2">
                   <span className="text-xs font-mono text-[#444]">Shot {i + 1}</span>

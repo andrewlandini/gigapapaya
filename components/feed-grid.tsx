@@ -14,6 +14,7 @@ interface FeedVideo {
   duration: number;
   visibility: string;
   heart_count?: string;
+  thumbnail_url?: string | null;
 }
 
 interface FeedGridProps {
@@ -89,6 +90,7 @@ export function FeedGrid({ videos, showVisibilityToggle, onToggleVisibility }: F
             showVisibilityToggle={showVisibilityToggle}
             onToggleVisibility={onToggleVisibility}
             tileAspect={tileAspects[i]}
+            thumbnailUrl={video.thumbnail_url}
           />
         </div>
       ))}

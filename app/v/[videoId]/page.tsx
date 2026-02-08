@@ -20,6 +20,7 @@ interface VideoDetail {
   created_at: string;
   visibility: string;
   generation_id: string;
+  thumbnail_url: string | null;
 }
 
 export default function VideoPage() {
@@ -120,6 +121,7 @@ export default function VideoPage() {
             controls
             autoPlay
             loop
+            poster={video.thumbnail_url || undefined}
             className="w-full lg:w-auto max-w-full max-h-[60vh] lg:max-h-[90vh] object-contain rounded-xl lg:rounded-none"
           />
         </div>

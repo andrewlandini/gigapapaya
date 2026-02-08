@@ -161,10 +161,14 @@ export async function POST(request: NextRequest) {
               const shotElapsed = ((Date.now() - shotStartTime) / 1000).toFixed(1);
               debug(`Shot ${i + 1} succeeded in ${shotElapsed}s — ${(video.size / (1024 * 1024)).toFixed(2)} MB — ${video.url}`);
 
+              const thumbnailUrl = storyboardImages?.[i] && storyboardImages[i] !== '' ? storyboardImages[i] : undefined;
+              video.thumbnailUrl = thumbnailUrl;
+
               await saveVideoRecord({
                 id: video.id, generationId: sessionId, userId,
                 blobUrl: video.url, prompt: video.prompt, duration: video.duration,
                 aspectRatio: video.aspectRatio, size: video.size, sceneIndex: i,
+                thumbnailUrl,
               });
 
               // Deduct credits for this video

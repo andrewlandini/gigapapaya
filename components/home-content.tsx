@@ -27,6 +27,7 @@ interface FeedVideo {
   duration: number;
   visibility: string;
   heart_count?: string;
+  thumbnail_url?: string | null;
 }
 
 interface HomeContentProps {
@@ -83,14 +84,17 @@ export function HomeContent({ videos: initialVideos, isAuthenticated }: HomeCont
                   className="flex-shrink-0 w-48 aspect-video rounded-xl border border-[#222] bg-[#0a0a0a] overflow-hidden relative group-hover:border-[#444] transition-colors"
                 >
                   {draft.status === 'complete' && draft.videos.length > 0 ? (
-                    <video
-                      src={draft.videos[0].url}
-                      muted
-                      loop
-                      playsInline
-                      preload="metadata"
-                      className="w-full h-full object-cover"
-                    />
+                    draft.videos[0].thumbnailUrl ? (
+                      <img src={draft.videos[0].thumbnailUrl} alt="" className="w-full h-full object-cover" />
+                    ) : (
+                      <video
+                        src={draft.videos[0].url}
+                        muted
+                        playsInline
+                        preload="metadata"
+                        className="w-full h-full object-cover"
+                      />
+                    )
                   ) : draft.status === 'error' ? (
                     <div className="w-full h-full flex items-center justify-center">
                       <span className="text-xs text-[#ff4444]">Failed</span>

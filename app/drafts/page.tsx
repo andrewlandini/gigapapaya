@@ -56,20 +56,17 @@ function DraftCard({ draft, onClear }: { draft: Draft; onClear: (id: string) => 
         {/* Thumbnail */}
         <div className="flex-shrink-0 w-40 aspect-video rounded-lg overflow-hidden bg-[#111] border border-[#222]">
           {draft.status === 'complete' && draft.videos.length > 0 ? (
-            <video
-              src={draft.videos[0].url}
-              muted
-              loop
-              playsInline
-              preload="metadata"
-              className="w-full h-full object-cover"
-              onMouseEnter={(e) => (e.target as HTMLVideoElement).play().catch(() => {})}
-              onMouseLeave={(e) => {
-                const v = e.target as HTMLVideoElement;
-                v.pause();
-                v.currentTime = 0;
-              }}
-            />
+            draft.videos[0].thumbnailUrl ? (
+              <img src={draft.videos[0].thumbnailUrl} alt="" className="w-full h-full object-cover" />
+            ) : (
+              <video
+                src={draft.videos[0].url}
+                muted
+                playsInline
+                preload="metadata"
+                className="w-full h-full object-cover"
+              />
+            )
           ) : draft.status === 'error' ? (
             <div className="w-full h-full flex items-center justify-center">
               <span className="text-xs text-[#ff4444]">Failed</span>
@@ -130,7 +127,8 @@ function DraftCard({ draft, onClear }: { draft: Draft; onClear: (id: string) => 
                   loop
                   playsInline
                   controls
-                  preload="metadata"
+                  preload="none"
+                  poster={video.thumbnailUrl || undefined}
                   className="w-full"
                 />
               </div>

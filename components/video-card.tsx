@@ -32,6 +32,7 @@ interface VideoCardProps {
   showVisibilityToggle?: boolean;
   onToggleVisibility?: (id: string, visibility: 'public' | 'private') => void;
   tileAspect?: string; // e.g. '9/16' or '16/9'
+  thumbnailUrl?: string | null;
 }
 
 export function VideoCard({
@@ -47,6 +48,7 @@ export function VideoCard({
   showVisibilityToggle,
   onToggleVisibility,
   tileAspect = '9/16',
+  thumbnailUrl,
 }: VideoCardProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLAnchorElement>(null);
@@ -106,13 +108,21 @@ export function VideoCard({
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
+      {/* Poster image — shown when not hovering */}
+      {thumbnailUrl && !hovering && (
+        <img
+          src={thumbnailUrl}
+          alt=""
+          className="absolute inset-0 w-full h-full object-cover"
+        />
+      )}
       <video
         ref={videoRef}
-        src={visible ? blobUrl : undefined}
+        src={visible && hovering ? blobUrl : undefined}
         muted
         loop
         playsInline
-        preload="metadata"
+        preload="none"
         className="w-full h-full object-contain"
       />
 

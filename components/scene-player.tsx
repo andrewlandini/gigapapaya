@@ -9,6 +9,7 @@ interface SceneVideo {
   prompt: string;
   duration: number;
   scene_index: number;
+  thumbnail_url?: string | null;
 }
 
 interface TrimPoints {
@@ -350,12 +351,16 @@ export function ScenePlayer({ videos, autoProgress: initialAutoProgress = true }
               }`}
               style={{ width: 120, height: 68 }}
             >
-              <video
-                src={v.blob_url}
-                className="w-full h-full object-cover"
-                muted
-                preload="metadata"
-              />
+              {v.thumbnail_url ? (
+                <img src={v.thumbnail_url} alt="" className="w-full h-full object-cover" />
+              ) : (
+                <video
+                  src={v.blob_url}
+                  className="w-full h-full object-cover"
+                  muted
+                  preload="metadata"
+                />
+              )}
               <div className="absolute bottom-0 left-0 right-0 px-1.5 py-0.5 bg-black/70 flex items-center justify-between">
                 <span className="text-[10px] font-mono text-white/80">Shot {i + 1}</span>
                 {isTrimmed && <Scissors className="h-2.5 w-2.5 text-white/50" />}

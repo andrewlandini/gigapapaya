@@ -39,6 +39,7 @@ export interface Video {
   aspectRatio: string;
   createdAt: Date;
   size: number;
+  thumbnailUrl?: string;
 }
 
 export type ProgressEventType =

@@ -69,6 +69,7 @@ export async function initDb() {
   try { await sql`ALTER TABLE videos ADD COLUMN IF NOT EXISTS title TEXT`; } catch {}
   try { await sql`ALTER TABLE videos ADD COLUMN IF NOT EXISTS description TEXT`; } catch {}
   try { await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS is_admin BOOLEAN DEFAULT FALSE`; } catch {}
+  try { await sql`ALTER TABLE videos ADD COLUMN IF NOT EXISTS thumbnail_url TEXT`; } catch {}
   try { await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS credits INTEGER DEFAULT 10000`; } catch {}
   try { await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS credits_reset_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()`; } catch {}
 
@@ -169,11 +170,12 @@ export async function saveVideoRecord(video: {
   aspectRatio: string;
   size: number;
   sceneIndex: number;
+  thumbnailUrl?: string;
 }) {
   const sql = getDb();
   await sql`
-    INSERT INTO videos (id, generation_id, user_id, blob_url, prompt, duration, aspect_ratio, size, scene_index)
-    VALUES (${video.id}, ${video.generationId}, ${video.userId || null}, ${video.blobUrl}, ${video.prompt}, ${video.duration}, ${video.aspectRatio}, ${video.size}, ${video.sceneIndex})
+    INSERT INTO videos (id, generation_id, user_id, blob_url, prompt, duration, aspect_ratio, size, scene_index, thumbnail_url)
+    VALUES (${video.id}, ${video.generationId}, ${video.userId || null}, ${video.blobUrl}, ${video.prompt}, ${video.duration}, ${video.aspectRatio}, ${video.size}, ${video.sceneIndex}, ${video.thumbnailUrl || null})
   `;
 }
 
