@@ -108,7 +108,7 @@ export function VideoCard({
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
-      {/* Poster image — shown when not hovering */}
+      {/* Poster image — shown when not hovering (only for videos with thumbnails) */}
       {thumbnailUrl && !hovering && (
         <img
           src={thumbnailUrl}
@@ -118,11 +118,11 @@ export function VideoCard({
       )}
       <video
         ref={videoRef}
-        src={visible && hovering ? blobUrl : undefined}
+        src={thumbnailUrl ? (visible && hovering ? blobUrl : undefined) : (visible ? blobUrl : undefined)}
         muted
         loop
         playsInline
-        preload="none"
+        preload={thumbnailUrl ? 'none' : 'metadata'}
         className="w-full h-full object-contain"
       />
 
