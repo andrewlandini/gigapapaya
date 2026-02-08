@@ -212,6 +212,7 @@ export function UserMenu({ user }: UserMenuProps) {
             <div className="p-5 space-y-3">
               <input
                 type="password"
+                name="currentPassword"
                 value={currentPw}
                 onChange={(e) => setCurrentPw(e.target.value)}
                 placeholder="Current password"
@@ -219,6 +220,7 @@ export function UserMenu({ user }: UserMenuProps) {
               />
               <input
                 type="password"
+                name="newPassword"
                 value={newPw}
                 onChange={(e) => setNewPw(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleChangePassword()}
@@ -269,6 +271,7 @@ export function UserMenu({ user }: UserMenuProps) {
               <div className="space-y-3">
                 <input
                   type="number"
+                  name="creditAmount"
                   value={reqAmount}
                   onChange={(e) => setReqAmount(e.target.value)}
                   placeholder="Amount (e.g. 5000)"
@@ -277,6 +280,7 @@ export function UserMenu({ user }: UserMenuProps) {
                   className="w-full bg-black border border-[#333] rounded-lg px-3 py-2.5 text-sm text-[#ededed] placeholder:text-[#555] focus:outline-none focus:border-[#555]"
                 />
                 <textarea
+                  name="creditReason"
                   value={reqReason}
                   onChange={(e) => setReqReason(e.target.value)}
                   placeholder="Reason for request..."

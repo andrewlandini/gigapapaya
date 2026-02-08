@@ -237,6 +237,7 @@ export function PromptBar({ isAuthenticated }: PromptBarProps) {
           <div className="px-4 pt-3 pb-2">
             <textarea
               ref={textareaRef}
+              name="videoPrompt"
               value={prompt}
               onChange={(e) => { setPrompt(e.target.value); autoResize(); }}
               onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSubmit(); } }}

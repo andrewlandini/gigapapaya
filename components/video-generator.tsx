@@ -228,6 +228,7 @@ export function VideoGenerator() {
               {/* Unified input box */}
               <div className="border border-[#333] rounded-2xl bg-[#0a0a0a] focus-within:border-[#555] focus-within:ring-1 focus-within:ring-white/10 transition-all">
                 <textarea
+                  name="storyboardIdea"
                   placeholder="A frog drinking a cocktail at Martha's Vineyard..."
                   value={state.idea}
                   onChange={(e) => setIdea(e.target.value)}
@@ -238,6 +239,7 @@ export function VideoGenerator() {
                   <div className="flex items-center gap-1.5" title="Video aspect ratio — 16:9 landscape, 9:16 vertical/TikTok, 4:3 classic, 1:1 square">
                     <label className="text-[11px] font-mono text-[#444]">ratio</label>
                     <select
+                      name="aspectRatio"
                       value={options.aspectRatio}
                       onChange={(e) => setOptions(prev => ({ ...prev, aspectRatio: e.target.value as any }))}
                       className="h-7 px-1.5 rounded-md bg-transparent text-xs text-[#888] font-mono focus:outline-none cursor-pointer hover:text-[#ededed] transition-colors"
@@ -251,6 +253,7 @@ export function VideoGenerator() {
                   <div className="flex items-center gap-1.5" title="Length of each shot in seconds — auto lets the AI pick the best duration per scene">
                     <label className="text-[11px] font-mono text-[#444]">duration</label>
                     <select
+                      name="duration"
                       value={options.duration}
                       onChange={(e) => {
                         const val = e.target.value;
@@ -273,6 +276,7 @@ export function VideoGenerator() {
                     <div className="flex items-center gap-1.5" title="Target total video length — only used when duration is set to auto">
                       <label className="text-[11px] font-mono text-[#444]">length</label>
                       <select
+                        name="totalLength"
                         value={options.totalLength || 'auto'}
                         onChange={(e) => {
                           const val = e.target.value;
@@ -291,6 +295,7 @@ export function VideoGenerator() {
                   <div className="flex items-center gap-1.5" title="Number of scenes to generate — auto lets the AI decide based on the story">
                     <label className="text-[11px] font-mono text-[#444]">shots</label>
                     <select
+                      name="numScenes"
                       value={options.numScenes || 'auto'}
                       onChange={(e) => {
                         const val = e.target.value;
@@ -334,7 +339,7 @@ export function VideoGenerator() {
                   ))}
                   <label className="h-16 w-16 rounded-lg border border-dashed border-[#333] flex items-center justify-center cursor-pointer hover:border-[#555] transition-colors">
                     <ImagePlus className="h-4 w-4 text-[#555]" />
-                    <input type="file" accept="image/*" multiple className="hidden" onChange={(e) => {
+                    <input type="file" name="referenceImages" accept="image/*" multiple className="hidden" onChange={(e) => {
                       const files = Array.from(e.target.files || []);
                       files.forEach(file => {
                         const reader = new FileReader();
@@ -350,7 +355,7 @@ export function VideoGenerator() {
                 <label className="flex items-center gap-2 h-9 px-3 rounded-lg border border-dashed border-[#333] cursor-pointer hover:border-[#555] transition-colors">
                   <ImagePlus className="h-3.5 w-3.5 text-[#555]" />
                   <span className="text-xs text-[#555]">Add reference images</span>
-                  <input type="file" accept="image/*" multiple className="hidden" onChange={(e) => {
+                  <input type="file" name="referenceImagesAdd" accept="image/*" multiple className="hidden" onChange={(e) => {
                     const files = Array.from(e.target.files || []);
                     files.forEach(file => {
                       const reader = new FileReader();
@@ -496,6 +501,7 @@ export function VideoGenerator() {
                           Restore default
                         </button>
                         <select
+                          name="ideaModel"
                           value={ideaModel}
                           onChange={(e) => updateModeCustomization(settingsTab, 'ideaModel', e.target.value)}
                           className="h-7 px-2 rounded-md border border-[#333] bg-black text-xs text-[#888] font-mono max-w-[200px]"
@@ -507,6 +513,7 @@ export function VideoGenerator() {
                       </div>
                     </div>
                     <textarea
+                      name="ideaPrompt"
                       value={ideaPrompt}
                       onChange={(e) => updateModeCustomization(settingsTab, 'ideaPrompt', e.target.value)}
                       rows={8}
@@ -527,6 +534,7 @@ export function VideoGenerator() {
                           Restore default
                         </button>
                         <select
+                          name="sceneModel"
                           value={sceneModel}
                           onChange={(e) => updateModeCustomization(settingsTab, 'sceneModel', e.target.value)}
                           className="h-7 px-2 rounded-md border border-[#333] bg-black text-xs text-[#888] font-mono max-w-[200px]"
@@ -538,6 +546,7 @@ export function VideoGenerator() {
                       </div>
                     </div>
                     <textarea
+                      name="scenePrompt"
                       value={scenePrompt}
                       onChange={(e) => updateModeCustomization(settingsTab, 'scenePrompt', e.target.value)}
                       rows={8}

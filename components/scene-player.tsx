@@ -294,6 +294,7 @@ export function ScenePlayer({ videos, autoProgress: initialAutoProgress = true }
               <label className="text-[10px] font-mono text-[#555]">In: {currentTrim.inPoint.toFixed(1)}s</label>
               <input
                 type="range"
+                name="trimInPoint"
                 min={0}
                 max={current.duration}
                 step={0.1}
@@ -314,6 +315,7 @@ export function ScenePlayer({ videos, autoProgress: initialAutoProgress = true }
               <label className="text-[10px] font-mono text-[#555]">Out: {currentTrim.outPoint.toFixed(1)}s</label>
               <input
                 type="range"
+                name="trimOutPoint"
                 min={0}
                 max={current.duration}
                 step={0.1}
