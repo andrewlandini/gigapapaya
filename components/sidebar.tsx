@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation';
 import { Play, Zap, User, FileVideo, Shield, Bug } from 'lucide-react';
 import { useGeneration } from './generation-context';
 import { useDebug } from './debug-context';
+import { useCredits } from './credits-context';
 import { cn } from '@/lib/utils';
 
 interface SidebarProps {
@@ -15,6 +16,7 @@ export function Sidebar({ user }: SidebarProps) {
   const pathname = usePathname();
   const { activeDraftCount } = useGeneration();
   const { debugMode, toggleDebugMode } = useDebug();
+  const { credits } = useCredits();
 
   const links = [
     { href: '/', icon: Play, label: 'Feed' },
@@ -106,6 +108,12 @@ export function Sidebar({ user }: SidebarProps) {
 
       {/* Bottom */}
       <div className="flex flex-col items-center gap-1">
+        {user && credits !== null && (
+          <div className="text-center px-1 mb-2" title={`${credits.toLocaleString()} credits remaining`}>
+            <span className="text-[10px] font-mono text-[#00DC82] block">{credits.toLocaleString()}</span>
+            <span className="text-[8px] font-mono text-[#444]">credits</span>
+          </div>
+        )}
         {!user && (
           <Link
             href="/auth/sign-in"
