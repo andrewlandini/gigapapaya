@@ -128,7 +128,7 @@ export function VideoGenerator() {
     <div className="min-h-screen bg-black flex flex-col">
       {/* Header */}
       <header className="border-b border-[#222]">
-        <div className="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
+        <div className="px-6 h-14 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <span className="text-[15px] font-semibold tracking-tight">gigapapaya</span>
             <span className="text-[#333]">/</span>
@@ -207,7 +207,7 @@ export function VideoGenerator() {
         </>
       )}
 
-      <main className="max-w-6xl mx-auto px-6 pt-16 pb-10 space-y-10 flex-1">
+      <main className="px-6 pt-16 pb-10 space-y-10 flex-1">
         {/* Hero + Input */}
         <div className="max-w-3xl mx-auto space-y-8 text-center">
           {!wizardActive && (
@@ -736,7 +736,7 @@ export function VideoGenerator() {
 
       {/* Footer */}
       <footer className="border-t border-[#222] mt-auto">
-        <div className="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
+        <div className="px-6 h-14 flex items-center justify-between">
           <span className="text-xs font-mono text-[#333]">gigapapaya</span>
           <span className="text-xs font-mono text-[#333]">veo 3.1 / ai gateway</span>
         </div>
