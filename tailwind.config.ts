@@ -8,6 +8,10 @@ const config: Config = {
   ],
   theme: {
     extend: {
+      fontFamily: {
+        sans: ['var(--font-geist-pixel-square)', 'monospace'],
+        mono: ['var(--font-geist-pixel-square)', 'monospace'],
+      },
       colors: {
         background: "var(--background)",
         foreground: "var(--foreground)",

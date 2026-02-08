@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { GeistSans } from 'geist/font/sans';
 import { GeistMono } from 'geist/font/mono';
+import { GeistPixelSquare } from 'geist/font/pixel';
 import { Sidebar } from '@/components/sidebar';
 import { UserMenu } from '@/components/user-menu';
 import { Providers } from '@/components/providers';
@@ -46,8 +47,8 @@ export default async function RootLayout({
   const user = await getSession();
 
   return (
-    <html lang="en" className={`${GeistSans.variable} ${GeistMono.variable}`}>
-      <body className="font-sans">
+    <html lang="en" className={`${GeistSans.variable} ${GeistMono.variable} ${GeistPixelSquare.variable}`}>
+      <body style={{ fontFamily: 'var(--font-geist-pixel-square), monospace' }}>
         <Providers initialAvatarUrl={user?.avatarUrl} isAuthenticated={!!user}>
           <Sidebar user={user} />
           <UserMenu user={user} />
