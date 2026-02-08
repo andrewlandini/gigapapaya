@@ -568,6 +568,49 @@ NO overlay graphics, captions, speech bubbles, dialogue text, subtitles, labels,
 }
 
 /**
+ * Describe a storyboard frame using Gemini vision for shot consistency.
+ * Sends the image to Gemini 2.5 Flash and extracts an extremely detailed
+ * visual description that can be prepended to the Veo prompt, compensating
+ * for the lack of image-to-video support through the AI Gateway.
+ */
+export async function describeStoryboardFrame(
+  imageUrl: string,
+  style: string,
+  mood: string,
+): Promise<string> {
+  const result = await generateText({
+    model: getTextModel('google/gemini-2.5-flash'),
+    messages: [
+      {
+        role: 'system' as const,
+        content: `You are a cinematography reference analyst. Given a storyboard frame, output an EXTREMELY detailed visual description that a text-to-video model can use to recreate this exact image as a moving shot.
+
+DESCRIBE WITH OBSESSIVE PRECISION:
+- Every person: exact position in frame (left/center/right, foreground/mid/background), body posture, head angle and tilt, eye direction, mouth state, facial expression micro-details, skin tone (Fitzpatrick scale + undertone), hair color/length/style/texture, clothing items with colors and materials and fit, any accessories, visible body language
+- Environment: every object and its spatial position relative to subjects, furniture placement, wall colors and textures, floor material, ceiling details, windows and what's visible through them, plants/decorations/props
+- Lighting: direction of key light (clock position), fill ratio, color temperature in Kelvin, hard vs soft shadows, any practicals (lamps, screens, windows as light sources), rim/back lighting, ambient light quality
+- Color palette: dominant colors as hex codes, color temperature, contrast level, saturation level, any color grading (teal-orange, warm amber, cool blue, etc.)
+- Camera: estimated focal length, depth of field (what's sharp vs blurred), lens characteristics (anamorphic, spherical), camera height, angle (eye level, low, high), framing (wide, medium, close-up, etc.)
+- Composition: rule of thirds placement, leading lines, negative space, foreground/background relationship
+- Texture and materials: fabric weave, wood grain, metal finish, skin texture, hair texture
+- Atmosphere: haze, dust, moisture, time of day implied by light
+
+Output a SINGLE DENSE PARAGRAPH. No bullet points, no headers, no line breaks. Pack maximum visual information into flowing prose. This description will be injected directly into a video generation prompt.`,
+      },
+      {
+        role: 'user' as const,
+        content: [
+          { type: 'image' as const, image: imageUrl },
+          { type: 'text' as const, text: `Describe this storyboard frame with extreme visual precision. The intended style is "${style}" with a "${mood}" mood. Output only the visual description paragraph — nothing else.` },
+        ],
+      },
+    ],
+  });
+
+  return result.text.trim();
+}
+
+/**
  * Agent 3: Generate video from scene prompt using AI Gateway + Veo 3.1
  */
 export async function executeVideoAgent(

@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server';
-import { executeVideoAgent } from '@/lib/ai/agents';
+import { executeVideoAgent, describeStoryboardFrame } from '@/lib/ai/agents';
 import { getSession } from '@/lib/auth/session';
 import {
   initDb,
@@ -72,9 +72,27 @@ export async function POST(request: NextRequest) {
           for (let i = 0; i < scenes.length; i++) {
             const scene = scenes[i] as { prompt: string; dialogue?: string; duration: number };
 
+            // ── Storyboard frame vision analysis ──
+            // Analyze the storyboard frame with Gemini vision to inject a detailed
+            // visual description, compensating for broken image-to-video mode.
+            let visualDescription = '';
+            const storyboardFrame = storyboardImages?.[i] && storyboardImages[i] !== '' ? storyboardImages[i] : undefined;
+            if (storyboardFrame) {
+              try {
+                sendEvent({ type: 'agent-log', agent: 'videos', status: `Analyzing storyboard frame ${i + 1}...` });
+                visualDescription = await describeStoryboardFrame(storyboardFrame, style, mood);
+                debug(`Vision analysis for shot ${i + 1} (${visualDescription.length} chars): ${visualDescription}`);
+              } catch (error) {
+                const errMsg = error instanceof Error ? error.message : 'Unknown error';
+                debug(`Vision analysis failed for shot ${i + 1}: ${errMsg} — continuing with original prompt`);
+              }
+            }
+
             // Recombine visual prompt + dialogue for Veo 3.1
             // Dialogue must be woven in BEFORE style/camera specs since Veo weights early tokens more
-            let finalPrompt = scene.prompt;
+            let finalPrompt = visualDescription
+              ? `[VISUAL REFERENCE: ${visualDescription}] ${scene.prompt}`
+              : scene.prompt;
             if (scene.dialogue) {
               const styleMarkers = [', shot on ', ', Shot on ', '. Shot on ', ', filmed on ', ', ARRI ', ', RED ', ', Sony '];
               let insertIdx = -1;

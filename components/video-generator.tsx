@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { RotateCcw, Play, X, Clock, ChevronDown, Settings2, RotateCw, AlertCircle, Loader2, ImagePlus, MessageSquare } from 'lucide-react';
-import { formatCost, estimateGenerateVideosCost, estimateVideoCost, STORYBOARD_PIPELINE_COST } from '@/lib/costs';
+import { formatCost, estimateGenerateVideosCost, estimateVideoCost, STORYBOARD_PIPELINE_COST, estimateStoryboardTotalCost } from '@/lib/costs';
 
 const HEADLINES = [
   "What should we cook, chef?",
@@ -290,11 +290,12 @@ export function VideoGenerator() {
                       }}
                       className="h-7 px-1.5 rounded-md bg-transparent text-xs text-[#888] font-mono focus:outline-none cursor-pointer hover:text-[#ededed] transition-colors"
                     >
-                      <option value="auto">auto</option>
+                      <option value={1}>1</option>
                       <option value={2}>2</option>
                       <option value={3}>3</option>
                       <option value={4}>4</option>
                       <option value={5}>5</option>
+                      <option value="auto">auto</option>
                     </select>
                   </div>
                   <div className="flex items-center gap-1.5 ml-auto" title="AI-generated background music — turn off if you'll add your own in post">
@@ -354,6 +355,20 @@ export function VideoGenerator() {
               )}
 
               {/* Mode buttons */}
+              {/* Cost estimate */}
+              <div className="flex items-center justify-center gap-2 text-xs text-[#555]">
+                <span className="font-mono">
+                  Estimated cost: {formatCost(estimateStoryboardTotalCost(
+                    options.numScenes || 3,
+                    typeof options.duration === 'number' ? options.duration : 8
+                  ))}
+                </span>
+                <span className="text-[#333]">·</span>
+                <span className="text-[#444]">
+                  {options.numScenes || 3} {(options.numScenes || 3) === 1 ? 'video' : 'videos'} × {typeof options.duration === 'number' ? `${options.duration}s` : 'auto'}
+                </span>
+              </div>
+
               <div className="flex flex-wrap gap-3 justify-center">
                 {GENERATION_MODES.map((mode) => {
                   const noIdea = !state.idea.trim();
@@ -365,7 +380,6 @@ export function VideoGenerator() {
                       >
                         <span className="text-base">{mode.icon}</span>
                         <span className="text-sm text-[#ededed]">{mode.label}</span>
-                        <span className="text-[10px] font-mono text-[#555]">{formatCost(STORYBOARD_PIPELINE_COST)}</span>
                       </button>
                       <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-1.5 rounded-lg bg-[#222] border border-[#333] text-xs text-[#ccc] whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
                         {mode.description}
@@ -548,18 +562,23 @@ export function VideoGenerator() {
         {state.status === 'reviewing' && state.editableScenes && (
           <div className="space-y-4 animate-fade-in">
             <div className="flex items-center justify-between">
-              <h2 className="text-sm font-medium text-[#ededed]">Review Shots</h2>
-              <div className="flex items-center gap-3">
-                <Button onClick={handleGenerateVideos} className="gap-2">
-                  <Play className="h-4 w-4" />
-                  Generate Videos
-                </Button>
+              <div>
+                <h2 className="text-sm font-medium text-[#ededed]">Review Shots</h2>
                 {state.editableScenes && (
-                  <span className="text-[11px] font-mono text-[#555]">
+                  <p className="text-xs text-[#555] mt-1 font-mono">
+                    {state.editableScenes.length} {state.editableScenes.length === 1 ? 'shot' : 'shots'} · {state.editableScenes.reduce((sum, s) => sum + s.duration, 0)}s total · {formatCost(estimateGenerateVideosCost(state.editableScenes))} estimated
+                  </p>
+                )}
+              </div>
+              <Button onClick={handleGenerateVideos} className="gap-2">
+                <Play className="h-4 w-4" />
+                Generate {state.editableScenes?.length === 1 ? 'Video' : 'Videos'}
+                {state.editableScenes && (
+                  <span className="text-white/50 font-mono text-xs ml-1">
                     {formatCost(estimateGenerateVideosCost(state.editableScenes))}
                   </span>
                 )}
-              </div>
+              </Button>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">

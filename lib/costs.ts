@@ -33,3 +33,10 @@ export function estimateGenerateVideosCost(
 export function estimateQuickGenerateCost(durationSec: number): number {
   return durationSec * VIDEO_PRICE_PER_SEC_WITH_AUDIO;
 }
+
+export function estimateStoryboardTotalCost(
+  numScenes: number,
+  durationPerScene: number,
+): number {
+  return STORYBOARD_PIPELINE_COST + numScenes * durationPerScene * VIDEO_PRICE_PER_SEC_WITH_AUDIO;
+}
