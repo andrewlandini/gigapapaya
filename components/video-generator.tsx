@@ -358,7 +358,7 @@ export function VideoGenerator() {
               {/* Cost estimate */}
               <div className="flex items-center justify-center gap-2 text-xs text-[#555]">
                 <span className="font-mono">
-                  Cost: <span className="text-[#FF0000]">{formatCostWithCredits(estimateStoryboardTotalCost(
+                  <span className="text-[#FF0000]">{formatCostWithCredits(estimateStoryboardTotalCost(
                     options.numScenes || 3,
                     typeof options.duration === 'number' ? options.duration : 8
                   ))}</span>
