@@ -692,11 +692,23 @@ export async function executeVideoAgent(
       }
     }
     console.error('Error:', resolvedError);
-    throw resolvedError instanceof Error ? resolvedError : new Error(
-      typeof resolvedError === 'string' ? resolvedError :
-      resolvedError && typeof resolvedError === 'object' ? JSON.stringify(resolvedError) :
-      'Unknown video generation error'
-    );
+    // Extract meaningful error message from various error shapes
+    let errorMsg = 'Unknown video generation error';
+    if (resolvedError instanceof Error) {
+      errorMsg = resolvedError.message || errorMsg;
+      if ((resolvedError as any).status) errorMsg = `HTTP ${(resolvedError as any).status}: ${errorMsg}`;
+      if ((resolvedError as any).statusCode) errorMsg = `HTTP ${(resolvedError as any).statusCode}: ${errorMsg}`;
+      if ((resolvedError as any).cause) errorMsg += ` (cause: ${JSON.stringify((resolvedError as any).cause)})`;
+      if ((resolvedError as any).data) errorMsg += ` (data: ${JSON.stringify((resolvedError as any).data)})`;
+      if ((resolvedError as any).responseBody) errorMsg += ` (body: ${String((resolvedError as any).responseBody).substring(0, 500)})`;
+    } else if (typeof resolvedError === 'string') {
+      errorMsg = resolvedError;
+    } else if (resolvedError && typeof resolvedError === 'object') {
+      const obj = resolvedError as any;
+      errorMsg = obj.message || obj.error || obj.detail || JSON.stringify(obj);
+      if (errorMsg === '{}') errorMsg = `AI Gateway returned empty error — check gateway dashboard for rate limits or auth issues. Full error keys: ${Object.getOwnPropertyNames(obj).join(', ')}`;
+    }
+    throw new Error(errorMsg);
   }
 }
 
