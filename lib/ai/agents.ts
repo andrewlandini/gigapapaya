@@ -377,6 +377,7 @@ Vary pacing — not every scene should be the same intensity. Use quiet moments 
 export async function executeMoodBoardAgent(
   idea: VideoIdea,
   referenceImages?: string[],
+  onImage?: (index: number, url: string) => void,
 ): Promise<string[]> {
   console.log('\n🖼️  MOOD BOARD AGENT: Starting...');
   console.log(`📋 Concept: ${idea.title}`);
@@ -408,6 +409,7 @@ Create a photorealistic, cinematic reference image that captures the visual styl
       if (url) {
         results.push(url);
         console.log(`✅ Mood board image ${i + 1} generated`);
+        onImage?.(i, url);
       } else {
         console.error(`❌ No image returned for mood board ${i + 1}`);
       }
@@ -469,6 +471,7 @@ export async function generateCharacterPortraits(
   style: string,
   mood: string,
   modeId?: string,
+  onPortrait?: (name: string, url: string) => void,
 ): Promise<Record<string, string>> {
   console.log(`\n🧑 PORTRAITS: Generating ${characters.length} character portraits...`);
   const portraits: Record<string, string> = {};
@@ -490,6 +493,7 @@ NO overlay graphics, captions, speech bubbles, subtitles, labels, or watermarks.
       if (url) {
         portraits[char.name] = url;
         console.log(`✅ Portrait for ${char.name} generated`);
+        onPortrait?.(char.name, url);
       } else {
         console.error(`❌ No image returned for ${char.name}`);
       }
@@ -582,6 +586,7 @@ export async function generateSceneStoryboards(
   style: string,
   mood: string,
   modeId?: string,
+  onFrame?: (index: number, url: string) => void,
 ): Promise<string[]> {
   console.log(`\n🎬 STORYBOARD: Generating ${scenes.length} scene frames...`);
   const results = new Array<string>(scenes.length).fill('');
@@ -620,6 +625,7 @@ NO overlay graphics, captions, speech bubbles, dialogue text, subtitles, labels,
       if (url) {
         results[i] = url;
         console.log(`✅ Frame ${i + 1} generated`);
+        onFrame?.(i, url);
       } else {
         console.error(`❌ No image returned for frame ${i + 1}`);
       }

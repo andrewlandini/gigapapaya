@@ -519,25 +519,25 @@ export function VideoGenerator() {
 
         </div>
 
-        {/* Mood Board (review mode) */}
-        {state.status === 'reviewing' && state.moodBoard.length > 0 && (
+        {/* Mood Board — shown as soon as images arrive */}
+        {state.moodBoard.length > 0 && (
           <div className="space-y-3 animate-fade-in">
             <h2 className="text-sm font-medium text-[#ededed]">Mood Board</h2>
             <div className="grid grid-cols-3 gap-3">
               {state.moodBoard.map((img, i) => (
-                <img key={i} src={img} alt={`Mood board ${i + 1}`} className="w-full aspect-video object-cover rounded-xl border border-[#222]" />
+                <img key={i} src={img} alt={`Mood board ${i + 1}`} className="w-full aspect-video object-cover rounded-xl border border-[#222] animate-scale-in" style={{ animationDelay: `${i * 200}ms` }} />
               ))}
             </div>
           </div>
         )}
 
-        {/* Character Portraits (review mode) */}
-        {state.status === 'reviewing' && Object.keys(state.characterPortraits).length > 0 && (
+        {/* Character Portraits — shown as soon as portraits arrive */}
+        {Object.keys(state.characterPortraits).length > 0 && (
           <div className="space-y-3 animate-fade-in">
             <h2 className="text-sm font-medium text-[#ededed]">Characters</h2>
             <div className="flex gap-3 flex-wrap">
-              {Object.entries(state.characterPortraits).map(([name, img]) => (
-                <div key={name} className="text-center space-y-1.5">
+              {Object.entries(state.characterPortraits).map(([name, img], i) => (
+                <div key={name} className="text-center space-y-1.5 animate-scale-in" style={{ animationDelay: `${i * 200}ms` }}>
                   <img src={img} alt={name} className="w-20 h-20 object-cover rounded-full border border-[#333]" />
                   <span className="text-xs font-mono text-[#888] block">{name}</span>
                 </div>
@@ -546,107 +546,125 @@ export function VideoGenerator() {
           </div>
         )}
 
-        {/* Editable Scenes (review mode) */}
-        {state.status === 'reviewing' && state.editableScenes && (
+        {/* Scene Cards — shown during generating (read-only) and reviewing (editable) */}
+        {(state.scenes || state.editableScenes) && (state.status === 'generating' || state.status === 'reviewing') && (
           <div className="space-y-4 animate-fade-in">
             <div className="flex items-center justify-between">
               <div>
-                <h2 className="text-sm font-medium text-[#ededed]">Review Shots</h2>
-                {state.editableScenes && (
+                <h2 className="text-sm font-medium text-[#ededed]">{state.status === 'reviewing' ? 'Review Shots' : 'Building Shots'}</h2>
+                {(state.editableScenes || state.scenes) && (
                   <p className="text-xs text-[#555] mt-1 font-mono">
-                    {state.editableScenes.length} {state.editableScenes.length === 1 ? 'shot' : 'shots'} · {state.editableScenes.reduce((sum, s) => sum + s.duration, 0)}s total · <span className="text-[#FF0000]">{formatCostWithCredits(estimateGenerateVideosCost(state.editableScenes))}</span>
+                    {(state.editableScenes || state.scenes)!.length} {(state.editableScenes || state.scenes)!.length === 1 ? 'shot' : 'shots'} · {(state.editableScenes || state.scenes)!.reduce((sum, s) => sum + s.duration, 0)}s total
+                    {state.status === 'reviewing' && state.editableScenes && (
+                      <> · <span className="text-[#FF0000]">{formatCostWithCredits(estimateGenerateVideosCost(state.editableScenes))}</span></>
+                    )}
                   </p>
                 )}
               </div>
-              <Button onClick={handleGenerateVideos} className="gap-2">
-                <Play className="h-4 w-4" />
-                Generate {state.editableScenes?.length === 1 ? 'Video' : 'Videos'}
-                {state.editableScenes && (
-                  <span className="text-[#FF0000] font-mono text-xs ml-1">
-                    {formatCostWithCredits(estimateGenerateVideosCost(state.editableScenes))}
-                  </span>
-                )}
-              </Button>
+              {state.status === 'reviewing' && state.editableScenes && (
+                <Button onClick={handleGenerateVideos} className="gap-2">
+                  <Play className="h-4 w-4" />
+                  Generate {state.editableScenes?.length === 1 ? 'Video' : 'Videos'}
+                  {state.editableScenes && (
+                    <span className="text-[#FF0000] font-mono text-xs ml-1">
+                      {formatCostWithCredits(estimateGenerateVideosCost(state.editableScenes))}
+                    </span>
+                  )}
+                </Button>
+              )}
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {state.editableScenes.map((scene, i) => (
-                <div
-                  key={i}
-                  className="border border-[#222] rounded-xl overflow-hidden hover:border-[#333] transition-colors flex flex-col"
-                >
-                  {/* 1. Image */}
-                  <div className="relative bg-[#0a0a0a]">
-                    {state.storyboardImages[i] ? (
-                      <>
-                        <img src={state.storyboardImages[i]} alt={`Shot ${i + 1}`} className="w-full aspect-video object-cover" />
-                        <button
-                          onClick={() => {
-                            // TODO: implement frame regeneration
-                          }}
-                          className="absolute bottom-2 right-2 flex items-center gap-1 px-2 py-1 rounded-md bg-black/60 text-[10px] font-mono text-[#888] hover:text-white transition-colors backdrop-blur-sm"
-                          title="Regenerate this storyboard frame (coming soon)"
-                        >
-                          <RotateCw className="h-2.5 w-2.5" />
-                          Edit
-                        </button>
-                      </>
-                    ) : (
-                      <div className="aspect-video flex items-center justify-center text-[#333] border-b border-[#222]">
-                        <div className="text-center space-y-1.5">
-                          <ImagePlus className="h-6 w-6 mx-auto" />
-                          <span className="text-xs font-mono block">Generating...</span>
+              {(state.editableScenes || state.scenes)!.map((scene, i) => {
+                const isReviewing = state.status === 'reviewing';
+                return (
+                  <div
+                    key={i}
+                    className="border border-[#222] rounded-xl overflow-hidden hover:border-[#333] transition-colors flex flex-col animate-fade-in"
+                    style={{ animationDelay: `${i * 150}ms` }}
+                  >
+                    {/* 1. Image */}
+                    <div className="relative bg-[#0a0a0a]">
+                      {state.storyboardImages[i] ? (
+                        <>
+                          <img src={state.storyboardImages[i]} alt={`Shot ${i + 1}`} className="w-full aspect-video object-cover animate-scale-in" />
+                          {isReviewing && (
+                            <button
+                              onClick={() => {
+                                // TODO: implement frame regeneration
+                              }}
+                              className="absolute bottom-2 right-2 flex items-center gap-1 px-2 py-1 rounded-md bg-black/60 text-[10px] font-mono text-[#888] hover:text-white transition-colors backdrop-blur-sm"
+                              title="Regenerate this storyboard frame (coming soon)"
+                            >
+                              <RotateCw className="h-2.5 w-2.5" />
+                              Edit
+                            </button>
+                          )}
+                        </>
+                      ) : (
+                        <div className="aspect-video animate-shimmer border-b border-[#222]" />
+                      )}
+                      {/* Shot badge */}
+                      <div className="absolute top-2 left-2 flex items-center gap-2">
+                        <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-black/60 backdrop-blur-sm">
+                          <span className="text-xs font-mono font-medium text-white">Shot {i + 1}</span>
+                          <span className="text-xs font-mono text-[#888]">{scene.duration}s</span>
                         </div>
                       </div>
-                    )}
-                    {/* Shot badge */}
-                    <div className="absolute top-2 left-2 flex items-center gap-2">
-                      <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-black/60 backdrop-blur-sm">
-                        <span className="text-xs font-mono font-medium text-white">Shot {i + 1}</span>
-                        <span className="text-xs font-mono text-[#888]">{scene.duration}s</span>
-                      </div>
-                    </div>
-                    {state.editableScenes!.length > 1 && (
-                      <button
-                        onClick={() => removeScene(i)}
-                        className="absolute top-2 right-2 p-1 rounded-md bg-black/60 text-[#888] hover:text-[#ff4444] transition-colors backdrop-blur-sm"
-                        title="Remove shot"
-                      >
-                        <X className="h-3 w-3" />
-                      </button>
-                    )}
-                  </div>
-
-                  {/* 2. Dialogue */}
-                  <div className="px-3 pt-3 pb-2">
-                    <div className="flex items-center gap-1.5 mb-1.5">
-                      <MessageSquare className="h-3 w-3 text-[#555]" />
-                      <label className="text-[10px] font-mono text-[#555] uppercase tracking-wider">dialogue</label>
-                      {scene.characters?.length > 0 && (
-                        <span className="text-[10px] font-mono text-[#444] ml-auto">{scene.characters.join(', ')}</span>
+                      {isReviewing && state.editableScenes && state.editableScenes.length > 1 && (
+                        <button
+                          onClick={() => removeScene(i)}
+                          className="absolute top-2 right-2 p-1 rounded-md bg-black/60 text-[#888] hover:text-[#ff4444] transition-colors backdrop-blur-sm"
+                          title="Remove shot"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
                       )}
                     </div>
-                    <input
-                      type="text"
-                      value={scene.dialogue || ''}
-                      onChange={(e) => updateSceneDialogue(i, e.target.value)}
-                      placeholder="What does the character say?"
-                      className="w-full bg-[#111] border border-[#333] rounded-lg px-3 py-2 text-sm text-[#e0c866] placeholder:text-[#555] focus:outline-none focus:border-[#555] focus:ring-1 focus:ring-white/10 italic"
-                    />
-                  </div>
 
-                  {/* 3. Description */}
-                  <div className="px-3 pb-3">
-                    <label className="text-[10px] font-mono text-[#555] uppercase tracking-wider mb-1.5 block">description</label>
-                    <textarea
-                      value={scene.prompt}
-                      onChange={(e) => updateScenePrompt(i, e.target.value)}
-                      className="w-full bg-[#0a0a0a] border border-[#333] rounded-lg px-3 py-2 text-xs text-[#999] placeholder:text-[#555] focus:outline-none focus:border-[#555] focus:ring-1 focus:ring-white/10 resize-y leading-relaxed"
-                      style={{ fieldSizing: 'content' as any, minHeight: '3rem' }}
-                    />
+                    {/* 2. Dialogue */}
+                    <div className="px-3 pt-3 pb-2">
+                      <div className="flex items-center gap-1.5 mb-1.5">
+                        <MessageSquare className="h-3 w-3 text-[#555]" />
+                        <label className="text-[10px] font-mono text-[#555] uppercase tracking-wider">dialogue</label>
+                        {scene.characters?.length > 0 && (
+                          <span className="text-[10px] font-mono text-[#444] ml-auto">{scene.characters.join(', ')}</span>
+                        )}
+                      </div>
+                      {isReviewing ? (
+                        <input
+                          type="text"
+                          value={scene.dialogue || ''}
+                          onChange={(e) => updateSceneDialogue(i, e.target.value)}
+                          placeholder="What does the character say?"
+                          className="w-full bg-[#111] border border-[#333] rounded-lg px-3 py-2 text-sm text-[#e0c866] placeholder:text-[#555] focus:outline-none focus:border-[#555] focus:ring-1 focus:ring-white/10 italic"
+                        />
+                      ) : (
+                        <p className="w-full bg-[#111] border border-[#222] rounded-lg px-3 py-2 text-sm text-[#e0c866]/60 italic">
+                          {scene.dialogue || '\u00A0'}
+                        </p>
+                      )}
+                    </div>
+
+                    {/* 3. Description */}
+                    <div className="px-3 pb-3">
+                      <label className="text-[10px] font-mono text-[#555] uppercase tracking-wider mb-1.5 block">description</label>
+                      {isReviewing ? (
+                        <textarea
+                          value={scene.prompt}
+                          onChange={(e) => updateScenePrompt(i, e.target.value)}
+                          className="w-full bg-[#0a0a0a] border border-[#333] rounded-lg px-3 py-2 text-xs text-[#999] placeholder:text-[#555] focus:outline-none focus:border-[#555] focus:ring-1 focus:ring-white/10 resize-y leading-relaxed"
+                          style={{ fieldSizing: 'content' as any, minHeight: '3rem' }}
+                        />
+                      ) : (
+                        <p className="w-full bg-[#0a0a0a] border border-[#222] rounded-lg px-3 py-2 text-xs text-[#666] leading-relaxed">
+                          {scene.prompt}
+                        </p>
+                      )}
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         )}

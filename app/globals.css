@@ -108,6 +108,26 @@
   background: #555;
 }
 
+/* Shimmer skeleton for loading cards */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+.animate-shimmer {
+  background: linear-gradient(90deg, #111 25%, #1a1a1a 50%, #111 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+}
+
+/* Scale-in for image reveals */
+@keyframes scale-in {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+.animate-scale-in {
+  animation: scale-in 0.5s ease-out forwards;
+}
+
 /* Monospace code blocks */
 code, pre, .font-mono {
   font-family: 'Geist Mono', 'SF Mono', 'Fira Code', monospace;

@@ -373,6 +373,10 @@ export function StoryboardProvider({ children }: { children: ReactNode }) {
             moodBoard: data.moodBoard,
             storyboardImages: data.storyboardImages,
             characterPortraits: data.characterPortraits,
+            moodBoardImage: data.moodBoardImage,
+            storyboardImage: data.storyboardImage,
+            characterName: data.characterName,
+            characterPortrait: data.characterPortrait,
           };
 
           setState(prev => ({ ...prev, progress: [...prev.progress, progressEvent] }));
@@ -385,9 +389,31 @@ export function StoryboardProvider({ children }: { children: ReactNode }) {
                 setState(prev => ({ ...prev, scenes: data.result.scenes }));
               }
               break;
+            case 'mood-board-image':
+              if (data.moodBoardImage) {
+                setState(prev => ({ ...prev, moodBoard: [...prev.moodBoard, data.moodBoardImage!] }));
+              }
+              break;
             case 'mood-board-complete':
               if (data.moodBoard) {
                 setState(prev => ({ ...prev, moodBoard: data.moodBoard || [] }));
+              }
+              break;
+            case 'character-portrait':
+              if (data.characterName && data.characterPortrait) {
+                setState(prev => ({
+                  ...prev,
+                  characterPortraits: { ...prev.characterPortraits, [data.characterName!]: data.characterPortrait! },
+                }));
+              }
+              break;
+            case 'storyboard-frame':
+              if (data.storyboardImage !== undefined && data.sceneIndex !== undefined) {
+                setState(prev => {
+                  const imgs = [...prev.storyboardImages];
+                  imgs[data.sceneIndex!] = data.storyboardImage!;
+                  return { ...prev, storyboardImages: imgs };
+                });
               }
               break;
             case 'storyboard-complete':

@@ -157,7 +157,9 @@ export async function POST(request: NextRequest) {
 
             try {
               sendEvent({ type: 'agent-log', agent: 'mood-board', status: `${refDataUrls.length > 0 ? `Passing ${refDataUrls.length} reference image(s) to mood board generation` : 'No reference images — generating from concept only'}` });
-              moodBoard = await executeMoodBoardAgent(ideaResult, refDataUrls.length > 0 ? refDataUrls : undefined);
+              moodBoard = await executeMoodBoardAgent(ideaResult, refDataUrls.length > 0 ? refDataUrls : undefined, (i, url) => {
+                sendEvent({ type: 'mood-board-image', moodBoardImage: url });
+              });
               sendEvent({ type: 'agent-log', agent: 'mood-board', status: `Generated ${moodBoard.length} reference images` });
               sendEvent({ type: 'mood-board-complete', moodBoard });
             } catch (error) {
@@ -196,7 +198,9 @@ export async function POST(request: NextRequest) {
               if (chars.length > 0) {
                 sendEvent({ type: 'agent-log', agent: 'mood-board', status: `Generating ${chars.length} character portrait(s)...` });
                 try {
-                  characterPortraits = await generateCharacterPortraits(chars, ideaResult.style, ideaResult.mood, options.modeId);
+                  characterPortraits = await generateCharacterPortraits(chars, ideaResult.style, ideaResult.mood, options.modeId, (name, url) => {
+                    sendEvent({ type: 'character-portrait', characterName: name, characterPortrait: url });
+                  });
                   sendEvent({ type: 'agent-log', agent: 'mood-board', status: `${Object.keys(characterPortraits).length} portrait(s) ready` });
                 } catch (e) {
                   sendEvent({ type: 'agent-log', agent: 'mood-board', status: `Portrait generation failed: ${e instanceof Error ? e.message : 'Unknown error'}` });
@@ -220,7 +224,9 @@ export async function POST(request: NextRequest) {
               sendEvent({ type: 'agent-log', agent: 'mood-board', status: `Generating ${scenesResult.scenes.length} scene frames...` });
               try {
                 storyboardImages = await generateSceneStoryboards(
-                  scenesResult.scenes, chars, characterPortraits, groupRefs, ideaResult.style, ideaResult.mood, options.modeId,
+                  scenesResult.scenes, chars, characterPortraits, groupRefs, ideaResult.style, ideaResult.mood, options.modeId, (i, url) => {
+                    sendEvent({ type: 'storyboard-frame', sceneIndex: i, storyboardImage: url });
+                  },
                 );
                 sendEvent({ type: 'agent-log', agent: 'mood-board', status: `${storyboardImages.filter(Boolean).length}/${scenesResult.scenes.length} storyboard frames ready` });
               } catch (e) {

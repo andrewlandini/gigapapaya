@@ -52,9 +52,12 @@ export type ProgressEventType =
   | 'agent-complete'
   | 'agent-log'
   | 'mood-board-start'
+  | 'mood-board-image'
   | 'mood-board-complete'
   | 'storyboard-start'
+  | 'storyboard-frame'
   | 'storyboard-complete'
+  | 'character-portrait'
   | 'scenes-ready'
   | 'video-start'
   | 'video-complete'
@@ -74,6 +77,10 @@ export interface ProgressEvent {
   moodBoard?: string[];
   storyboardImages?: string[];
   characterPortraits?: Record<string, string>;
+  moodBoardImage?: string;
+  storyboardImage?: string;
+  characterName?: string;
+  characterPortrait?: string;
 }
 
 export interface GenerationState {
@@ -138,4 +145,8 @@ export interface SSEMessage {
   moodBoard?: string[]; // mood board image data URLs
   storyboardImages?: string[]; // per-scene preview images
   characterPortraits?: Record<string, string>; // name → data URL
+  moodBoardImage?: string;
+  storyboardImage?: string;
+  characterName?: string;
+  characterPortrait?: string;
 }

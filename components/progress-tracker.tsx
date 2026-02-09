@@ -93,6 +93,15 @@ export function ProgressTracker({ events, status, shotCount }: ProgressTrackerPr
         continue;
       }
 
+      if (event.type === 'mood-board-image') {
+        const group = result.find(g => g.key === 'mood-board');
+        if (group) {
+          const count = events.filter(e => e.type === 'mood-board-image' && events.indexOf(e) <= events.indexOf(event)).length;
+          group.message = `${count}/3 images...`;
+        }
+        continue;
+      }
+
       if (event.type === 'mood-board-complete') {
         const group = result.find(g => g.key === 'mood-board');
         if (group) {
@@ -103,7 +112,35 @@ export function ProgressTracker({ events, status, shotCount }: ProgressTrackerPr
         continue;
       }
 
+      if (event.type === 'character-portrait') {
+        let group = result.find(g => g.key === 'characters');
+        if (!group) {
+          group = {
+            key: 'characters',
+            label: 'Characters',
+            status: 'running',
+            message: '1 portrait...',
+            timestamp: event.timestamp,
+            logs: [],
+            type: 'agent',
+          };
+          result.push(group);
+        } else {
+          const count = events.filter(e => e.type === 'character-portrait' && events.indexOf(e) <= events.indexOf(event)).length;
+          group.message = `${count} portrait${count !== 1 ? 's' : ''}...`;
+        }
+        continue;
+      }
+
       if (event.type === 'storyboard-start') {
+        // Mark characters group as done when storyboard starts (portraits are finished)
+        const charGroup = result.find(g => g.key === 'characters');
+        if (charGroup && charGroup.status === 'running') {
+          charGroup.status = 'done';
+          const count = events.filter(e => e.type === 'character-portrait').length;
+          charGroup.message = `${count} portrait${count !== 1 ? 's' : ''} generated`;
+        }
+
         currentGroup = {
           key: 'storyboard',
           label: 'Storyboard',
@@ -117,11 +154,28 @@ export function ProgressTracker({ events, status, shotCount }: ProgressTrackerPr
         continue;
       }
 
+      if (event.type === 'storyboard-frame') {
+        const group = result.find(g => g.key === 'storyboard');
+        if (group) {
+          const count = events.filter(e => e.type === 'storyboard-frame' && events.indexOf(e) <= events.indexOf(event)).length;
+          const total = events.find(e => e.type === 'agent-complete' && e.agent === 'scenes')?.result?.scenes?.length || '?';
+          group.message = `${count}/${total} frames...`;
+        }
+        continue;
+      }
+
       if (event.type === 'storyboard-complete') {
         const group = result.find(g => g.key === 'storyboard');
         if (group) {
           group.status = 'done';
           group.message = `${event.storyboardImages?.filter(Boolean).length || 0} frames generated`;
+        }
+        // Also ensure characters group is done
+        const charGroup = result.find(g => g.key === 'characters');
+        if (charGroup && charGroup.status === 'running') {
+          charGroup.status = 'done';
+          const count = events.filter(e => e.type === 'character-portrait').length;
+          charGroup.message = `${count} portrait${count !== 1 ? 's' : ''} generated`;
         }
         currentGroup = null;
         continue;
