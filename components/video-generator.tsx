@@ -134,7 +134,20 @@ export function VideoGenerator() {
             <span className="text-[15px] font-semibold tracking-tight" style={{ fontFamily: 'var(--font-geist-sans)' }}>gigapapaya</span>
             <span className="text-[#333]">/</span>
             <span className="text-sm text-[#666]" style={{ fontFamily: 'var(--font-geist-sans)' }}>storyboard</span>
-            <span className="text-[#333]">·</span>
+          </div>
+          <div className="flex items-center gap-4 pr-36">
+            {isGenerating && (
+              <div className="flex items-center gap-2">
+                <div className="h-2 w-2 rounded-full bg-[#0070f3] animate-pulse-dot" />
+                <span className="text-xs font-mono text-[#666]">generating</span>
+              </div>
+            )}
+            {state.status === 'reviewing' && (
+              <Badge variant="blue">review shots</Badge>
+            )}
+            {state.status === 'complete' && (
+              <Badge variant="success">complete</Badge>
+            )}
             <button
               onClick={() => setShowAgentSettings(true)}
               className="flex items-center gap-1.5 text-xs font-mono text-[#555] hover:text-[#888] transition-colors"
@@ -150,20 +163,6 @@ export function VideoGenerator() {
                 <Clock className="h-3.5 w-3.5" />
                 History
               </button>
-            )}
-          </div>
-          <div className="flex items-center gap-4 pr-12">
-            {isGenerating && (
-              <div className="flex items-center gap-2">
-                <div className="h-2 w-2 rounded-full bg-[#0070f3] animate-pulse-dot" />
-                <span className="text-xs font-mono text-[#666]">generating</span>
-              </div>
-            )}
-            {state.status === 'reviewing' && (
-              <Badge variant="blue">review shots</Badge>
-            )}
-            {state.status === 'complete' && (
-              <Badge variant="success">complete</Badge>
             )}
           </div>
         </div>
