@@ -71,6 +71,9 @@ export interface ProgressEvent {
   videoId?: string;
   prompt?: string;
   message?: string;
+  moodBoard?: string[];
+  storyboardImages?: string[];
+  characterPortraits?: Record<string, string>;
 }
 
 export interface GenerationState {

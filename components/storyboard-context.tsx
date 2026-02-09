@@ -370,6 +370,9 @@ export function StoryboardProvider({ children }: { children: ReactNode }) {
             videoId: data.videoId,
             prompt: data.prompt,
             message: data.message,
+            moodBoard: data.moodBoard,
+            storyboardImages: data.storyboardImages,
+            characterPortraits: data.characterPortraits,
           };
 
           setState(prev => ({ ...prev, progress: [...prev.progress, progressEvent] }));

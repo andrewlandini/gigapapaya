@@ -97,7 +97,7 @@ export function ProgressTracker({ events, status, shotCount }: ProgressTrackerPr
         const group = result.find(g => g.key === 'mood-board');
         if (group) {
           group.status = 'done';
-          group.message = `${(event as any).moodBoard?.length || 0} images generated`;
+          group.message = `${event.moodBoard?.length || 0} images generated`;
         }
         currentGroup = null;
         continue;
@@ -121,7 +121,7 @@ export function ProgressTracker({ events, status, shotCount }: ProgressTrackerPr
         const group = result.find(g => g.key === 'storyboard');
         if (group) {
           group.status = 'done';
-          group.message = `${(event as any).storyboardImages?.filter(Boolean).length || 0} frames generated`;
+          group.message = `${event.storyboardImages?.filter(Boolean).length || 0} frames generated`;
         }
         currentGroup = null;
         continue;
