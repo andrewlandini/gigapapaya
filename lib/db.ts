@@ -93,11 +93,12 @@ export async function initDb() {
 
   // Seed demo admin account (username: demo, password: demo)
   try {
+    try { await sql`UPDATE users SET email = 'demo@vercel.com' WHERE username = 'demo'`; } catch {}
     const existing = await sql`SELECT 1 FROM users WHERE username = 'demo'`;
     if (existing.length === 0) {
       const bcrypt = await import('bcryptjs');
       const hash = await bcrypt.hash('demo', 10);
-      await sql`INSERT INTO users (id, email, password_hash, username, name, is_admin) VALUES (${crypto.randomUUID()}, 'demo@gigapapaya.app', ${hash}, 'demo', 'Demo Admin', TRUE)`;
+      await sql`INSERT INTO users (id, email, password_hash, username, name, is_admin) VALUES (${crypto.randomUUID()}, 'demo@vercel.com', ${hash}, 'demo', 'Demo Admin', TRUE)`;
       console.log('✅ Demo admin account created (demo/demo)');
     }
   } catch {}
