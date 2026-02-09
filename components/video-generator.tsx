@@ -525,7 +525,7 @@ export function VideoGenerator() {
             <h2 className="text-sm font-medium text-[#ededed]">Mood Board</h2>
             <div className="grid grid-cols-3 gap-3">
               {state.moodBoard.map((img, i) => (
-                <img key={i} src={img} alt={`Mood board ${i + 1}`} className="w-full aspect-video object-contain rounded-xl border border-[#222] animate-scale-in bg-black" style={{ animationDelay: `${i * 200}ms` }} />
+                <img key={i} src={img} alt={`Mood board ${i + 1}`} className="w-full object-contain rounded-xl border border-[#222] animate-scale-in bg-black" style={{ animationDelay: `${i * 200}ms`, aspectRatio: options.aspectRatio.replace(':', '/') }} />
               ))}
             </div>
           </div>
@@ -587,7 +587,7 @@ export function VideoGenerator() {
                     <div className="relative bg-[#0a0a0a]">
                       {state.storyboardImages[i] ? (
                         <>
-                          <img src={state.storyboardImages[i]} alt={`Shot ${i + 1}`} className="w-full aspect-video object-contain animate-scale-in bg-black" />
+                          <img src={state.storyboardImages[i]} alt={`Shot ${i + 1}`} className="w-full object-contain animate-scale-in bg-black" style={{ aspectRatio: options.aspectRatio.replace(':', '/') }} />
                           {isReviewing && (
                             <button
                               onClick={() => {
@@ -602,7 +602,7 @@ export function VideoGenerator() {
                           )}
                         </>
                       ) : (
-                        <div className="aspect-video animate-shimmer border-b border-[#222]" />
+                        <div className="animate-shimmer border-b border-[#222]" style={{ aspectRatio: options.aspectRatio.replace(':', '/') }} />
                       )}
                       {/* Shot badge */}
                       <div className="absolute top-2 left-2 flex items-center gap-2">

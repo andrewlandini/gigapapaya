@@ -389,6 +389,7 @@ export async function executeMoodBoardAgent(
   idea: VideoIdea,
   referenceImages?: string[],
   onImage?: (index: number, url: string) => void,
+  aspectRatio?: string,
 ): Promise<string[]> {
   console.log('\n🖼️  MOOD BOARD AGENT: Starting...');
   console.log(`📋 Concept: ${idea.title}`);
@@ -416,7 +417,7 @@ Create a photorealistic, cinematic reference image that captures the visual styl
   for (let i = 0; i < 3; i++) {
     try {
       console.log(`🖼️  Generating mood board image ${i + 1}/3...`);
-      const url = await geminiImage(moodBoardPrompt + ' Output only the image.', referenceImages);
+      const url = await geminiImage(moodBoardPrompt + ' Output only the image.', referenceImages, aspectRatio);
       if (url) {
         results.push(url);
         console.log(`✅ Mood board image ${i + 1} generated`);
@@ -436,7 +437,18 @@ Create a photorealistic, cinematic reference image that captures the visual styl
 // ── Storyboard Pipeline: Character Portraits → Group Refs → Scene Frames ──
 // Uses generateText with Gemini multimodal output (same approach as avatar generation)
 
-async function geminiImage(prompt: string, referenceImages?: string[]): Promise<string> {
+async function geminiImage(prompt: string, referenceImages?: string[], aspectRatio?: string): Promise<string> {
+  // Prepend aspect ratio instruction if provided
+  if (aspectRatio) {
+    const ratioDesc: Record<string, string> = {
+      '16:9': '16:9 landscape (widescreen)',
+      '9:16': '9:16 vertical/portrait (tall)',
+      '4:3': '4:3 classic (slightly wider than tall)',
+      '1:1': '1:1 square',
+    };
+    const desc = ratioDesc[aspectRatio] || aspectRatio;
+    prompt = `ASPECT RATIO: Generate this image in ${desc} aspect ratio. The image dimensions MUST be ${aspectRatio}.\n\n${prompt}`;
+  }
   let result;
   if (referenceImages && referenceImages.length > 0) {
     console.log(`  📎 geminiImage: passing ${referenceImages.length} reference image(s) (sizes: ${referenceImages.map(r => `${Math.round(r.length / 1024)}KB`).join(', ')})`);
@@ -527,6 +539,7 @@ export async function generateGroupReferences(
   portraits: Record<string, string>,
   style: string,
   mood: string,
+  aspectRatio?: string,
 ): Promise<Record<string, string>> {
   console.log('\n👥 GROUP REFS: Finding multi-character scenes...');
   const groupRefs: Record<string, string> = {};
@@ -568,7 +581,8 @@ Characters: ${charDescs}
 Framing: Medium shot, both characters clearly visible with natural spatial relationship. Cinematic composition — rule of thirds, depth in frame. Each character must look IDENTICAL to their reference portrait — same face, same hair, same skin tone, same build, same clothing.
 
 NO overlay graphics, captions, speech bubbles, subtitles, labels, or watermarks. Clean photographic image only. Output only the image.`,
-        refImages
+        refImages,
+        aspectRatio
       );
       if (url) {
         groupRefs[key] = url;
@@ -598,6 +612,7 @@ export async function generateSceneStoryboards(
   mood: string,
   modeId?: string,
   onFrame?: (index: number, url: string) => void,
+  aspectRatio?: string,
 ): Promise<string[]> {
   console.log(`\n🎬 STORYBOARD: Generating ${scenes.length} scene frames...`);
   const results = new Array<string>(scenes.length).fill('');
@@ -631,7 +646,8 @@ Shot description: ${scene.prompt}
 ${charContext ? `Characters in this frame: ${charContext}\n` : ''}Render this exactly as described — match the camera, lens, and framing from the shot description. Do not override the camera specs. This should look like a frame grab from a real film. NOT stock photography. NOT B-roll. Every element in the frame should feel intentional.
 
 NO overlay graphics, captions, speech bubbles, dialogue text, subtitles, labels, or watermarks. Diegetic screens (phones, laptops, TVs) can show content. Clean photographic frame only. Output only the image.`,
-        refImages.length > 0 ? refImages : undefined
+        refImages.length > 0 ? refImages : undefined,
+        aspectRatio
       );
       if (url) {
         results[i] = url;

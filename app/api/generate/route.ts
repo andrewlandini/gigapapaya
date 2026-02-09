@@ -159,7 +159,7 @@ export async function POST(request: NextRequest) {
               sendEvent({ type: 'agent-log', agent: 'mood-board', status: `${refDataUrls.length > 0 ? `Passing ${refDataUrls.length} reference image(s) to mood board generation` : 'No reference images — generating from concept only'}` });
               moodBoard = await executeMoodBoardAgent(ideaResult, refDataUrls.length > 0 ? refDataUrls : undefined, (i, url) => {
                 sendEvent({ type: 'mood-board-image', moodBoardImage: url });
-              });
+              }, options.aspectRatio);
               sendEvent({ type: 'agent-log', agent: 'mood-board', status: `Generated ${moodBoard.length} reference images` });
               sendEvent({ type: 'mood-board-complete', moodBoard });
             } catch (error) {
@@ -211,7 +211,7 @@ export async function POST(request: NextRequest) {
               let groupRefs: Record<string, string> = {};
               try {
                 groupRefs = await generateGroupReferences(
-                  scenesResult.scenes, chars, characterPortraits, ideaResult.style, ideaResult.mood,
+                  scenesResult.scenes, chars, characterPortraits, ideaResult.style, ideaResult.mood, options.aspectRatio,
                 );
                 if (Object.keys(groupRefs).length > 0) {
                   sendEvent({ type: 'agent-log', agent: 'mood-board', status: `${Object.keys(groupRefs).length} group reference(s) ready` });
@@ -226,7 +226,7 @@ export async function POST(request: NextRequest) {
                 storyboardImages = await generateSceneStoryboards(
                   scenesResult.scenes, chars, characterPortraits, groupRefs, ideaResult.style, ideaResult.mood, options.modeId, (i, url) => {
                     sendEvent({ type: 'storyboard-frame', sceneIndex: i, storyboardImage: url });
-                  },
+                  }, options.aspectRatio,
                 );
                 sendEvent({ type: 'agent-log', agent: 'mood-board', status: `${storyboardImages.filter(Boolean).length}/${scenesResult.scenes.length} storyboard frames ready` });
               } catch (e) {
