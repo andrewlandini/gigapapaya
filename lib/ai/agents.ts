@@ -662,26 +662,33 @@ export async function executeVideoAgent(
         duration: videoDuration,
       });
     } catch (sdkError: any) {
-      // Build detailed debug string that will flow through SSE events
+      // The AI SDK throws a Promise instead of an Error — await it to get the real error
+      let realError = sdkError;
+      if (sdkError && typeof sdkError === 'object' && typeof sdkError.then === 'function') {
+        try {
+          await sdkError;
+          // If the promise resolves, that's unexpected — throw generic
+          throw new Error('Video generation failed: SDK threw a Promise that resolved unexpectedly');
+        } catch (inner: any) {
+          realError = inner;
+        }
+      }
+      // Build detailed debug string
       const parts: string[] = [];
-      parts.push(`SDK_ERROR_TYPE: ${sdkError?.constructor?.name}`);
-      parts.push(`MESSAGE: ${sdkError?.message}`);
-      parts.push(`STATUS: ${sdkError?.statusCode}`);
-      parts.push(`KEYS: ${Object.getOwnPropertyNames(sdkError).join(', ')}`);
-      if (sdkError?.cause) {
-        const c = sdkError.cause;
+      parts.push(`TYPE: ${realError?.constructor?.name}`);
+      parts.push(`MSG: ${realError?.message}`);
+      parts.push(`STATUS: ${realError?.statusCode}`);
+      parts.push(`KEYS: ${realError ? Object.getOwnPropertyNames(realError).join(', ') : ''}`);
+      if (realError?.cause) {
+        const c = realError.cause;
         parts.push(`CAUSE_TYPE: ${c?.constructor?.name}`);
         parts.push(`CAUSE_MSG: ${c?.message}`);
         parts.push(`CAUSE_STATUS: ${c?.statusCode}`);
         parts.push(`CAUSE_BODY: ${String(c?.responseBody || '').substring(0, 500)}`);
-        parts.push(`CAUSE_KEYS: ${c ? Object.getOwnPropertyNames(c).join(', ') : ''}`);
       }
-      if (sdkError?.data) parts.push(`DATA: ${JSON.stringify(sdkError.data).substring(0, 500)}`);
-      if (sdkError?.response) parts.push(`RESPONSE: ${JSON.stringify(sdkError.response).substring(0, 500)}`);
-      if (sdkError?.responseBody) parts.push(`BODY: ${String(sdkError.responseBody).substring(0, 500)}`);
+      if (realError?.data) parts.push(`DATA: ${JSON.stringify(realError.data).substring(0, 500)}`);
+      if (realError?.responseBody) parts.push(`BODY: ${String(realError.responseBody).substring(0, 500)}`);
       const debugInfo = parts.join(' | ');
-      console.error(`🔍 VIDEO SDK ERROR: ${debugInfo}`);
-      // Throw with full debug info in the message so it shows in SSE events
       throw new Error(`Video generation failed: ${debugInfo}`);
     }
     const { videos } = result;
