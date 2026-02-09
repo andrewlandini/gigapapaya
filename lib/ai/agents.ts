@@ -10,6 +10,7 @@ import { saveVideo } from './video-storage';
 import { put } from '@vercel/blob';
 import crypto from 'crypto';
 import type { VideoIdea, ScenesResult, Video, GenerationOptions, Character } from '../types';
+import { inspectError, formatErrorReport } from './error-inspector';
 
 // Mode-specific visual tone overrides for storyboard image generation
 const STORYBOARD_TONE_OVERRIDES: Record<string, string> = {
@@ -651,50 +652,12 @@ export async function executeVideoAgent(
 
     // Text-to-video only — image-to-video via the AI Gateway returns empty errors
     const model = getVideoModel('google/veo-3.1-generate-001');
-    console.log(`🔍 Video model object: provider=${model.provider}, modelId=${model.modelId}, spec=${model.specificationVersion}`);
-    console.log(`🔍 Calling generateVideo with: prompt=${enhancedPrompt.length} chars, aspectRatio=${options.aspectRatio}, duration=${videoDuration}`);
-    let result;
-    try {
-      result = await generateVideo({
-        model,
-        prompt: enhancedPrompt,
-        aspectRatio: options.aspectRatio,
-        duration: videoDuration,
-      });
-    } catch (sdkError: any) {
-      // The AI SDK throws a Promise instead of an Error — await it to get the real error
-      let realError = sdkError;
-      if (sdkError && typeof sdkError === 'object' && typeof sdkError.then === 'function') {
-        try {
-          const resolved = await sdkError;
-          // Promise resolved — inspect what it returned
-          const resolvedInfo = typeof resolved === 'object' && resolved !== null
-            ? `RESOLVED_TYPE: ${resolved?.constructor?.name} | RESOLVED_KEYS: ${Object.keys(resolved).join(', ')} | RESOLVED_JSON: ${JSON.stringify(resolved).substring(0, 800)}`
-            : `RESOLVED_VALUE: ${String(resolved).substring(0, 500)}`;
-          throw new Error(`SDK threw a Promise that resolved: ${resolvedInfo}`);
-        } catch (inner: any) {
-          realError = inner;
-        }
-      }
-      // Build detailed debug string
-      const parts: string[] = [];
-      parts.push(`TYPE: ${realError?.constructor?.name}`);
-      parts.push(`MSG: ${realError?.message}`);
-      parts.push(`STATUS: ${realError?.statusCode}`);
-      parts.push(`KEYS: ${realError ? Object.getOwnPropertyNames(realError).join(', ') : ''}`);
-      if (realError?.cause) {
-        const c = realError.cause;
-        parts.push(`CAUSE_TYPE: ${c?.constructor?.name}`);
-        parts.push(`CAUSE_MSG: ${c?.message}`);
-        parts.push(`CAUSE_STATUS: ${c?.statusCode}`);
-        parts.push(`CAUSE_BODY: ${String(c?.responseBody || '').substring(0, 500)}`);
-      }
-      if (realError?.data) parts.push(`DATA: ${JSON.stringify(realError.data).substring(0, 500)}`);
-      if (realError?.responseBody) parts.push(`BODY: ${String(realError.responseBody).substring(0, 500)}`);
-      const debugInfo = parts.join(' | ');
-      throw new Error(`Video generation failed: ${debugInfo}`);
-    }
-    const { videos } = result;
+    const { videos } = await generateVideo({
+      model,
+      prompt: enhancedPrompt,
+      aspectRatio: options.aspectRatio,
+      duration: videoDuration,
+    });
 
     const elapsedTime = ((Date.now() - startTime) / 1000).toFixed(1);
     console.log(`✅ VIDEO AGENT: Video generated in ${elapsedTime}s`);
@@ -720,34 +683,11 @@ export async function executeVideoAgent(
 
     return video;
   } catch (error) {
+    const report = await inspectError(error);
+    const lines = formatErrorReport(report);
     console.error(`❌ VIDEO AGENT: Failed to generate video for scene ${sceneIndex + 1}`);
-    // The AI SDK sometimes throws a Promise instead of an Error — resolve it
-    let resolvedError = error;
-    if (error && typeof error === 'object' && typeof (error as any).then === 'function') {
-      try {
-        await (error as Promise<unknown>);
-      } catch (inner) {
-        resolvedError = inner;
-      }
-    }
-    console.error('Error:', resolvedError);
-    // Extract meaningful error message from various error shapes
-    let errorMsg = 'Unknown video generation error';
-    if (resolvedError instanceof Error) {
-      errorMsg = resolvedError.message || errorMsg;
-      if ((resolvedError as any).status) errorMsg = `HTTP ${(resolvedError as any).status}: ${errorMsg}`;
-      if ((resolvedError as any).statusCode) errorMsg = `HTTP ${(resolvedError as any).statusCode}: ${errorMsg}`;
-      if ((resolvedError as any).cause) errorMsg += ` (cause: ${JSON.stringify((resolvedError as any).cause)})`;
-      if ((resolvedError as any).data) errorMsg += ` (data: ${JSON.stringify((resolvedError as any).data)})`;
-      if ((resolvedError as any).responseBody) errorMsg += ` (body: ${String((resolvedError as any).responseBody).substring(0, 500)})`;
-    } else if (typeof resolvedError === 'string') {
-      errorMsg = resolvedError;
-    } else if (resolvedError && typeof resolvedError === 'object') {
-      const obj = resolvedError as any;
-      errorMsg = obj.message || obj.error || obj.detail || JSON.stringify(obj);
-      if (errorMsg === '{}') errorMsg = `AI Gateway returned empty error — check gateway dashboard for rate limits or auth issues. Full error keys: ${Object.getOwnPropertyNames(obj).join(', ')}`;
-    }
-    throw new Error(errorMsg);
+    lines.forEach(l => console.error(`  ${l}`));
+    throw new Error(report.summary);
   }
 }
 

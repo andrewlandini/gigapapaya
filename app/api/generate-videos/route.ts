@@ -1,5 +1,6 @@
 import { NextRequest } from 'next/server';
 import { executeVideoAgent, describeStoryboardFrame } from '@/lib/ai/agents';
+import { inspectError, formatErrorReport } from '@/lib/ai/error-inspector';
 import { getSession } from '@/lib/auth/session';
 import {
   initDb,
@@ -166,26 +167,18 @@ export async function POST(request: NextRequest) {
               sendEvent({ type: 'video-complete', sceneIndex: i, videoId: video.id, video });
             } catch (error) {
               const shotElapsed = ((Date.now() - shotStartTime) / 1000).toFixed(1);
-              console.error(`❌ Failed to generate video ${i + 1}:`, error);
-              const errMsg = error instanceof Error ? error.message : 'Unknown error';
-              const errStack = error instanceof Error ? error.stack : String(error);
+              const report = await inspectError(error);
+              const debugLines = formatErrorReport(report);
+
               debug(`Shot ${i + 1} FAILED after ${shotElapsed}s`);
-              debug(`Error message: ${errMsg}`);
-              debug(`Error stack: ${errStack}`);
-              if (error && typeof error === 'object' && 'cause' in error) {
-                debug(`Error cause: ${JSON.stringify((error as any).cause, null, 2)}`);
-              }
-              if (error && typeof error === 'object') {
-                const keys = Object.keys(error).filter(k => !['message', 'stack', 'name'].includes(k));
-                if (keys.length > 0) debug(`Extra error fields: ${JSON.stringify(Object.fromEntries(keys.map(k => [k, (error as any)[k]])))}`);
-              }
-              sendEvent({ type: 'agent-log', agent: 'videos', status: `Shot ${i + 1} failed: ${errMsg}` });
+              debugLines.forEach(line => debug(line));
+
+              sendEvent({ type: 'agent-log', agent: 'videos', status: `Shot ${i + 1} failed: ${report.summary}` });
               sendEvent({
                 type: 'error',
-                message: `Failed to generate video ${i + 1}: ${errMsg}`,
+                message: `Failed to generate video ${i + 1}: ${report.summary}`,
                 sceneIndex: i,
               });
-              // Don't break — continue to next shot, falling back to storyboard frame
             }
           }
 
