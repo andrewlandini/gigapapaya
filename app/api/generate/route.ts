@@ -133,6 +133,7 @@ export async function POST(request: NextRequest) {
 
             // Build tagged reference image context for the idea agent
             const refImages = (options.referenceImages || []).filter((r: any) => r && r.dataUrl);
+            console.log(`📎 Reference images: ${refImages.length} provided (raw slots: ${(options.referenceImages || []).length}, non-null: ${(options.referenceImages || []).filter(Boolean).length})`);
             let ideaPromptWithRefs = idea;
             if (refImages.length > 0) {
               const tagList = refImages.map((r: any, i: number) => `[${r.tag || `image-${i + 1}`}]`).join(', ');
@@ -155,6 +156,7 @@ export async function POST(request: NextRequest) {
             sendEvent({ type: 'agent-log', agent: 'mood-board', status: `Creating visual references for "${ideaResult.title}"` });
 
             try {
+              sendEvent({ type: 'agent-log', agent: 'mood-board', status: `${refDataUrls.length > 0 ? `Passing ${refDataUrls.length} reference image(s) to mood board generation` : 'No reference images — generating from concept only'}` });
               moodBoard = await executeMoodBoardAgent(ideaResult, refDataUrls.length > 0 ? refDataUrls : undefined);
               sendEvent({ type: 'agent-log', agent: 'mood-board', status: `Generated ${moodBoard.length} reference images` });
               sendEvent({ type: 'mood-board-complete', moodBoard });

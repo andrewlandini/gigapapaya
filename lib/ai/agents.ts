@@ -426,9 +426,12 @@ Create a photorealistic, cinematic reference image that captures the visual styl
 async function geminiImage(prompt: string, referenceImages?: string[]): Promise<string> {
   let result;
   if (referenceImages && referenceImages.length > 0) {
+    console.log(`  📎 geminiImage: passing ${referenceImages.length} reference image(s) (sizes: ${referenceImages.map(r => `${Math.round(r.length / 1024)}KB`).join(', ')})`);
     // Multimodal: pass reference images + text prompt
+    // Wrap prompt to strongly instruct the model to use reference images as the visual basis
+    const refPrompt = `You are given ${referenceImages.length} reference image(s). These are the user's visual references — you MUST use them as the primary basis for the generated image. Match their visual style, color palette, lighting, composition, subject matter, and overall aesthetic as closely as possible. The output should look like it belongs in the same film or photo series as the reference images.\n\n${prompt}`;
     const content: any[] = referenceImages.map(img => ({ type: 'image' as const, image: img }));
-    content.push({ type: 'text' as const, text: prompt });
+    content.push({ type: 'text' as const, text: refPrompt });
     result = await generateText({
       model: getTextModel('google/gemini-2.5-flash-image'),
       providerOptions: {
