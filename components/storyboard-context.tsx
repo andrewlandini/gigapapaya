@@ -1,7 +1,7 @@
 'use client';
 
 import { createContext, useContext, useState, useCallback, useRef, useEffect, type ReactNode } from 'react';
-import type { GenerationState, GenerationOptions, SSEMessage, ProgressEvent, AgentConfig } from '@/lib/types';
+import type { GenerationState, GenerationOptions, SSEMessage, ProgressEvent, AgentConfig, ReferenceImage } from '@/lib/types';
 import { GENERATION_MODES, getModeById } from '@/lib/generation-modes';
 import { useDebug } from './debug-context';
 
@@ -47,9 +47,12 @@ interface StoryboardContextValue {
   customPrompts: CustomPrompts;
   updateModeCustomization: (modeId: string, field: keyof ModeCustomization, value: string) => void;
   restoreModeDefault: (modeId: string, agent: 'idea' | 'scene') => void;
-  // Reference images
-  addReferenceImage: (dataUrl: string) => void;
-  removeReferenceImage: (index: number) => void;
+  // Reference images (slot-based)
+  setReferenceImageSlot: (index: number, dataUrl: string, tag: string) => void;
+  clearReferenceImageSlot: (index: number) => void;
+  removeReferenceImageSlot: (index: number) => void;
+  addEmptySlot: () => void;
+  resetReferenceImages: () => void;
   // History
   history: HistoryEntry[];
   deleteHistoryEntry: (id: string) => void;
@@ -150,18 +153,57 @@ export function StoryboardProvider({ children }: { children: ReactNode }) {
     setState(prev => ({ ...prev, idea }));
   }, []);
 
-  const addReferenceImage = useCallback((dataUrl: string) => {
-    setOptionsState(prev => ({
-      ...prev,
-      referenceImages: [...(prev.referenceImages || []), dataUrl],
-    }));
+  // Slot-based reference images (2 empty slots by default)
+  const ensureSlots = useCallback(() => {
+    setOptionsState(prev => {
+      if (!prev.referenceImages || prev.referenceImages.length === 0) {
+        return { ...prev, referenceImages: [null, null] };
+      }
+      return prev;
+    });
   }, []);
 
-  const removeReferenceImage = useCallback((index: number) => {
-    setOptionsState(prev => ({
-      ...prev,
-      referenceImages: (prev.referenceImages || []).filter((_, i) => i !== index),
-    }));
+  // Initialize slots on mount
+  useEffect(() => { ensureSlots(); }, [ensureSlots]);
+
+  const setReferenceImageSlot = useCallback((index: number, dataUrl: string, tag: string) => {
+    setOptionsState(prev => {
+      const slots = [...(prev.referenceImages || [null, null])];
+      while (slots.length <= index) slots.push(null);
+      slots[index] = { dataUrl, tag };
+      return { ...prev, referenceImages: slots };
+    });
+  }, []);
+
+  const clearReferenceImageSlot = useCallback((index: number) => {
+    setOptionsState(prev => {
+      const slots = [...(prev.referenceImages || [null, null])];
+      if (index < slots.length) slots[index] = null;
+      return { ...prev, referenceImages: slots };
+    });
+  }, []);
+
+  const removeReferenceImageSlot = useCallback((index: number) => {
+    setOptionsState(prev => {
+      const slots = [...(prev.referenceImages || [null, null])];
+      slots.splice(index, 1);
+      // Never go below 2 slots
+      while (slots.length < 2) slots.push(null);
+      return { ...prev, referenceImages: slots };
+    });
+  }, []);
+
+  const addEmptySlot = useCallback(() => {
+    setOptionsState(prev => {
+      const slots = [...(prev.referenceImages || [null, null])];
+      if (slots.length >= 14) return prev;
+      slots.push(null);
+      return { ...prev, referenceImages: slots };
+    });
+  }, []);
+
+  const resetReferenceImages = useCallback(() => {
+    setOptionsState(prev => ({ ...prev, referenceImages: [null, null] }));
   }, []);
 
   const setOptions = useCallback((updater: (prev: GenerationOptions) => GenerationOptions) => {
@@ -698,7 +740,7 @@ export function StoryboardProvider({ children }: { children: ReactNode }) {
       startModeGeneration, startDirectGeneration, handleGenerateVideos, handleReset, clearGeneration,
       isGenerating,
       rerunShot, rerunningShots,
-      addReferenceImage, removeReferenceImage,
+      setReferenceImageSlot, clearReferenceImageSlot, removeReferenceImageSlot, addEmptySlot, resetReferenceImages,
       customPrompts, updateModeCustomization, restoreModeDefault,
       history, deleteHistoryEntry, clearHistory, loadFromHistory,
     }}>

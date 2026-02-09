@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { RotateCcw, Play, X, Clock, ChevronDown, Settings2, RotateCw, AlertCircle, Loader2, ImagePlus, MessageSquare } from 'lucide-react';
+import { ReferenceImages } from './reference-images';
 import { formatCostWithCredits, estimateGenerateVideosCost, estimateVideoCost, estimateStoryboardTotalCost } from '@/lib/costs';
 
 const HEADLINES = [
@@ -60,7 +61,7 @@ export function VideoGenerator() {
     updateScenePrompt, updateSceneDialogue, removeScene, startModeGeneration, startDirectGeneration, handleGenerateVideos, handleReset, clearGeneration,
     isGenerating,
     rerunShot, rerunningShots,
-    addReferenceImage, removeReferenceImage,
+    setReferenceImageSlot, clearReferenceImageSlot, removeReferenceImageSlot, addEmptySlot, resetReferenceImages,
     customPrompts, updateModeCustomization, restoreModeDefault,
     history, deleteHistoryEntry, loadFromHistory,
   } = useStoryboard();
@@ -211,7 +212,7 @@ export function VideoGenerator() {
         {/* Hero + Input */}
         <div className="max-w-3xl mx-auto space-y-8 text-center">
           {!wizardActive && (
-            <h1 className={`text-[40px] font-bold tracking-tight leading-tight transition-opacity duration-700 ease-in-out ${isActive ? (headlineFade ? 'opacity-100' : 'opacity-0') : 'animate-fade-in'}`}>{isActive && generatingHeadline ? generatingHeadline : headline}</h1>
+            <h1 className={`text-[40px] font-semibold font-[family-name:var(--font-geist-sans)] tracking-tight leading-tight transition-opacity duration-700 ease-in-out ${isActive ? (headlineFade ? 'opacity-100' : 'opacity-0') : 'animate-fade-in'}`}>{isActive && generatingHeadline ? generatingHeadline : headline}</h1>
           )}
 
           {/* Input & mode buttons — hidden when generating/reviewing/complete */}
@@ -315,49 +316,15 @@ export function VideoGenerator() {
                 </div>
               </div>
 
-              {/* Reference images (beta only) */}
-              {(options.referenceImages?.length || 0) > 0 && (
-                <div className="flex items-center gap-2 flex-wrap">
-                  {options.referenceImages!.map((img, i) => (
-                    <div key={i} className="relative group/img">
-                      <img src={img} alt={`Reference ${i + 1}`} className="h-16 w-24 object-cover rounded-lg border border-[#333]" />
-                      <button
-                        onClick={() => removeReferenceImage(i)}
-                        className="absolute -top-1.5 -right-1.5 h-5 w-5 rounded-full bg-[#222] border border-[#444] flex items-center justify-center opacity-0 group-hover/img:opacity-100 transition-opacity"
-                      >
-                        <X className="h-3 w-3 text-[#888]" />
-                      </button>
-                    </div>
-                  ))}
-                  <label className="h-16 w-16 rounded-lg border border-dashed border-[#333] flex items-center justify-center cursor-pointer hover:border-[#555] transition-colors">
-                    <ImagePlus className="h-4 w-4 text-[#555]" />
-                    <input type="file" name="referenceImages" accept="image/*" multiple className="hidden" onChange={(e) => {
-                      const files = Array.from(e.target.files || []);
-                      files.forEach(file => {
-                        const reader = new FileReader();
-                        reader.onload = () => addReferenceImage(reader.result as string);
-                        reader.readAsDataURL(file);
-                      });
-                      e.target.value = '';
-                    }} />
-                  </label>
-                </div>
-              )}
-              {(options.referenceImages?.length || 0) === 0 && (
-                <label className="flex items-center gap-2 h-9 px-3 rounded-lg border border-dashed border-[#333] cursor-pointer hover:border-[#555] transition-colors">
-                  <ImagePlus className="h-3.5 w-3.5 text-[#555]" />
-                  <span className="text-xs text-[#555]">Add reference images</span>
-                  <input type="file" name="referenceImagesAdd" accept="image/*" multiple className="hidden" onChange={(e) => {
-                    const files = Array.from(e.target.files || []);
-                    files.forEach(file => {
-                      const reader = new FileReader();
-                      reader.onload = () => addReferenceImage(reader.result as string);
-                      reader.readAsDataURL(file);
-                    });
-                    e.target.value = '';
-                  }} />
-                </label>
-              )}
+              {/* Reference Images */}
+              <ReferenceImages
+                images={options.referenceImages || [null, null]}
+                onSetSlot={setReferenceImageSlot}
+                onClearSlot={clearReferenceImageSlot}
+                onRemoveSlot={removeReferenceImageSlot}
+                onAddEmptySlot={addEmptySlot}
+                onReset={resetReferenceImages}
+              />
 
               {/* Mode buttons */}
               {/* Cost estimate */}

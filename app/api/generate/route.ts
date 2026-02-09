@@ -131,7 +131,16 @@ export async function POST(request: NextRequest) {
             sendEvent({ type: 'agent-log', agent: 'idea', status: 'Analyzing input for visual potential, narrative hooks, and cinematic style...' });
             sendEvent({ type: 'agent-start', agent: 'idea', status: 'Generating creative video concept...' });
 
-            const ideaResult = await executeIdeaAgent(idea, options.ideaAgent);
+            // Build tagged reference image context for the idea agent
+            const refImages = (options.referenceImages || []).filter((r: any) => r && r.dataUrl);
+            let ideaPromptWithRefs = idea;
+            if (refImages.length > 0) {
+              const tagList = refImages.map((r: any, i: number) => `[${r.tag || `image-${i + 1}`}]`).join(', ');
+              ideaPromptWithRefs = `${idea}\n\nThe user provided these reference images for visual guidance: ${tagList}. Incorporate these visual elements into the concept.`;
+              sendEvent({ type: 'agent-log', agent: 'idea', status: `Reference images: ${tagList}` });
+            }
+
+            const ideaResult = await executeIdeaAgent(ideaPromptWithRefs, options.ideaAgent);
             await updateGenerationIdea(sessionId, ideaResult);
 
             sendEvent({ type: 'agent-log', agent: 'idea', status: `Concept: "${ideaResult.title}"` });
@@ -145,7 +154,8 @@ export async function POST(request: NextRequest) {
             sendEvent({ type: 'agent-log', agent: 'mood-board', status: `Creating visual references for "${ideaResult.title}"` });
 
             try {
-              moodBoard = await executeMoodBoardAgent(ideaResult, options.referenceImages);
+              const refDataUrls = refImages.map((r: any) => r.dataUrl as string);
+              moodBoard = await executeMoodBoardAgent(ideaResult, refDataUrls.length > 0 ? refDataUrls : undefined);
               sendEvent({ type: 'agent-log', agent: 'mood-board', status: `Generated ${moodBoard.length} reference images` });
               sendEvent({ type: 'mood-board-complete', moodBoard });
             } catch (error) {

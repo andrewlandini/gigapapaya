@@ -1,5 +1,10 @@
 // Core types for the video generation app
 
+export interface ReferenceImage {
+  dataUrl: string;
+  tag: string;
+}
+
 export interface VideoIdea {
   title: string;
   description: string;
@@ -98,7 +103,7 @@ export interface GenerationOptions {
   ideaAgent?: AgentConfig;
   sceneAgent?: AgentConfig;
   modeId?: string; // generation mode (action, comedy, deadpan, stylize, unhinged)
-  referenceImages?: string[]; // user-uploaded reference image data URLs
+  referenceImages?: (ReferenceImage | null)[]; // slot-based reference images (null = empty slot)
   useMoodBoard?: boolean; // beta: enable mood board generation + reference images
 }
 
