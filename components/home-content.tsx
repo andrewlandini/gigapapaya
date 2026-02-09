@@ -85,14 +85,14 @@ export function HomeContent({ videos: initialVideos, isAuthenticated }: HomeCont
                 >
                   {draft.status === 'complete' && draft.videos.length > 0 ? (
                     draft.videos[0].thumbnailUrl ? (
-                      <img src={draft.videos[0].thumbnailUrl} alt="" className="w-full h-full object-cover" />
+                      <img src={draft.videos[0].thumbnailUrl} alt="" className="w-full h-full object-contain bg-black" />
                     ) : (
                       <video
                         src={draft.videos[0].url}
                         muted
                         playsInline
                         preload="metadata"
-                        className="w-full h-full object-cover"
+                        className="w-full h-full object-contain bg-black"
                       />
                     )
                   ) : draft.status === 'error' ? (

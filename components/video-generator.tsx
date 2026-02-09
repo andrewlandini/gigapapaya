@@ -525,7 +525,7 @@ export function VideoGenerator() {
             <h2 className="text-sm font-medium text-[#ededed]">Mood Board</h2>
             <div className="grid grid-cols-3 gap-3">
               {state.moodBoard.map((img, i) => (
-                <img key={i} src={img} alt={`Mood board ${i + 1}`} className="w-full aspect-video object-cover rounded-xl border border-[#222] animate-scale-in" style={{ animationDelay: `${i * 200}ms` }} />
+                <img key={i} src={img} alt={`Mood board ${i + 1}`} className="w-full aspect-video object-contain rounded-xl border border-[#222] animate-scale-in bg-black" style={{ animationDelay: `${i * 200}ms` }} />
               ))}
             </div>
           </div>
@@ -538,7 +538,7 @@ export function VideoGenerator() {
             <div className="flex gap-3 flex-wrap">
               {Object.entries(state.characterPortraits).map(([name, img], i) => (
                 <div key={name} className="text-center space-y-1.5 animate-scale-in" style={{ animationDelay: `${i * 200}ms` }}>
-                  <img src={img} alt={name} className="w-20 h-20 object-cover rounded-full border border-[#333]" />
+                  <img src={img} alt={name} className="w-20 h-20 object-contain rounded-full border border-[#333] bg-black" />
                   <span className="text-xs font-mono text-[#888] block">{name}</span>
                 </div>
               ))}
@@ -587,7 +587,7 @@ export function VideoGenerator() {
                     <div className="relative bg-[#0a0a0a]">
                       {state.storyboardImages[i] ? (
                         <>
-                          <img src={state.storyboardImages[i]} alt={`Shot ${i + 1}`} className="w-full aspect-video object-cover animate-scale-in" />
+                          <img src={state.storyboardImages[i]} alt={`Shot ${i + 1}`} className="w-full aspect-video object-contain animate-scale-in bg-black" />
                           {isReviewing && (
                             <button
                               onClick={() => {

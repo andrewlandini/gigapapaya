@@ -49,7 +49,7 @@ function HoverVideo({ video, isRerunning }: { video: Video; isRerunning: boolean
         <img
           src={video.thumbnailUrl}
           alt=""
-          className="absolute inset-0 w-full h-full object-cover"
+          className="absolute inset-0 w-full h-full object-contain bg-black"
         />
       )}
       {/* Video — only loads src on hover */}

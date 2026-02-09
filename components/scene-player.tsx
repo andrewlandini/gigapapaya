@@ -354,11 +354,11 @@ export function ScenePlayer({ videos, autoProgress: initialAutoProgress = true }
               style={{ width: 120, height: 68 }}
             >
               {v.thumbnail_url ? (
-                <img src={v.thumbnail_url} alt="" className="w-full h-full object-cover" />
+                <img src={v.thumbnail_url} alt="" className="w-full h-full object-contain bg-black" />
               ) : (
                 <video
                   src={v.blob_url}
-                  className="w-full h-full object-cover"
+                  className="w-full h-full object-contain bg-black"
                   muted
                   preload="metadata"
                 />
