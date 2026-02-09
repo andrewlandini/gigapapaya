@@ -342,6 +342,8 @@ export async function executeMoodBoardAgent(
   console.log(`📋 Concept: ${idea.title}`);
   console.log(`🎨 Style: ${idea.style}, Mood: ${idea.mood}`);
 
+  const hasRefs = referenceImages && referenceImages.length > 0;
+
   const moodBoardPrompt = `Generate a cinematic still frame / reference image for this video concept:
 
 Title: ${idea.title}
@@ -350,15 +352,19 @@ Visual Style: ${idea.style}
 Mood: ${idea.mood}
 Key Elements: ${idea.keyElements.join(', ')}
 
-Create a photorealistic, cinematic reference image that captures the visual style, color palette, lighting, and atmosphere of this concept. This image will be used as a visual reference for AI video generation — focus on establishing the look and feel, not telling a story. Think of it as a single frame from the final video.`;
+Create a photorealistic, cinematic reference image that captures the visual style, color palette, lighting, and atmosphere of this concept. This image will be used as a visual reference for AI video generation — focus on establishing the look and feel, not telling a story. Think of it as a single frame from the final video.${hasRefs ? '\n\nThe user has provided reference images — use them as strong visual guidance for style, color palette, composition, and subject matter. Match the look and feel of the reference images closely.' : ''}`;
 
   const results: string[] = [];
+
+  if (hasRefs) {
+    console.log(`📎 ${referenceImages.length} user reference image(s) provided — passing to Gemini`);
+  }
 
   // Generate 3 mood board images using Gemini multimodal
   for (let i = 0; i < 3; i++) {
     try {
       console.log(`🖼️  Generating mood board image ${i + 1}/3...`);
-      const url = await geminiImage(moodBoardPrompt + ' Output only the image.');
+      const url = await geminiImage(moodBoardPrompt + ' Output only the image.', referenceImages);
       if (url) {
         results.push(url);
         console.log(`✅ Mood board image ${i + 1} generated`);
