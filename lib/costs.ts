@@ -23,10 +23,13 @@ export function estimateVideoCost(durationSec: number, hasDialogue: boolean): nu
 }
 
 export function estimateGenerateVideosCost(
-  scenes: Array<{ duration: number; dialogue?: string }>
+  scenes: Array<{ duration: number; dialogue?: string | Array<{ character: string; line: string }> }>
 ): number {
   return scenes.reduce((total, scene) => {
-    return total + estimateVideoCost(scene.duration, Boolean(scene.dialogue?.trim()));
+    const hasDialogue = Array.isArray(scene.dialogue)
+      ? scene.dialogue.length > 0
+      : Boolean(scene.dialogue?.trim());
+    return total + estimateVideoCost(scene.duration, hasDialogue);
   }, 0);
 }
 

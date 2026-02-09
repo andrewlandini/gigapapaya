@@ -1,7 +1,7 @@
 'use client';
 
 import { createContext, useContext, useState, useCallback, useRef, useEffect, type ReactNode } from 'react';
-import type { GenerationState, GenerationOptions, SSEMessage, ProgressEvent, AgentConfig, ReferenceImage } from '@/lib/types';
+import type { GenerationState, GenerationOptions, SSEMessage, ProgressEvent, AgentConfig, ReferenceImage, DialogueLine } from '@/lib/types';
 import { GENERATION_MODES, getModeById } from '@/lib/generation-modes';
 import { useDebug } from './debug-context';
 
@@ -32,7 +32,7 @@ interface StoryboardContextValue {
   setIdea: (idea: string) => void;
   setOptions: (updater: (prev: GenerationOptions) => GenerationOptions) => void;
   updateScenePrompt: (index: number, prompt: string) => void;
-  updateSceneDialogue: (index: number, dialogue: string) => void;
+  updateSceneDialogue: (index: number, dialogue: DialogueLine[]) => void;
   removeScene: (index: number) => void;
   startModeGeneration: (modeId: string) => void;
   startDirectGeneration: () => void;
@@ -259,7 +259,7 @@ export function StoryboardProvider({ children }: { children: ReactNode }) {
     }));
   }, []);
 
-  const updateSceneDialogue = useCallback((index: number, dialogue: string) => {
+  const updateSceneDialogue = useCallback((index: number, dialogue: DialogueLine[]) => {
     setState(prev => ({
       ...prev,
       editableScenes: prev.editableScenes?.map((s, i) =>
@@ -429,17 +429,27 @@ export function StoryboardProvider({ children }: { children: ReactNode }) {
                 ...prev,
                 status: 'reviewing',
                 editableScenes: prev.scenes ? prev.scenes.map(s => {
-                  // Ensure dialogue field exists (safety net if agent omits it)
-                  const scene = { ...s, dialogue: s.dialogue || '', characters: s.characters || [] };
-                  // If dialogue ended up in the prompt (old agent behavior), extract it
-                  if (!scene.dialogue) {
-                    const match = scene.prompt.match(/"([^"]{3,})"/);
+                  const characters = s.characters || [];
+                  // Ensure dialogue field is a DialogueLine[] (backward compat)
+                  let dialogue: DialogueLine[];
+                  if (Array.isArray(s.dialogue)) {
+                    dialogue = s.dialogue;
+                  } else if (typeof s.dialogue === 'string' && (s.dialogue as string).trim()) {
+                    // Old agent returned a plain string — wrap it
+                    dialogue = [{ character: characters[0] || 'Character', line: s.dialogue as string }];
+                  } else {
+                    dialogue = [];
+                  }
+                  let prompt = s.prompt;
+                  // If dialogue is empty and there's quoted text in the prompt, extract it
+                  if (dialogue.length === 0) {
+                    const match = prompt.match(/"([^"]{3,})"/);
                     if (match) {
-                      scene.dialogue = match[1];
-                      scene.prompt = scene.prompt.replace(`"${match[1]}"`, '').replace(/,\s*saying\s*,/, ',').replace(/\s+/g, ' ').trim();
+                      dialogue = [{ character: characters[0] || 'Character', line: match[1] }];
+                      prompt = prompt.replace(`"${match[1]}"`, '').replace(/,\s*saying\s*,/, ',').replace(/\s+/g, ' ').trim();
                     }
                   }
-                  return scene;
+                  return { ...s, dialogue, characters, prompt };
                 }) : null,
                 moodBoard: data.moodBoard || prev.moodBoard,
                 storyboardImages: data.storyboardImages || prev.storyboardImages,
@@ -579,7 +589,7 @@ export function StoryboardProvider({ children }: { children: ReactNode }) {
     setState(prev => {
       if (!prev.editableScenes) return prev;
 
-      log('client', { type: 'video-generation-start', sceneCount: prev.editableScenes.length, scenes: prev.editableScenes.map((s, i) => ({ shot: i + 1, duration: s.duration, promptLength: s.prompt.length, hasDialogue: !!s.dialogue })) });
+      log('client', { type: 'video-generation-start', sceneCount: prev.editableScenes.length, scenes: prev.editableScenes.map((s, i) => ({ shot: i + 1, duration: s.duration, promptLength: s.prompt.length, hasDialogue: Array.isArray(s.dialogue) && s.dialogue.length > 0 })) });
       const scenes = prev.editableScenes.map(s => ({ prompt: s.prompt, dialogue: s.dialogue, duration: s.duration }));
       const style = prev.generatedIdea?.style || '';
       const mood = prev.generatedIdea?.mood || '';

@@ -19,10 +19,15 @@ export interface Character {
   sceneIndices: number[];
 }
 
+export interface DialogueLine {
+  character: string;
+  line: string;
+}
+
 export interface Scene {
   index: number;
   prompt: string;
-  dialogue: string;
+  dialogue: DialogueLine[];
   characters: string[];
   duration: number;
   notes: string;

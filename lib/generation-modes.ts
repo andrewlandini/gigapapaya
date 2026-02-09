@@ -46,7 +46,7 @@ Write prompts that look like REAL MOVIES — specific people, specific places, s
 
 Each prompt must include (in order): shot type, character (age/build/hair/key clothing), action, environment, camera/style tag, audio cue. ONE action per scene. Re-describe characters every time.
 
-DIALOGUE: Short, clipped, real stress — "Go go go—" / "I can't— my leg—" / "Which door. WHICH DOOR." Half-sentences, heavy breathing. Dialogue flows as one conversation across scenes.`,
+DIALOGUE: Short, clipped, real stress — "Go go go—" / "I can't— my leg—" / "Which door. WHICH DOOR." Half-sentences, heavy breathing. Dialogue flows as one conversation across scenes. Output dialogue as array of { character, line } objects in speaking order.`,
   },
   {
     id: 'comedy',
@@ -87,7 +87,7 @@ PROMPT LENGTH LIMIT (MOST IMPORTANT RULE): Each scene's "prompt" field must be 6
 
 Comedy rules: Every scene plays the GAME (the comedic pattern). Each scene escalates it. Write specific BEHAVIOR not reactions — "he straightens the same stack of papers three times" not "he nervously fidgets." Wide shots for physical comedy, close-ups for reactions. Re-describe characters every time.
 
-DIALOGUE: Real human speech — fixating on wrong details, trailing off, "wait, what?", calmly stating insane things. Not sitcom quips. Dialogue flows as one conversation across scenes.`,
+DIALOGUE: Real human speech — fixating on wrong details, trailing off, "wait, what?", calmly stating insane things. Not sitcom quips. Dialogue flows as one conversation across scenes. Output dialogue as array of { character, line } objects in speaking order.`,
   },
   {
     id: 'deadpan',
@@ -127,7 +127,7 @@ PROMPT LENGTH LIMIT (MOST IMPORTANT RULE): Each scene's "prompt" field must be 6
 
 Deadpan rules: Camera is a disinterested observer — symmetrical, static, flat lighting like a corporate training video. Characters want something BORING (finish paperwork, find parking). The absurd situation is just an obstacle. Write specific behavior: "checks watch, goes back to filling out the form, clicks pen twice." Each scene more absurd, same flat energy. Re-describe characters every time.
 
-DIALOGUE: Flat, procedural, bored. Talk about insane things like a printer jam. "So apparently there is a — yeah. I already called someone, they said Tuesday." Dialogue flows as one conversation across scenes.`,
+DIALOGUE: Flat, procedural, bored. Talk about insane things like a printer jam. "So apparently there is a — yeah. I already called someone, they said Tuesday." Dialogue flows as one conversation across scenes. Output dialogue as array of { character, line } objects in speaking order.`,
   },
   {
     id: 'stylize',
@@ -163,7 +163,7 @@ PROMPT LENGTH LIMIT (MOST IMPORTANT RULE): Each scene's "prompt" field must be 6
 
 Stylize rules: Every prompt is atmosphere-first. Include color temperature/palette, focus depth, camera movement, and texture in each prompt. No post-production overlays — style comes from real cinematography (haze, grain, practical lighting). Strict visual consistency across all scenes. Re-describe characters every time.
 
-DIALOGUE: Dreamy, wandering, atmospheric — matching the mood. Natural speech. Dialogue flows as one conversation across scenes. Only skip if no speaking characters.`,
+DIALOGUE: Dreamy, wandering, atmospheric — matching the mood. Natural speech. Dialogue flows as one conversation across scenes. Only skip if no speaking characters. Output dialogue as array of { character, line } objects in speaking order.`,
   },
   {
     id: 'unhinged',
@@ -201,7 +201,7 @@ PROMPT LENGTH LIMIT (MOST IMPORTANT RULE): Each scene's "prompt" field must be 6
 
 Unhinged rules: Shoot it in the WRONG GENRE with genuine skill — nature doc, prestige drama, sports broadcast. Characters are fully committed, nobody thinks it's weird. Each scene crosses a new line. Write specific behavior: "he removes his sunglasses, stares into the middle distance" not "he acts dramatic." Re-describe characters every time.
 
-DIALOGUE: Wrong-genre dialogue. Mundane situations get intense dramatic delivery. Intense situations get casual bored delivery. The mismatch IS the joke. Dialogue flows as one conversation across scenes.`,
+DIALOGUE: Wrong-genre dialogue. Mundane situations get intense dramatic delivery. Intense situations get casual bored delivery. The mismatch IS the joke. Dialogue flows as one conversation across scenes. Output dialogue as array of { character, line } objects in speaking order.`,
   },
 ];
 

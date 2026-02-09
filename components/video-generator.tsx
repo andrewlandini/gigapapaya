@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { RotateCcw, Play, X, Clock, ChevronDown, Settings2, RotateCw, AlertCircle, Loader2, ImagePlus, MessageSquare } from 'lucide-react';
+import { RotateCcw, Play, X, Clock, ChevronDown, ChevronUp, Settings2, RotateCw, AlertCircle, Loader2, ImagePlus, MessageSquare } from 'lucide-react';
 import { ReferenceImages } from './reference-images';
 import { formatCostWithCredits, estimateGenerateVideosCost, estimateVideoCost, estimateStoryboardTotalCost } from '@/lib/costs';
 
@@ -52,7 +52,7 @@ import { ScenePreview } from './scene-preview';
 import { VideoGallery } from './video-gallery';
 import { useStoryboard } from './storyboard-context';
 import { IdeaWizard } from './idea-wizard';
-import { TEXT_MODELS } from '@/lib/types';
+import { TEXT_MODELS, type DialogueLine } from '@/lib/types';
 import { GENERATION_MODES, getModeById } from '@/lib/generation-modes';
 
 export function VideoGenerator() {
@@ -627,22 +627,105 @@ export function VideoGenerator() {
                       <div className="flex items-center gap-1.5 mb-1.5">
                         <MessageSquare className="h-3 w-3 text-[#555]" />
                         <label className="text-[10px] font-mono text-[#555] uppercase tracking-wider">dialogue</label>
-                        {scene.characters?.length > 0 && (
-                          <span className="text-[10px] font-mono text-[#444] ml-auto">{scene.characters.join(', ')}</span>
-                        )}
                       </div>
                       {isReviewing ? (
-                        <input
-                          type="text"
-                          value={scene.dialogue || ''}
-                          onChange={(e) => updateSceneDialogue(i, e.target.value)}
-                          placeholder="What does the character say?"
-                          className="w-full bg-[#111] border border-[#333] rounded-lg px-3 py-2 text-sm text-[#e0c866] placeholder:text-[#555] focus:outline-none focus:border-[#555] focus:ring-1 focus:ring-white/10 italic"
-                        />
+                        <div className="space-y-2">
+                          {(scene.dialogue || []).map((dl: DialogueLine, dlIdx: number) => (
+                            <div key={dlIdx} className="flex items-start gap-1.5 group">
+                              {/* Reorder buttons */}
+                              <div className="flex flex-col gap-0 pt-1">
+                                <button
+                                  onClick={() => {
+                                    if (dlIdx === 0) return;
+                                    const d = [...scene.dialogue];
+                                    [d[dlIdx - 1], d[dlIdx]] = [d[dlIdx], d[dlIdx - 1]];
+                                    updateSceneDialogue(i, d);
+                                  }}
+                                  disabled={dlIdx === 0}
+                                  className="text-[#444] hover:text-[#888] disabled:opacity-20 transition-colors"
+                                  title="Move up"
+                                >
+                                  <ChevronUp className="h-3 w-3" />
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    if (dlIdx === scene.dialogue.length - 1) return;
+                                    const d = [...scene.dialogue];
+                                    [d[dlIdx], d[dlIdx + 1]] = [d[dlIdx + 1], d[dlIdx]];
+                                    updateSceneDialogue(i, d);
+                                  }}
+                                  disabled={dlIdx === scene.dialogue.length - 1}
+                                  className="text-[#444] hover:text-[#888] disabled:opacity-20 transition-colors"
+                                  title="Move down"
+                                >
+                                  <ChevronDown className="h-3 w-3" />
+                                </button>
+                              </div>
+                              {/* Character selector */}
+                              <select
+                                value={dl.character}
+                                onChange={(e) => {
+                                  const d = [...scene.dialogue];
+                                  d[dlIdx] = { ...dl, character: e.target.value };
+                                  updateSceneDialogue(i, d);
+                                }}
+                                className="h-7 px-1.5 rounded-md bg-[#0a0a0a] border border-[#333] text-[10px] text-[#e0c866] font-mono focus:outline-none flex-shrink-0 min-w-0"
+                              >
+                                {(scene.characters || []).map((c: string) => (
+                                  <option key={c} value={c}>{c}</option>
+                                ))}
+                                {/* Include current character if not in scene.characters */}
+                                {dl.character && !(scene.characters || []).includes(dl.character) && (
+                                  <option value={dl.character}>{dl.character}</option>
+                                )}
+                              </select>
+                              {/* Line text — auto-expanding */}
+                              <textarea
+                                value={dl.line}
+                                onChange={(e) => {
+                                  const d = [...scene.dialogue];
+                                  d[dlIdx] = { ...dl, line: e.target.value };
+                                  updateSceneDialogue(i, d);
+                                }}
+                                placeholder="What do they say?"
+                                className="flex-1 min-w-0 bg-[#111] border border-[#333] rounded-lg px-2 py-1.5 text-sm text-[#e0c866] placeholder:text-[#555] focus:outline-none focus:border-[#555] italic resize-none"
+                                style={{ fieldSizing: 'content' as any, minHeight: '2rem' }}
+                              />
+                              {/* Remove line */}
+                              <button
+                                onClick={() => {
+                                  updateSceneDialogue(i, scene.dialogue.filter((_: DialogueLine, idx: number) => idx !== dlIdx));
+                                }}
+                                className="p-1 mt-1 text-[#333] hover:text-[#ff4444] transition-colors opacity-0 group-hover:opacity-100"
+                                title="Remove line"
+                              >
+                                <X className="h-3 w-3" />
+                              </button>
+                            </div>
+                          ))}
+                          {/* Add line */}
+                          <button
+                            onClick={() => {
+                              const defaultChar = scene.characters?.[0] || 'Character';
+                              updateSceneDialogue(i, [...(scene.dialogue || []), { character: defaultChar, line: '' }]);
+                            }}
+                            className="text-[10px] font-mono text-[#444] hover:text-[#888] transition-colors"
+                          >
+                            + Add line
+                          </button>
+                        </div>
                       ) : (
-                        <p className="w-full bg-[#111] border border-[#222] rounded-lg px-3 py-2 text-sm text-[#e0c866]/60 italic">
-                          {scene.dialogue || '\u00A0'}
-                        </p>
+                        <div className="space-y-1">
+                          {(scene.dialogue || []).map((dl: DialogueLine, dlIdx: number) => (
+                            <p key={dlIdx} className="text-sm text-[#e0c866]/60 italic">
+                              <span className="text-[10px] font-mono text-[#555] not-italic mr-1.5">{dl.character}:</span>
+                              {dl.line}
+                            </p>
+                          ))}
+                          {(!scene.dialogue || scene.dialogue.length === 0) && (
+                            <p className="text-sm text-[#555] italic">(no dialogue)</p>
+                          )}
+                        </div>
                       )}
                     </div>
 
@@ -714,7 +797,7 @@ export function VideoGenerator() {
                         </button>
                         {!isRerunning && (
                           <span className="text-[10px] font-mono text-[#FF0000]">
-                            {formatCostWithCredits(estimateVideoCost(scene.duration, Boolean(scene.dialogue?.trim())))}
+                            {formatCostWithCredits(estimateVideoCost(scene.duration, scene.dialogue?.length > 0))}
                           </span>
                         )}
                       </div>

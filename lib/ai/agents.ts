@@ -33,7 +33,10 @@ const videoIdeaSchema = z.object({
 const sceneSchema = z.object({
   index: z.number().describe('Shot number'),
   prompt: z.string().describe('Veo 3.1-ready VISUAL prompt: [SHOT TYPE] + [SUBJECT with full description] + [ACTION] + [STYLE/CAMERA/LENS] + [CAMERA MOVEMENT] + [AUDIO]. Do NOT include dialogue here — dialogue goes in the separate dialogue field. Must be fully self-contained — Veo 3.1 has zero context between shots.'),
-  dialogue: z.string().describe('REQUIRED: The exact spoken words for this shot. Write what the character ACTUALLY SAYS out loud — short, punchy, conversational. NOT a description of what they might say. The actual words. Almost every shot should have dialogue. Only empty string for pure environment shots with no people.'),
+  dialogue: z.array(z.object({
+    character: z.string().describe('The name of the character speaking this line (must match a name in the characters array)'),
+    line: z.string().describe('The exact spoken words — short, punchy, conversational. NOT a description. THE ACTUAL WORDS.'),
+  })).describe('REQUIRED: Array of dialogue lines in speaking order. Each entry is one character utterance. Example: [{ character: "Mike", line: "Hey." }, { character: "Sarah", line: "What?" }]. Almost every shot with people should have dialogue. Empty array ONLY for pure environment shots.'),
   characters: z.array(z.string()).describe('Short consistent names of characters appearing in this scene (e.g. ["Mike", "Sarah"]). Use the same name across all scenes for the same character. Empty array if no characters.'),
   duration: z.number().describe('Duration in seconds (2, 4, 6, or 8)'),
   notes: z.string().describe('What happens narratively in this shot and how it connects to the next'),
@@ -139,7 +142,10 @@ Rules:
 
 DIALOGUE IS NOT OPTIONAL:
 - If there is a person in the shot, they should almost certainly be TALKING. Veo 3.1's speech model is one of its strongest features — USE IT. A character who is present but silent wastes the most powerful tool you have.
-- The ONLY time dialogue should be empty is a pure environment shot with no people, or a rare dramatic beat where silence is the entire point of the shot (max 1 silent shot per video).
+- The "dialogue" field is an ARRAY of { character, line } objects, in speaking order. Each object is one character's utterance.
+  - For a two-person exchange: [{ character: "Mike", line: "Hey." }, { character: "Sarah", line: "What's up?" }]
+  - For a single character: [{ character: "Mike", line: "Okay, let's do this." }]
+- The ONLY time dialogue should be an empty array is a pure environment shot with no people, or a rare dramatic beat where silence is the entire point of the shot (max 1 silent shot per video).
 - When in doubt: give them something to say. Even a sigh, a muttered "okay," or a half-sentence they abandon is better than nothing.
 
 Camera movements that work:
@@ -166,20 +172,25 @@ These are real people, not stock footage models. Write them like humans — tire
 BAD: "A man stands confidently and delivers his line with a warm smile"
 GOOD: "A man in his late 30s, slight bags under his eyes, half-smile that doesn't quite land, fidgeting with a pen"
 
+CAMERA AWARENESS (MANDATORY):
+- Characters should NOT look directly at the camera. Veo 3.1 renders this as an awkward "staring at the viewer" effect that breaks immersion.
+- The ONLY exceptions: (1) the scene is clearly a commercial or PSA where addressing the viewer is intentional, (2) the creative concept explicitly calls for breaking the fourth wall as a deliberate stylistic choice.
+- When in doubt, characters look at each other, at objects in the scene, or into the middle distance — never at the lens.
+
 REMEMBER: 60-80 words MAX per prompt. Count them. If you're over 80, cut. Short sentences. Specific details. No essays.
 
 DIALOGUE RULES (MANDATORY):
-- EVERY SCENE WITH A PERSON MUST HAVE DIALOGUE. This is non-negotiable. If someone is in the frame, they are talking. The dialogue field must contain their actual words.
-- Put dialogue in the SEPARATE "dialogue" field — NOT in the "prompt" field. The prompt field is VISUAL ONLY. The dialogue field is the ACTUAL WORDS SPOKEN, nothing else.
-- The dialogue field should contain ONLY the words that come out of the character's mouth. Not a description of what they say. Not stage directions. THE ACTUAL WORDS.
-  - BAD dialogue field: "He expresses concern about the situation and mentions that they should probably leave"
-  - GOOD dialogue field: "Yeah, no, we should — I think we should go. Like, now."
-- Write SHORT. Real people do not give speeches. They say 5-10 words and pause. They say one sentence and wait for a reaction. In an 8-second shot, one or two short lines is perfect. Do not write a paragraph.
+- EVERY SCENE WITH A PERSON MUST HAVE DIALOGUE entries. This is non-negotiable. If someone is in the frame, they are talking.
+- Put dialogue in the SEPARATE "dialogue" array — NOT in the "prompt" field. The prompt field is VISUAL ONLY.
+- Each entry in the dialogue array must have "character" (matching a name from the characters array) and "line" (the ACTUAL WORDS spoken).
+  - BAD: { character: "Mike", line: "He expresses concern about the situation and mentions they should leave" }
+  - GOOD: { character: "Mike", line: "Yeah, no, we should — I think we should go. Like, now." }
+- Write SHORT. Real people do not give speeches. They say 5-10 words and pause. One or two entries per scene is perfect.
 - Write MESSY. Real people say "um" and "like" and "I mean" and "you know what I mean?" They trail off mid-sentence. They start over. They say "wait, what?" They speak in fragments.
 - COMEDY DIALOGUE IS CASUAL. Funny people do not announce their jokes. They say things matter-of-factly. The humor is in WHAT they choose to say, not in HOW cleverly they say it. Deadpan, flat, understated.
 - Dialogue across scenes should feel like one continuous conversation — each scene picks up roughly where the last left off.
-- HARD WORD COUNT LIMIT: A person speaks ~2.5 words per second. For the scene duration, count the words in your dialogue and MAKE SURE they fit. An 8-second scene = MAX 15-18 words of dialogue (leave room for pauses and breathing). A 6-second scene = MAX 12 words. A 4-second scene = MAX 8 words. If your dialogue is longer than this, CUT IT DOWN. The video will literally cut off mid-sentence if you write too much. Shorter is always better — one punchy line beats a paragraph that gets cut off.
-- BANNED WORDS: NEVER use "subtitle", "subtitles", "subtitled", "caption", "captions", or "text overlay" in any prompt. Veo 3.1 will render literal subtitle text on screen if these words appear. Write dialogue directly in quotes instead.
+- HARD WORD COUNT LIMIT: Count the TOTAL words across ALL dialogue entries in a scene. An 8-second scene = MAX 15-18 words total. A 6-second scene = MAX 12 words. A 4-second scene = MAX 8 words. If your dialogue is longer than this, CUT IT DOWN. Shorter is always better.
+- BANNED WORDS: NEVER use "subtitle", "subtitles", "subtitled", "caption", "captions", or "text overlay" in any prompt. Veo 3.1 will render literal subtitle text on screen if these words appear.
 
 DIALOGUE FORMATTING (VEO 3.1 SPEECH MODEL):
 - NEVER write dialogue in ALL CAPS — the speech model will try to yell everything. Use normal sentence case, even if the character is shouting. Convey intensity through word choice and stage direction ("voice cracking," "barely above a whisper"), not capitalization.

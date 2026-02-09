@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
 
     const { sessionId, scenes, style, mood, options, moodBoard, storyboardImages, characterPortraits } = body as {
       sessionId: string;
-      scenes: { prompt: string; dialogue?: string; duration: number }[];
+      scenes: { prompt: string; dialogue?: Array<{ character: string; line: string }>; duration: number }[];
       style: string;
       mood: string;
       options: GenerationOptions;
@@ -88,7 +88,7 @@ export async function POST(request: NextRequest) {
           debug(`Character portraits provided: ${Object.keys(characterPortraits || {}).length}`);
 
           for (let i = 0; i < scenes.length; i++) {
-            const scene = scenes[i] as { prompt: string; dialogue?: string; duration: number };
+            const scene = scenes[i] as { prompt: string; dialogue?: Array<{ character: string; line: string }>; duration: number };
 
             // ── Storyboard frame vision analysis ──
             // Analyze the storyboard frame with Gemini vision to inject a detailed
@@ -111,8 +111,9 @@ export async function POST(request: NextRequest) {
             if (visualDescription) {
               finalPrompt = `[VISUAL REFERENCE: ${visualDescription}] ${finalPrompt}`;
             }
-            if (scene.dialogue) {
-              finalPrompt = `The character says: "${scene.dialogue}". ${finalPrompt}`;
+            if (scene.dialogue && scene.dialogue.length > 0) {
+              const flatDialogue = scene.dialogue.map(dl => `${dl.character}: "${dl.line}"`).join(' ');
+              finalPrompt = `${flatDialogue}. ${finalPrompt}`;
             }
             const shotDuration = perShotDurations[i];
             const shotOptions = { ...options, duration: shotDuration };
@@ -127,7 +128,7 @@ export async function POST(request: NextRequest) {
             debug(`--- Shot ${i + 1}/${scenes.length} ---`);
             debug(`Duration: ${shotDuration}s | Aspect: ${shotOptions.aspectRatio}`);
             debug(`Original prompt (${scene.prompt.length} chars): ${scene.prompt}`);
-            if (scene.dialogue) debug(`Dialogue: "${scene.dialogue}"`);
+            if (scene.dialogue?.length) debug(`Dialogue: ${scene.dialogue.map(d => `${d.character}: "${d.line}"`).join(' | ')}`);
             debug(`Final prompt after dialogue merge (${finalPrompt.length} chars): ${finalPrompt}`);
             debug(`Ref image source: ${storyboardRef ? 'storyboard frame' : moodBoardRef ? 'mood board' : 'NONE'}`);
             if (refImage) debug(`Ref image URL: ${refImage}`);
@@ -158,7 +159,7 @@ export async function POST(request: NextRequest) {
 
               // Deduct credits for this video
               if (userId && !isAdmin) {
-                const actualCredits = usdToCredits(estimateVideoCost(video.duration, Boolean(scene.dialogue?.trim())));
+                const actualCredits = usdToCredits(estimateVideoCost(video.duration, Array.isArray(scene.dialogue) && scene.dialogue.length > 0));
                 await deductCredits(userId, actualCredits);
               }
 

@@ -25,7 +25,7 @@ Your task is to take a video concept and break it into scenes that tell a story 
 
 CRITICAL — DIALOGUE GOES IN A SEPARATE FIELD:
 - The "prompt" field is for VISUAL/TECHNICAL description ONLY — camera, lighting, subject, action, environment, style. NO dialogue in the prompt field.
-- The "dialogue" field is for the exact spoken words ONLY — no quotes, no stage directions.
+- The "dialogue" field is an ARRAY of { character, line } objects in speaking order — the actual words each character says.
 - The "characters" array lists which named characters appear in each scene.
 - Output a top-level "characters" array with full physical descriptions.
 
@@ -41,7 +41,7 @@ Return a structured response:
     {
       "index": 1,
       "prompt": "VISUAL ONLY: Shot type, subject with full physical description, action, environment, camera/lens, lighting, color grade, audio cues. NO dialogue here.",
-      "dialogue": "The exact spoken words for this shot, or empty string if no one speaks.",
+      "dialogue": [{ "character": "CharacterName", "line": "The exact spoken words." }],
       "characters": ["CharacterName"],
       "duration": 8,
       "notes": "What happens narratively and how it connects to the next shot"
