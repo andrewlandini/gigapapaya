@@ -662,20 +662,27 @@ export async function executeVideoAgent(
         duration: videoDuration,
       });
     } catch (sdkError: any) {
-      // Unwrap the gateway error to find the real cause
-      console.error(`🔍 Raw SDK error type: ${sdkError?.constructor?.name}`);
-      console.error(`🔍 Raw SDK error message: ${sdkError?.message}`);
-      console.error(`🔍 Raw SDK error cause: ${JSON.stringify(sdkError?.cause, null, 2)}`);
-      console.error(`🔍 Raw SDK error response: ${JSON.stringify(sdkError?.response, null, 2)}`);
-      console.error(`🔍 Raw SDK error statusCode: ${sdkError?.statusCode}`);
-      console.error(`🔍 Raw SDK error data: ${JSON.stringify(sdkError?.data, null, 2)}`);
-      console.error(`🔍 Raw SDK error responseBody: ${sdkError?.responseBody}`);
-      console.error(`🔍 Raw SDK error keys: ${Object.getOwnPropertyNames(sdkError).join(', ')}`);
+      // Build detailed debug string that will flow through SSE events
+      const parts: string[] = [];
+      parts.push(`SDK_ERROR_TYPE: ${sdkError?.constructor?.name}`);
+      parts.push(`MESSAGE: ${sdkError?.message}`);
+      parts.push(`STATUS: ${sdkError?.statusCode}`);
+      parts.push(`KEYS: ${Object.getOwnPropertyNames(sdkError).join(', ')}`);
       if (sdkError?.cause) {
         const c = sdkError.cause;
-        console.error(`🔍 Cause type: ${c?.constructor?.name}, message: ${c?.message}, statusCode: ${c?.statusCode}, responseBody: ${c?.responseBody}`);
+        parts.push(`CAUSE_TYPE: ${c?.constructor?.name}`);
+        parts.push(`CAUSE_MSG: ${c?.message}`);
+        parts.push(`CAUSE_STATUS: ${c?.statusCode}`);
+        parts.push(`CAUSE_BODY: ${String(c?.responseBody || '').substring(0, 500)}`);
+        parts.push(`CAUSE_KEYS: ${c ? Object.getOwnPropertyNames(c).join(', ') : ''}`);
       }
-      throw sdkError;
+      if (sdkError?.data) parts.push(`DATA: ${JSON.stringify(sdkError.data).substring(0, 500)}`);
+      if (sdkError?.response) parts.push(`RESPONSE: ${JSON.stringify(sdkError.response).substring(0, 500)}`);
+      if (sdkError?.responseBody) parts.push(`BODY: ${String(sdkError.responseBody).substring(0, 500)}`);
+      const debugInfo = parts.join(' | ');
+      console.error(`🔍 VIDEO SDK ERROR: ${debugInfo}`);
+      // Throw with full debug info in the message so it shows in SSE events
+      throw new Error(`Video generation failed: ${debugInfo}`);
     }
     const { videos } = result;
 
