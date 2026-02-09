@@ -130,9 +130,9 @@ export function VideoGenerator() {
       <header className="border-b border-[#222]">
         <div className="px-6 h-14 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <span className="text-[15px] font-semibold tracking-tight">gigapapaya</span>
+            <span className="text-[15px] font-semibold tracking-tight" style={{ fontFamily: 'var(--font-geist-sans)' }}>gigapapaya</span>
             <span className="text-[#333]">/</span>
-            <span className="text-sm text-[#666]">storyboard</span>
+            <span className="text-sm text-[#666]" style={{ fontFamily: 'var(--font-geist-sans)' }}>storyboard</span>
           </div>
           <div className="flex items-center gap-4 pr-12">
             {isGenerating && (
