@@ -70,6 +70,11 @@ export function StoryboardProvider({ children }: { children: ReactNode }) {
   const pushLogRef = useRef(pushLog);
   pushLogRef.current = pushLog;
 
+  // Shorthand for verbose debug logging
+  const log = (source: string, raw: Record<string, unknown>) => {
+    pushLogRef.current({ timestamp: Date.now(), source, raw });
+  };
+
   const [state, setState] = useState<GenerationState>({
     status: 'idle',
     idea: '',
@@ -258,6 +263,7 @@ export function StoryboardProvider({ children }: { children: ReactNode }) {
     const idea = state.idea.trim();
     if (!idea) return;
 
+    pushLogRef.current({ timestamp: Date.now(), source: 'client', raw: { type: 'generation-start', mode: 'agents', modeId, prompt: idea, options: { ...options, modeId } } });
     addToHistory(idea);
 
     setState(prev => ({
@@ -295,8 +301,10 @@ export function StoryboardProvider({ children }: { children: ReactNode }) {
       signal: controller.signal,
     })
       .then(async (response) => {
+        log('client', { type: 'http-response', endpoint: '/api/generate', mode: 'agents', status: response.status });
         if (response.status === 402) {
           const data = await response.json();
+          log('client', { type: 'credit-error', endpoint: '/api/generate', required: data.required, available: data.available });
           setState(prev => ({
             ...prev,
             status: 'error',
@@ -304,7 +312,10 @@ export function StoryboardProvider({ children }: { children: ReactNode }) {
           }));
           return;
         }
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        if (!response.ok) {
+          log('client', { type: 'http-error', endpoint: '/api/generate', status: response.status });
+          throw new Error(`HTTP ${response.status}`);
+        }
 
         await readSSEStream(response, (data) => {
           const progressEvent: ProgressEvent = {
@@ -377,7 +388,11 @@ export function StoryboardProvider({ children }: { children: ReactNode }) {
         });
       })
       .catch((error) => {
-        if (error instanceof DOMException && error.name === 'AbortError') return;
+        if (error instanceof DOMException && error.name === 'AbortError') {
+          log('client', { type: 'generation-aborted', mode: 'agents' });
+          return;
+        }
+        log('client', { type: 'fetch-error', endpoint: '/api/generate', mode: 'agents', error: error instanceof Error ? error.message : String(error) });
         setState(prev => ({
           ...prev,
           status: 'error',
@@ -394,6 +409,7 @@ export function StoryboardProvider({ children }: { children: ReactNode }) {
     const idea = state.idea.trim();
     if (!idea) return;
 
+    log('client', { type: 'generation-start', mode: 'direct', prompt: idea, aspectRatio: options.aspectRatio, duration: options.duration });
     addToHistory(idea);
 
     setState(prev => ({
@@ -428,8 +444,10 @@ export function StoryboardProvider({ children }: { children: ReactNode }) {
       signal: controller.signal,
     })
       .then(async (response) => {
+        log('client', { type: 'http-response', endpoint: '/api/generate', mode: 'direct', status: response.status });
         if (response.status === 402) {
           const data = await response.json();
+          log('client', { type: 'credit-error', endpoint: '/api/generate', required: data.required, available: data.available });
           setState(prev => ({
             ...prev,
             status: 'error',
@@ -437,7 +455,10 @@ export function StoryboardProvider({ children }: { children: ReactNode }) {
           }));
           return;
         }
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        if (!response.ok) {
+          log('client', { type: 'http-error', endpoint: '/api/generate', status: response.status });
+          throw new Error(`HTTP ${response.status}`);
+        }
 
         await readSSEStream(response, (data) => {
           const progressEvent: ProgressEvent = {
@@ -461,10 +482,12 @@ export function StoryboardProvider({ children }: { children: ReactNode }) {
               }
               break;
             case 'complete':
+              log('client', { type: 'generation-complete', mode: 'direct', videoCount: (data.videos || []).length });
               setState(prev => ({ ...prev, status: 'complete', videos: data.videos || prev.videos }));
               window.dispatchEvent(new Event('credits-changed'));
               break;
             case 'error':
+              log('client', { type: 'generation-error', mode: 'direct', message: data.message });
               setState(prev => ({ ...prev, status: 'error', error: data.message || 'Unknown error' }));
               break;
           }
@@ -472,6 +495,7 @@ export function StoryboardProvider({ children }: { children: ReactNode }) {
       })
       .catch((error) => {
         if (error instanceof DOMException && error.name === 'AbortError') return;
+        log('client', { type: 'fetch-error', endpoint: '/api/generate', error: error instanceof Error ? error.message : String(error) });
         setState(prev => ({
           ...prev,
           status: 'error',
@@ -484,6 +508,7 @@ export function StoryboardProvider({ children }: { children: ReactNode }) {
     setState(prev => {
       if (!prev.editableScenes) return prev;
 
+      log('client', { type: 'video-generation-start', sceneCount: prev.editableScenes.length, scenes: prev.editableScenes.map((s, i) => ({ shot: i + 1, duration: s.duration, promptLength: s.prompt.length, hasDialogue: !!s.dialogue })) });
       const scenes = prev.editableScenes.map(s => ({ prompt: s.prompt, dialogue: s.dialogue, duration: s.duration }));
       const style = prev.generatedIdea?.style || '';
       const mood = prev.generatedIdea?.mood || '';
@@ -506,8 +531,10 @@ export function StoryboardProvider({ children }: { children: ReactNode }) {
           signal: controller.signal,
         })
           .then(async (response) => {
+            log('client', { type: 'http-response', endpoint: '/api/generate-videos', status: response.status });
             if (response.status === 402) {
               const data = await response.json();
+              log('client', { type: 'credit-error', endpoint: '/api/generate-videos', required: data.required, available: data.available });
               setState(p => ({
                 ...p,
                 status: 'error',
@@ -515,7 +542,10 @@ export function StoryboardProvider({ children }: { children: ReactNode }) {
               }));
               return;
             }
-            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            if (!response.ok) {
+              log('client', { type: 'http-error', endpoint: '/api/generate-videos', status: response.status });
+              throw new Error(`HTTP ${response.status}`);
+            }
 
             await readSSEStream(response, (data) => {
               const progressEvent: ProgressEvent = {
@@ -575,6 +605,7 @@ export function StoryboardProvider({ children }: { children: ReactNode }) {
     const scene = state.editableScenes?.[sceneIndex];
     if (!scene) return;
 
+    log('client', { type: 'rerun-start', shot: sceneIndex + 1, duration: scene.duration, promptLength: scene.prompt.length });
     const style = state.generatedIdea?.style || '';
     const mood = state.generatedIdea?.mood || '';
     const sid = sessionIdRef.current;

@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Lightbulb, Loader2, RotateCcw } from 'lucide-react';
+import { useDebug } from './debug-context';
 
 interface IdeaWizardProps {
   onSelectIdea: (idea: string) => void;
@@ -54,6 +55,12 @@ export function IdeaWizard({ onSelectIdea, onActiveChange }: IdeaWizardProps) {
   const [visibleCount, setVisibleCount] = useState(3);
   const [loading, setLoading] = useState(false);
   const [loadingStep, setLoadingStep] = useState(false);
+  const { pushLog } = useDebug();
+  const pushLogRef = useRef(pushLog);
+  pushLogRef.current = pushLog;
+  const log = (raw: Record<string, unknown>) => {
+    pushLogRef.current({ timestamp: Date.now(), source: 'idea-wizard', raw });
+  };
   const [optionsKey, setOptionsKey] = useState(0); // forces re-render for animations
   const [reaction, setReaction] = useState<string | null>(null);
   const [pickHeadline, setPickHeadline] = useState(PICK_HEADLINES[0]);
@@ -65,38 +72,48 @@ export function IdeaWizard({ onSelectIdea, onActiveChange }: IdeaWizardProps) {
   const fetchFirstStep = async () => {
     setLoadingStep(true);
     setCurrentOptions([]);
+    log({ type: 'wizard-start', action: 'first-step', model: 'claude-sonnet-4.5' });
     try {
       const res = await fetch('/api/generate-ideas', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'first-step' }),
       });
+      log({ type: 'wizard-response', action: 'first-step', status: res.status });
       if (res.ok) {
         const data = await res.json();
+        log({ type: 'wizard-question', question: data.question, optionCount: data.options?.length });
         setCurrentQuestion(data.question);
         setCurrentOptions(data.options?.slice(0, 5) || []);
         setOptionsKey(prev => prev + 1);
       }
-    } catch {}
+    } catch (e: any) {
+      log({ type: 'wizard-error', action: 'first-step', error: e?.message });
+    }
     setLoadingStep(false);
   };
 
   const fetchNextStep = async (newQuestions: string[], newAnswers: string[]) => {
     setLoadingStep(true);
     setCurrentOptions([]);
+    log({ type: 'wizard-next', action: 'next-step', step: newQuestions.length + 1, model: 'claude-sonnet-4.5' });
     try {
       const res = await fetch('/api/generate-ideas', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'next-step', questions: newQuestions, answers: newAnswers }),
       });
+      log({ type: 'wizard-response', action: 'next-step', status: res.status });
       if (res.ok) {
         const data = await res.json();
+        log({ type: 'wizard-question', question: data.question, optionCount: data.options?.length });
         setCurrentQuestion(data.question);
         setCurrentOptions(data.options?.slice(0, 5) || []);
         setOptionsKey(prev => prev + 1);
       }
-    } catch {}
+    } catch (e: any) {
+      log({ type: 'wizard-error', action: 'next-step', error: e?.message });
+    }
     setLoadingStep(false);
   };
 
@@ -107,6 +124,7 @@ export function IdeaWizard({ onSelectIdea, onActiveChange }: IdeaWizardProps) {
   };
 
   const handleAnswer = async (answer: string, reactionText: string) => {
+    log({ type: 'wizard-answer', step: questions.length + 1, answer, reaction: reactionText });
     const newQuestions = [...questions, currentQuestion!];
     const newAnswers = [...answers, answer];
     setQuestions(newQuestions);
@@ -119,21 +137,26 @@ export function IdeaWizard({ onSelectIdea, onActiveChange }: IdeaWizardProps) {
     } else {
       // All questions answered — generate a single prompt and auto-fill
       setLoading(true);
+      log({ type: 'wizard-finalize', model: 'claude-sonnet-4.5', answers: newAnswers, questions: newQuestions });
       try {
         const res = await fetch('/api/generate-ideas', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ answers: newAnswers, steps: newQuestions }),
         });
+        log({ type: 'wizard-response', action: 'finalize', status: res.status });
         if (res.ok) {
           const data = await res.json();
           const prompt = data.idea || (data.ideas && data.ideas[0]);
           if (prompt) {
+            log({ type: 'wizard-complete', generatedPrompt: prompt });
             onSelectIdea(prompt);
             handleClose();
           }
         }
-      } catch {}
+      } catch (e: any) {
+        log({ type: 'wizard-error', action: 'finalize', error: e?.message });
+      }
       setLoading(false);
     }
   };

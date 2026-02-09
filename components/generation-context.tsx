@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useState, useCallback, useRef, type ReactNode } from 'react';
 import type { SSEMessage, Video } from '@/lib/types';
+import { useDebug } from './debug-context';
 
 export interface Draft {
   id: string;
@@ -37,6 +38,13 @@ export function useGeneration() {
 }
 
 export function GenerationProvider({ children }: { children: ReactNode }) {
+  const { pushLog } = useDebug();
+  const pushLogRef = useRef(pushLog);
+  pushLogRef.current = pushLog;
+  const log = (source: string, raw: Record<string, unknown>) => {
+    pushLogRef.current({ timestamp: Date.now(), source, raw });
+  };
+
   const [drafts, setDrafts] = useState<Draft[]>([]);
   const abortControllers = useRef<Map<string, AbortController>>(new Map());
 
@@ -55,6 +63,7 @@ export function GenerationProvider({ children }: { children: ReactNode }) {
       createdAt: new Date(),
     };
 
+    log('quick-gen', { type: 'generation-start', mode: 'direct', prompt, aspectRatio: options.aspectRatio, duration: options.duration, draftId: id });
     setDrafts(prev => [draft, ...prev]);
 
     // Start SSE connection in background
@@ -68,8 +77,10 @@ export function GenerationProvider({ children }: { children: ReactNode }) {
       signal: controller.signal,
     })
       .then(async (response) => {
+        log('quick-gen', { type: 'http-response', endpoint: '/api/generate', status: response.status });
         if (response.status === 402) {
           const data = await response.json();
+          log('quick-gen', { type: 'credit-error', required: data.required, available: data.available });
           setDrafts(prev =>
             prev.map(d =>
               d.id === id
@@ -98,6 +109,7 @@ export function GenerationProvider({ children }: { children: ReactNode }) {
           for (const line of lines) {
             if (line.startsWith('data: ')) {
               const data = JSON.parse(line.slice(6)) as SSEMessage;
+              log('quick-gen', { type: 'sse-event', eventType: data.type, agent: data.agent, status: data.status, message: data.message });
 
               if (data.type === 'complete') {
                 setDrafts(prev =>

@@ -14,7 +14,7 @@ interface DebugContextValue {
 
 export interface DebugLogEntry {
   timestamp: number;
-  source: 'generate' | 'generate-videos' | 'rerun';
+  source: string;
   raw: Record<string, unknown>;
 }
 
