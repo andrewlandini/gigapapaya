@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react';
 import Link from 'next/link';
-import { Plus, ArrowUp, ArrowLeft, ChevronRight, ChevronUp, Monitor, Smartphone, Square, Clock, Film, Layers } from 'lucide-react';
+import { ArrowUp, ArrowLeft, ChevronRight, ChevronUp, Monitor, Smartphone, Square, Clock, Film, Layers } from 'lucide-react';
 import { useGeneration } from './generation-context';
 import { useToast } from './toast';
 import { formatCostWithCredits, estimateQuickGenerateCost } from '@/lib/costs';
@@ -253,13 +253,14 @@ export function PromptBar({ isAuthenticated }: PromptBarProps) {
             <div className="flex items-center gap-2">
               <button
                 onClick={togglePopup}
-                className={`h-9 w-9 rounded-xl border flex items-center justify-center transition-colors ${
+                className={`h-9 px-3 rounded-xl border flex items-center gap-2 text-sm transition-colors ${
                   showPopup
-                    ? 'bg-white text-black border-white'
+                    ? 'bg-[#222] border-[#555] text-white'
                     : 'bg-[#1a1a1a] border-[#333] text-[#888] hover:text-white hover:border-[#555]'
                 }`}
               >
-                <Plus className="h-4 w-4" />
+                {modelLabel}
+                <ChevronUp className={`h-3 w-3 transition-transform ${showPopup ? '' : 'rotate-180'}`} />
               </button>
               <Link
                 href="/storyboard"
@@ -270,17 +271,6 @@ export function PromptBar({ isAuthenticated }: PromptBarProps) {
             </div>
 
             <div className="flex items-center gap-2">
-              <button
-                onClick={togglePopup}
-                className={`h-9 px-3 rounded-xl border flex items-center gap-2 text-sm transition-colors ${
-                  showPopup
-                    ? 'bg-[#222] border-[#555] text-white'
-                    : 'bg-[#1a1a1a] border-[#333] text-[#888] hover:text-white hover:border-[#555]'
-                }`}
-              >
-                {modelLabel}
-                <ChevronUp className={`h-3 w-3 transition-transform ${showPopup ? '' : 'rotate-180'}`} />
-              </button>
               <span className="text-xs font-mono text-[#FF0000]">
                 {formatCostWithCredits(estimateQuickGenerateCost(duration))}
               </span>
