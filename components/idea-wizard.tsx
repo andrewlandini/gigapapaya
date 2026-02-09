@@ -11,6 +11,59 @@ interface IdeaWizardProps {
 
 const TOTAL_STEPS = 2;
 
+const SPARK_PHRASES = [
+  "Let me think...",
+  "Cooking something up.",
+  "One sec, brainstorming.",
+  "Digging into the vault.",
+  "Pulling threads.",
+  "Interesting. Very interesting.",
+  "Oh, I've got ideas.",
+  "Let's see what sticks.",
+  "Thinking out loud here.",
+  "Give me a second.",
+  "This could be good.",
+  "Running the mental film reel.",
+  "Something's forming.",
+  "Hold on, this is gonna be fun.",
+  "Okay okay okay.",
+  "Working on it.",
+  "This is my favorite part.",
+  "Bear with me.",
+  "I see possibilities.",
+  "Let the creative juices flow.",
+  "Hmm, what if...",
+  "The gears are turning.",
+  "Almost there.",
+  "I have a few directions.",
+  "Let me narrow it down.",
+  "Good vibes incoming.",
+  "Gathering inspiration.",
+  "Spinning up the idea machine.",
+  "Let's find your angle.",
+  "Where do we start...",
+  "Oh this is going to be fun.",
+  "Scanning the creative landscape.",
+  "Warming up.",
+  "Just a moment.",
+  "Let me cook.",
+  "Rummaging through concepts.",
+  "Finding the spark.",
+  "One moment of genius, please.",
+  "Getting into the zone.",
+  "This is the fun part.",
+  "Shuffling the deck.",
+  "Making connections.",
+  "Mapping out the terrain.",
+  "Building a vibe.",
+  "Let me set the stage.",
+  "Running through options.",
+  "Okay, I'm into this.",
+  "Feeling inspired already.",
+  "Tuning into the frequency.",
+  "The muse is on her way.",
+];
+
 const PICK_HEADLINES = [
   "Any of these good?",
   "How'd we do?",
@@ -64,6 +117,7 @@ export function IdeaWizard({ onSelectIdea, onActiveChange }: IdeaWizardProps) {
   const [optionsKey, setOptionsKey] = useState(0); // forces re-render for animations
   const [reaction, setReaction] = useState<string | null>(null);
   const [pickHeadline, setPickHeadline] = useState(PICK_HEADLINES[0]);
+  const [sparkPhrase, setSparkPhrase] = useState('');
 
   useEffect(() => {
     setPickHeadline(PICK_HEADLINES[Math.floor(Math.random() * PICK_HEADLINES.length)]);
@@ -84,7 +138,7 @@ export function IdeaWizard({ onSelectIdea, onActiveChange }: IdeaWizardProps) {
         const data = await res.json();
         log({ type: 'wizard-question', question: data.question, optionCount: data.options?.length });
         setCurrentQuestion(data.question);
-        setCurrentOptions(data.options?.slice(0, 5) || []);
+        setCurrentOptions(data.options?.slice(0, 6) || []);
         setOptionsKey(prev => prev + 1);
       }
     } catch (e: any) {
@@ -108,7 +162,7 @@ export function IdeaWizard({ onSelectIdea, onActiveChange }: IdeaWizardProps) {
         const data = await res.json();
         log({ type: 'wizard-question', question: data.question, optionCount: data.options?.length });
         setCurrentQuestion(data.question);
-        setCurrentOptions(data.options?.slice(0, 5) || []);
+        setCurrentOptions(data.options?.slice(0, 6) || []);
         setOptionsKey(prev => prev + 1);
       }
     } catch (e: any) {
@@ -120,6 +174,7 @@ export function IdeaWizard({ onSelectIdea, onActiveChange }: IdeaWizardProps) {
   const handleActivate = () => {
     setActive(true);
     onActiveChange?.(true);
+    setSparkPhrase(SPARK_PHRASES[Math.floor(Math.random() * SPARK_PHRASES.length)]);
     fetchFirstStep();
   };
 
@@ -271,11 +326,12 @@ export function IdeaWizard({ onSelectIdea, onActiveChange }: IdeaWizardProps) {
 
   // Loading next question
   if (loadingStep || !currentQuestion) {
+    const loadingText = reaction || sparkPhrase;
     return (
       <div className="w-full pb-24">
         <div className="flex flex-col items-center justify-center gap-4 py-8">
-          {reaction && (
-            <p className="text-sm text-[#888] animate-fade-in">{reaction}</p>
+          {loadingText && (
+            <p className="text-sm text-[#888] animate-fade-in">{loadingText}</p>
           )}
           <Loader2 className="h-6 w-6 text-[#777] animate-spin" />
         </div>
