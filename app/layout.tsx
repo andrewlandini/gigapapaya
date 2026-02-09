@@ -6,6 +6,7 @@ import { Sidebar } from '@/components/sidebar';
 import { UserMenu } from '@/components/user-menu';
 import { Providers } from '@/components/providers';
 import { DebugDrawer } from '@/components/debug-drawer';
+import { CreditsBadge } from '@/components/credits-badge';
 import { getSession } from '@/lib/auth/session';
 import './globals.css';
 
@@ -52,6 +53,7 @@ export default async function RootLayout({
         <Providers initialAvatarUrl={user?.avatarUrl} isAuthenticated={!!user}>
           <Sidebar user={user} />
           <UserMenu user={user} />
+          <CreditsBadge isAuthenticated={!!user} />
           <DebugDrawer />
           <div className="ml-[60px] min-h-screen overflow-x-hidden">
             {children}

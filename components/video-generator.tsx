@@ -3,7 +3,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { RotateCcw, Play, X, Clock, ChevronDown, Settings2, RotateCw, AlertCircle, Loader2, ImagePlus, MessageSquare } from 'lucide-react';
 import { formatCostWithCredits, estimateGenerateVideosCost, estimateVideoCost, estimateStoryboardTotalCost } from '@/lib/costs';
-import { useCredits } from './credits-context';
 
 const HEADLINES = [
   "What should we cook, chef?",
@@ -66,7 +65,6 @@ export function VideoGenerator() {
     history, deleteHistoryEntry, loadFromHistory,
   } = useStoryboard();
 
-  const { credits } = useCredits();
   const [showAgentSettings, setShowAgentSettings] = useState(false);
   const [wizardActive, setWizardActive] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
@@ -164,12 +162,6 @@ export function VideoGenerator() {
                 <Clock className="h-3.5 w-3.5" />
                 History
               </button>
-            )}
-            {credits !== null && (
-              <div className="flex items-center gap-1.5 text-xs font-mono">
-                <span className="text-[#00DC82]">{credits.toLocaleString()}</span>
-                <span className="text-[#555]">credits remaining</span>
-              </div>
             )}
           </div>
         </div>
