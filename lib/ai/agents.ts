@@ -110,6 +110,8 @@ SCENE CONSISTENCY RULES (MANDATORY):
 - Characters must be RECOGNIZABLE across scenes — same age, ethnicity, build, hair, and clothing. Re-describe these identity details every time. But allow their physical STATE to evolve naturally.
 - If scenes share a location, describe the environment with the same details each time (same lighting conditions, same set dressing, same color palette)
 - Scenes must feel like they belong to the same film — consistent color temperature, grain, contrast, and aspect ratio
+- LIGHTING DIRECTION: Key light must come from the same side across all shots in the same location. If the key light is camera-left in shot 1, it stays camera-left for every shot in that location. Changing key light direction between cuts makes it look like the scene was shot on different days.
+- PROP CONTINUITY: If a character is holding something (coffee cup, phone, weapon, bag), that object must appear in EVERY scene where that character is present unless there is a clear narrative reason it's gone. Disappearing props break the illusion instantly.
 
 SHOT VARIETY (CRITICAL — NO JUMP CUTS):
 - Every scene MUST use a DIFFERENT shot type and camera angle. If scene 1 is a medium shot, scene 2 must be a close-up or wide shot — NEVER two medium shots in a row.
@@ -117,6 +119,12 @@ SHOT VARIETY (CRITICAL — NO JUMP CUTS):
 - Vary camera movement too: if scene 1 is a slow push, scene 2 should be static or an orbit — NOT another push
 - Think like an EDITOR cutting a scene together. When these clips play back-to-back, each cut should show a meaningfully different framing. Same angle + same framing = jump cut = amateur.
 - Example for 3 scenes: Scene 1: wide shot, static → Scene 2: close-up on face, slow push → Scene 3: over-shoulder medium, handheld
+
+THE 180-DEGREE RULE (CRITICAL FOR CONVERSATIONS):
+- Pick ONE side of the action line and stay on it for the entire sequence. If character A is screen-left and character B is screen-right in the establishing shot, maintain that spatial relationship in EVERY subsequent shot.
+- In over-the-shoulder shots: if we're looking over A's left shoulder at B, then the reverse must be over B's right shoulder at A. Crossing the line makes the audience lose spatial orientation.
+- SCREEN DIRECTION: If a character is moving left-to-right in one shot, they continue left-to-right in the next unless there's a motivated cut (arriving at a destination, a collision, a reversal). Flipping screen direction between cuts creates a jarring mismatch.
+- In single-character scenes: if the character faces screen-right in shot 1, vary angle but maintain their general orientation — don't flip them to screen-left without motivation.
 
 PROMPT LENGTH (HARD LIMIT — THIS IS THE MOST IMPORTANT RULE):
 Each scene's "prompt" field must be 60-80 words MAX. Veo 3.1 deprioritizes everything past ~100 tokens — long prompts mean most of your details get IGNORED. Shorter prompts generate better videos.
@@ -148,6 +156,12 @@ DIALOGUE IS NOT OPTIONAL:
 - The ONLY time dialogue should be an empty array is a pure environment shot with no people, or a rare dramatic beat where silence is the entire point of the shot (max 1 silent shot per video).
 - When in doubt: give them something to say. Even a sigh, a muttered "okay," or a half-sentence they abandon is better than nothing.
 
+EDIT RHYTHM AND PACING:
+- Wide/establishing shots need more time to read — use 6-8s. Close-ups hit faster — 2-4s is enough. Match duration to shot type.
+- Build tension by tightening: start wide, move to medium, end on close-up. The edit gets CLOSER as stakes rise.
+- After a series of fast cuts, a held wide shot creates breathing room. After a long held shot, a quick close-up creates impact. Use contrast.
+- The first shot should orient the audience (who, where). The last shot should land the emotion or punchline. Middle shots build between those two points.
+
 Camera movements that work:
 - Slow push/pull (dolly in/out)
 - Orbit around subject
@@ -172,10 +186,12 @@ These are real people, not stock footage models. Write them like humans — tire
 BAD: "A man stands confidently and delivers his line with a warm smile"
 GOOD: "A man in his late 30s, slight bags under his eyes, half-smile that doesn't quite land, fidgeting with a pen"
 
-CAMERA AWARENESS (MANDATORY):
+CAMERA AWARENESS AND EYELINES (MANDATORY):
 - Characters should NOT look directly at the camera. Veo 3.1 renders this as an awkward "staring at the viewer" effect that breaks immersion.
 - The ONLY exceptions: (1) the scene is clearly a commercial or PSA where addressing the viewer is intentional, (2) the creative concept explicitly calls for breaking the fourth wall as a deliberate stylistic choice.
-- When in doubt, characters look at each other, at objects in the scene, or into the middle distance — never at the lens.
+- EYELINE DIRECTION: Always specify WHERE the character is looking — "looking down at the phone in her hand", "eyes fixed on the door", "glancing screen-left at the other person." Unspecified eyelines default to camera-stare.
+- EYELINE MATCHING ACROSS CUTS: If character A looks screen-right toward character B in shot 1, then B must look screen-left in shot 2. Their eyelines should "meet" across the cut. Mismatched eyelines make characters look like they're in different rooms.
+- Give characters something to look AT in every shot — another person, a task, an object, a horizon point. Idle eyes with no target drift toward camera.
 
 REMEMBER: 60-80 words MAX per prompt. Count them. If you're over 80, cut. Short sentences. Specific details. No essays.
 
