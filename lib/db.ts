@@ -1,4 +1,5 @@
 import { neon, type NeonQueryFunction } from '@neondatabase/serverless';
+import crypto from 'crypto';
 
 let _db: NeonQueryFunction<false, false> | null = null;
 
@@ -89,6 +90,17 @@ export async function initDb() {
 
   // Promote initial admin
   try { await sql`UPDATE users SET is_admin = TRUE WHERE email = 'andrew.landini@vercel.com'`; } catch {}
+
+  // Seed demo admin account (username: demo, password: demo)
+  try {
+    const existing = await sql`SELECT 1 FROM users WHERE username = 'demo'`;
+    if (existing.length === 0) {
+      const bcrypt = await import('bcryptjs');
+      const hash = await bcrypt.hash('demo', 10);
+      await sql`INSERT INTO users (id, email, password_hash, username, name, is_admin) VALUES (${crypto.randomUUID()}, 'demo@gigapapaya.app', ${hash}, 'demo', 'Demo Admin', TRUE)`;
+      console.log('✅ Demo admin account created (demo/demo)');
+    }
+  } catch {}
 
   _dbInitialized = true;
   console.log('✅ Database tables initialized');
