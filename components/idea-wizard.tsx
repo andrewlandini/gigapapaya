@@ -292,16 +292,17 @@ export function IdeaWizard({ onSelectIdea, onActiveChange }: IdeaWizardProps) {
         {currentQuestion}
       </h2>
 
-      {/* Options with staggered fade-in */}
-      <div className="flex flex-col gap-3 max-w-xl mx-auto w-full mt-8" key={optionsKey}>
+      {/* Options — storyboard-style grid */}
+      <div className={`grid gap-3 max-w-2xl mx-auto w-full mt-8 ${currentOptions.length <= 3 ? 'grid-cols-1 sm:grid-cols-3' : currentOptions.length === 4 ? 'grid-cols-2' : 'grid-cols-2 sm:grid-cols-3'}`} key={optionsKey}>
         {currentOptions.map((option, i) => (
           <button
             key={option.text}
             onClick={() => handleAnswer(option.text, option.reaction)}
-            className="w-full h-11 px-5 rounded-xl border border-[#333] bg-[#0a0a0a] hover:border-[#555] hover:bg-[#111] transition-all text-sm text-[#ededed] text-left opacity-0 animate-fade-in"
-            style={{ animationDelay: `${i * 200}ms`, animationFillMode: 'forwards' }}
+            className="group relative w-full aspect-[3/2] rounded-xl border border-[#333] bg-[#0a0a0a] hover:border-[#555] hover:bg-[#111] transition-all text-sm text-[#ededed] opacity-0 animate-fade-in flex items-center justify-center px-4 text-center"
+            style={{ animationDelay: `${i * 120}ms`, animationFillMode: 'forwards' }}
           >
-            {option.text}
+            <span className="leading-snug">{option.text}</span>
+            <div className="absolute inset-0 rounded-xl border border-transparent group-hover:border-purple-500/30 transition-colors pointer-events-none" />
           </button>
         ))}
       </div>
