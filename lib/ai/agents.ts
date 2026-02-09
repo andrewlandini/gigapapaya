@@ -666,9 +666,12 @@ export async function executeVideoAgent(
       let realError = sdkError;
       if (sdkError && typeof sdkError === 'object' && typeof sdkError.then === 'function') {
         try {
-          await sdkError;
-          // If the promise resolves, that's unexpected — throw generic
-          throw new Error('Video generation failed: SDK threw a Promise that resolved unexpectedly');
+          const resolved = await sdkError;
+          // Promise resolved — inspect what it returned
+          const resolvedInfo = typeof resolved === 'object' && resolved !== null
+            ? `RESOLVED_TYPE: ${resolved?.constructor?.name} | RESOLVED_KEYS: ${Object.keys(resolved).join(', ')} | RESOLVED_JSON: ${JSON.stringify(resolved).substring(0, 800)}`
+            : `RESOLVED_VALUE: ${String(resolved).substring(0, 500)}`;
+          throw new Error(`SDK threw a Promise that resolved: ${resolvedInfo}`);
         } catch (inner: any) {
           realError = inner;
         }
