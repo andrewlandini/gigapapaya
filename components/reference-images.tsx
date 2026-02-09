@@ -202,7 +202,7 @@ export function ReferenceImages({
             className={`
               relative h-[60px] xl:h-[14vh] rounded-lg overflow-hidden transition-all
               ${img
-                ? 'border border-[#333] group/slot cursor-pointer'
+                ? 'ring-1 ring-inset ring-[#333] group/slot cursor-pointer'
                 : `border border-dashed cursor-pointer hover:border-[#555] transition-colors ${dragOverSlot === i ? 'border-[#888] bg-[#ffffff08]' : 'border-[#333]'}`
               }
             `}
