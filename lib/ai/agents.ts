@@ -438,17 +438,12 @@ Create a photorealistic, cinematic reference image that captures the visual styl
 // Uses generateText with Gemini multimodal output (same approach as avatar generation)
 
 async function geminiImage(prompt: string, referenceImages?: string[], aspectRatio?: string): Promise<string> {
-  // Prepend aspect ratio instruction if provided
+  // Build Google provider options with aspect ratio if provided
+  const googleOptions: Record<string, any> = { responseModalities: ['TEXT', 'IMAGE'] };
   if (aspectRatio) {
-    const ratioDesc: Record<string, string> = {
-      '16:9': '16:9 landscape (widescreen)',
-      '9:16': '9:16 vertical/portrait (tall)',
-      '4:3': '4:3 classic (slightly wider than tall)',
-      '1:1': '1:1 square',
-    };
-    const desc = ratioDesc[aspectRatio] || aspectRatio;
-    prompt = `ASPECT RATIO: Generate this image in ${desc} aspect ratio. The image dimensions MUST be ${aspectRatio}.\n\n${prompt}`;
+    googleOptions.imageConfig = { aspectRatio };
   }
+
   let result;
   if (referenceImages && referenceImages.length > 0) {
     console.log(`  📎 geminiImage: passing ${referenceImages.length} reference image(s) (sizes: ${referenceImages.map(r => `${Math.round(r.length / 1024)}KB`).join(', ')})`);
@@ -460,7 +455,7 @@ async function geminiImage(prompt: string, referenceImages?: string[], aspectRat
     result = await generateText({
       model: getTextModel('google/gemini-2.5-flash-image'),
       providerOptions: {
-        google: { responseModalities: ['TEXT', 'IMAGE'] },
+        google: googleOptions,
       },
       messages: [{ role: 'user' as const, content }],
     });
@@ -468,7 +463,7 @@ async function geminiImage(prompt: string, referenceImages?: string[], aspectRat
     result = await generateText({
       model: getTextModel('google/gemini-2.5-flash-image'),
       providerOptions: {
-        google: { responseModalities: ['TEXT', 'IMAGE'] },
+        google: googleOptions,
       },
       prompt,
     });
