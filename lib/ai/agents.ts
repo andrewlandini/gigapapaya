@@ -650,12 +650,34 @@ export async function executeVideoAgent(
     const videoDuration = typeof options.duration === 'number' ? options.duration : 8;
 
     // Text-to-video only — image-to-video via the AI Gateway returns empty errors
-    const { videos } = await generateVideo({
-      model: getVideoModel('google/veo-3.1-generate-001'),
-      prompt: enhancedPrompt,
-      aspectRatio: options.aspectRatio,
-      duration: videoDuration,
-    });
+    const model = getVideoModel('google/veo-3.1-generate-001');
+    console.log(`🔍 Video model object: provider=${model.provider}, modelId=${model.modelId}, spec=${model.specificationVersion}`);
+    console.log(`🔍 Calling generateVideo with: prompt=${enhancedPrompt.length} chars, aspectRatio=${options.aspectRatio}, duration=${videoDuration}`);
+    let result;
+    try {
+      result = await generateVideo({
+        model,
+        prompt: enhancedPrompt,
+        aspectRatio: options.aspectRatio,
+        duration: videoDuration,
+      });
+    } catch (sdkError: any) {
+      // Unwrap the gateway error to find the real cause
+      console.error(`🔍 Raw SDK error type: ${sdkError?.constructor?.name}`);
+      console.error(`🔍 Raw SDK error message: ${sdkError?.message}`);
+      console.error(`🔍 Raw SDK error cause: ${JSON.stringify(sdkError?.cause, null, 2)}`);
+      console.error(`🔍 Raw SDK error response: ${JSON.stringify(sdkError?.response, null, 2)}`);
+      console.error(`🔍 Raw SDK error statusCode: ${sdkError?.statusCode}`);
+      console.error(`🔍 Raw SDK error data: ${JSON.stringify(sdkError?.data, null, 2)}`);
+      console.error(`🔍 Raw SDK error responseBody: ${sdkError?.responseBody}`);
+      console.error(`🔍 Raw SDK error keys: ${Object.getOwnPropertyNames(sdkError).join(', ')}`);
+      if (sdkError?.cause) {
+        const c = sdkError.cause;
+        console.error(`🔍 Cause type: ${c?.constructor?.name}, message: ${c?.message}, statusCode: ${c?.statusCode}, responseBody: ${c?.responseBody}`);
+      }
+      throw sdkError;
+    }
+    const { videos } = result;
 
     const elapsedTime = ((Date.now() - startTime) / 1000).toFixed(1);
     console.log(`✅ VIDEO AGENT: Video generated in ${elapsedTime}s`);
