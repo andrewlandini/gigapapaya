@@ -95,19 +95,10 @@ export function DebugDrawer() {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const handleClear = () => {
-    if (!confirmClear) {
-      setConfirmClear(true);
-      return;
-    }
-    clearLogs();
-    setConfirmClear(false);
-  };
-
   return (
     <div
       ref={drawerRef}
-      className="fixed z-[100] rounded-xl border border-[#333] bg-[#0a0a0a]/90 backdrop-blur-md shadow-2xl flex flex-col overflow-hidden"
+      className="fixed z-[100] rounded-xl border border-[#333] bg-[#0a0a0a]/70 backdrop-blur-md shadow-2xl flex flex-col overflow-hidden"
       style={{ left: pos.x, top: pos.y, width: size.w, height: size.h }}
     >
       {/* Header — draggable */}
@@ -128,15 +119,30 @@ export function DebugDrawer() {
           >
             {copied ? <Check className="h-3 w-3 text-[#00DC82]" /> : <Copy className="h-3 w-3" />}
           </button>
-          <button
-            onClick={handleClear}
-            className={`p-1 transition-colors ${confirmClear ? 'text-[#ff4444]' : 'text-[#555] hover:text-[#999]'}`}
-            title={confirmClear ? 'Click again to confirm' : 'Clear logs'}
-          >
-            <Trash2 className="h-3 w-3" />
-          </button>
-          {confirmClear && (
-            <span className="text-[9px] font-mono text-[#ff4444] animate-pulse">confirm?</span>
+          {confirmClear ? (
+            <div className="flex items-center gap-1">
+              <span className="text-[9px] font-mono text-[#888]">clear?</span>
+              <button
+                onClick={() => { clearLogs(); setConfirmClear(false); }}
+                className="px-1.5 py-0.5 rounded text-[9px] font-mono text-[#00DC82] hover:bg-[#00DC82]/10 transition-colors"
+              >
+                yes
+              </button>
+              <button
+                onClick={() => setConfirmClear(false)}
+                className="px-1.5 py-0.5 rounded text-[9px] font-mono text-[#ff4444] hover:bg-[#ff4444]/10 transition-colors"
+              >
+                no
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={() => setConfirmClear(true)}
+              className="p-1 text-[#555] hover:text-[#999] transition-colors"
+              title="Clear logs"
+            >
+              <Trash2 className="h-3 w-3" />
+            </button>
           )}
           <button
             onClick={toggleDebugMode}
