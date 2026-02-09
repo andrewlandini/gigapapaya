@@ -131,22 +131,42 @@ Each scene's "prompt" field must be 60-80 words MAX. Veo 3.1 deprioritizes every
 
 Structure each prompt in this order (most important first):
 1. Shot type + subject with key identifiers (15-20 words)
-2. Primary action + body language (10-15 words)
-3. Environment essentials (10-15 words)
+2. What the character is DOING and what CHANGES during the shot (10-15 words)
+3. Lived-in environment with specific messy details (10-15 words)
 4. Camera/lens + style tag (10-15 words)
-5. Audio cue (5-10 words)
+5. Audio cue — diegetic, specific, layered (5-10 words)
 
 Cut everything that doesn't change the generated video. Skip floor materials, exact Kelvin temperatures, fabric weave. Keep character descriptions to the essentials that make them RECOGNIZABLE: age, build, hair, key clothing.
 
-Example (74 words): Medium shot, cyberpunk hacker (male, mid-30s, shaved head, black hoodie, pale skin, cybernetic arm) typing frantically at a cluttered desk, neon reflections on his face, sweat on his brow. Dark server room, blue monitor glow, cables everywhere. Shot on ARRI Alexa, anamorphic lens, teal and orange color grade, slow push in. Audio: mechanical keyboard clicks, distant sirens, humming servers.
+EVERY SHOT IS A MOMENT, NOT A POSE (THIS IS WHAT SEPARATES FILM FROM STOCK FOOTAGE):
+- We are dropping into a MOMENT ALREADY IN PROGRESS. The character was doing something before the camera found them. They will keep doing it after.
+- Describe TRANSITIONAL actions — a hand mid-reach, a head turning, a body shifting weight from one foot to the other. NOT settled poses. NOT people standing still and looking at something.
+- SOMETHING MUST CHANGE during the shot. An expression shifts. A hand moves. Someone enters or exits frame. A light changes. Stillness is death — even "still" shots have breath, blinking, micro-adjustments.
+- AI stock footage looks like someone said "stand here and look thoughtful." Real movies look like someone caught a human being in the middle of living.
+
+BAD (stock footage): "Close-up of a woman looking determined, city lights behind her"
+GOOD (movie frame): "Close-up, a woman (late 20s, dark curly hair, paint-stained overalls) mid-blink, jaw tightening, fingers tapping the steering wheel, eyes tracking something moving screen-left. Rain-streaked windshield refracting red brake lights. Handheld, shallow focus, warm tungsten shift. Audio: wipers thumping, muffled traffic, her breath fogging the glass."
+
+BAD (stock footage): "Wide shot of a man walking through a hallway"
+GOOD (movie frame): "Wide shot, a man (40s, rumpled grey suit, loosened tie, coffee stain on shirt) pushing through a glass door mid-stride, badge lanyard swinging, looking back over his shoulder screen-right. Fluorescent-lit office corridor, papers taped to walls, one overhead light flickering. Steadicam follow, eye-level. Audio: door hiss, shoes on linoleum, distant phone ringing."
+
+ENVIRONMENTS MUST BE LIVED IN:
+- NO pristine surfaces. NO empty rooms. NO generic spaces. Real locations have STUFF in them — half-empty water bottles, post-it notes, scuff marks, a jacket thrown over a chair, condensation on a window.
+- Specify 2-3 small environmental details that make the space feel OCCUPIED. These details do more for realism than any camera or lens specification.
+- Practical light sources (a desk lamp, a neon sign, light from a laptop screen, a streetlight through blinds) feel more cinematic than described lighting setups. Name the SOURCE of light in the scene.
+
+CHARACTERS INTERACT WITH THEIR SPACE:
+- People TOUCH things. They lean on doorframes, rest elbows on tables, grip chair backs, fidget with objects. A character standing in the middle of a room not touching anything looks composited in.
+- People have WEIGHT. They shift it, redistribute it, slump into surfaces. "Leaning against the counter, weight on one hip" is more real than "standing at the counter."
+- Hands are always doing something — holding a phone, adjusting glasses, drumming fingers, picking at a label, rubbing the back of their neck. Idle hands at sides = mannequin.
 
 Rules:
 - Front-load the important stuff — Veo 3.1 weights early words more heavily
 - ONE primary action per scene with natural secondary behavior (breathing, glancing, fidgeting)
-- Specific > Creative — "Walking sadly" < "shuffling with hunched shoulders"
-- Audio cues are essential
+- Specific > Creative — "Walking sadly" < "shuffling with hunched shoulders, keys jangling"
+- Audio cues are essential — layer them (foreground action + ambient + one distant detail)
 - ALWAYS re-describe characters — never use "the character" or "the person"
-- Describe what CHANGES during the shot — a shift in expression, a hand moving, someone entering frame
+- Describe what CHANGES during the shot — a shift in expression, a hand moving, someone entering frame. Static tableaux are the hallmark of AI slop.
 
 DIALOGUE IS NOT OPTIONAL:
 - If there is a person in the shot, they should almost certainly be TALKING. Veo 3.1's speech model is one of its strongest features — USE IT. A character who is present but silent wastes the most powerful tool you have.
@@ -180,11 +200,21 @@ Style references that consistently deliver:
 - "[Movie] cinematography" (use the SAME film reference for all scenes)
 - Specific color grading terms (use the SAME grade for all scenes)
 
-PERFORMANCE DIRECTION:
-These are real people, not stock footage models. Write them like humans — tired eyes, nervous hands, a cleared throat before speaking. One or two specific physical details per character per scene is enough. Do not write a novel about their micro-expressions.
+PERFORMANCE DIRECTION (THE ANTI-AI-SLOP SECTION):
+These are real people, not stock footage models. The single biggest tell of AI-generated content is characters who look POSED — centered in frame, neutral expression, hands at sides, looking vaguely "cinematic." Real humans are NEVER like this.
 
-BAD: "A man stands confidently and delivers his line with a warm smile"
-GOOD: "A man in his late 30s, slight bags under his eyes, half-smile that doesn't quite land, fidgeting with a pen"
+Every character in every shot must be:
+1. IN THE MIDDLE OF DOING SOMETHING — not waiting for the camera
+2. PHYSICALLY INTERACTING with their environment — touching, leaning, holding
+3. SHOWING ASYMMETRY — weight on one leg, head tilted, one hand busy while the other rests
+4. WEARING THEIR HISTORY — wrinkled clothes, smudged glasses, chapped lips, a bandaid on a finger
+
+BAD (AI stock): "A man stands confidently and delivers his line with a warm smile"
+BAD (still AI stock): "A woman sits at a desk, looking focused"
+GOOD (real movie): "A man (late 30s, stubble, bags under eyes) slumped in a plastic chair, one knee bouncing, picking at the label on a water bottle, eyes down"
+GOOD (real movie): "A woman (mid-40s, reading glasses pushed up on forehead, sleeves rolled) hunched over a laptop, one hand in her hair, squinting at the screen, empty coffee cups around her"
+
+The test: if you can imagine this person JUST WOKE UP and was placed in this position for a photo, you wrote stock footage. If you can imagine this person has been here for 20 minutes and you just walked in, you wrote a movie.
 
 CAMERA AWARENESS AND EYELINES (MANDATORY):
 - Characters should NOT look directly at the camera. Veo 3.1 renders this as an awkward "staring at the viewer" effect that breaks immersion.
@@ -413,7 +443,7 @@ export async function executeMoodBoardAgent(
 
   const hasRefs = referenceImages && referenceImages.length > 0;
 
-  const moodBoardPrompt = `Generate a cinematic still frame / reference image for this video concept:
+  const moodBoardPrompt = `Generate a single frame grab from a real film for this video concept:
 
 Title: ${idea.title}
 Description: ${idea.description}
@@ -421,7 +451,14 @@ Visual Style: ${idea.style}
 Mood: ${idea.mood}
 Key Elements: ${idea.keyElements.join(', ')}
 
-Create a photorealistic, cinematic reference image that captures the visual style, color palette, lighting, and atmosphere of this concept. This image will be used as a visual reference for AI video generation — focus on establishing the look and feel, not telling a story. Think of it as a single frame from the final video.${hasRefs ? '\n\nThe user has provided reference images — use them as strong visual guidance for style, color palette, composition, and subject matter. Match the look and feel of the reference images closely.' : ''}`;
+This must look like a FRAME GRAB pulled from a real movie — NOT a stock photo, NOT a posed portrait, NOT a clean render. Think: a single frame from a film by the Coen Brothers, Denis Villeneuve, or Greta Gerwig. The kind of frame that if you paused the movie, it would look like this.
+
+Requirements for realism:
+- If people are present: they are MID-ACTION, caught in a moment. Asymmetric posture, hands doing something, weight shifted, eyes looking at something specific (never at camera). They look like they've been in this scene for 20 minutes, not like they just arrived.
+- Environment must be LIVED IN: clutter, wear, practical light sources (lamps, screens, neon, windows casting specific shadows). Objects that suggest human activity — a half-finished drink, a crumpled receipt, shoes by a door.
+- Lighting from PRACTICAL SOURCES in the scene, not generic studio lighting. The light should have a visible origin — a window, a streetlight, a desk lamp, a phone screen.
+- Depth in the frame: foreground elements (slightly out of focus), subject in the midground, background detail. Not flat.
+- Imperfection: a stray hair, a wrinkle in fabric, dust in a light beam, condensation on glass. Perfect = fake.${hasRefs ? '\n\nThe user has provided reference images — use them as strong visual guidance for style, color palette, composition, and subject matter. Match the look and feel of the reference images closely.' : ''}`;
 
   const results: string[] = [];
 
@@ -654,7 +691,16 @@ export async function generateSceneStoryboards(
 
 Shot description: ${scene.prompt}
 
-${charContext ? `Characters in this frame: ${charContext}\n` : ''}Render this exactly as described — match the camera, lens, and framing from the shot description. Do not override the camera specs. This should look like a frame grab from a real film. NOT stock photography. NOT B-roll. Every element in the frame should feel intentional.
+${charContext ? `Characters in this frame: ${charContext}\n` : ''}This must look like a FRAME GRAB from a real film — a single frame pulled from a moving shot. NOT a photograph. NOT a posed portrait. NOT stock footage.
+
+Key requirements for realism:
+- Characters must be MID-ACTION, not posing. Caught in the middle of a gesture, a turn, a reach. Asymmetric body positions — weight shifted, head tilted, one hand busy.
+- Characters must NEVER look at the camera. They look at other people, objects, tasks, or into the middle distance.
+- The environment must look LIVED IN — clutter, wear, practical light sources (lamps, screens, windows), objects that suggest someone has been here a while.
+- Characters must be TOUCHING or interacting with their environment — leaning on surfaces, holding objects, gripping things.
+- Include subtle motion cues — slight blur on a moving hand, hair catching light mid-swing, fabric mid-settle.
+
+Match the camera, lens, and framing from the shot description exactly. Do not override the camera specs.
 
 NO overlay graphics, captions, speech bubbles, dialogue text, subtitles, labels, or watermarks. Diegetic screens (phones, laptops, TVs) can show content. Clean photographic frame only. Output only the image.`,
         refImages.length > 0 ? refImages : undefined,
