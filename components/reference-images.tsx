@@ -240,7 +240,7 @@ export function ReferenceImages({
                 <img
                   src={img.dataUrl}
                   alt={tags.get(i) || `Reference ${i + 1}`}
-                  className="w-full h-full object-cover"
+                  className="w-full h-full object-contain"
                 />
                 {/* Tag badge */}
                 <div className="absolute bottom-1 left-1 right-1">
