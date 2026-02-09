@@ -140,7 +140,8 @@ export async function POST(request: NextRequest) {
               sendEvent({ type: 'agent-log', agent: 'idea', status: `Reference images: ${tagList}` });
             }
 
-            const ideaResult = await executeIdeaAgent(ideaPromptWithRefs, options.ideaAgent);
+            const refDataUrls = refImages.map((r: any) => r.dataUrl as string);
+            const ideaResult = await executeIdeaAgent(ideaPromptWithRefs, options.ideaAgent, refDataUrls.length > 0 ? refDataUrls : undefined);
             await updateGenerationIdea(sessionId, ideaResult);
 
             sendEvent({ type: 'agent-log', agent: 'idea', status: `Concept: "${ideaResult.title}"` });
@@ -154,7 +155,6 @@ export async function POST(request: NextRequest) {
             sendEvent({ type: 'agent-log', agent: 'mood-board', status: `Creating visual references for "${ideaResult.title}"` });
 
             try {
-              const refDataUrls = refImages.map((r: any) => r.dataUrl as string);
               moodBoard = await executeMoodBoardAgent(ideaResult, refDataUrls.length > 0 ? refDataUrls : undefined);
               sendEvent({ type: 'agent-log', agent: 'mood-board', status: `Generated ${moodBoard.length} reference images` });
               sendEvent({ type: 'mood-board-complete', moodBoard });
@@ -170,7 +170,7 @@ export async function POST(request: NextRequest) {
             sendEvent({ type: 'agent-log', agent: 'scenes', status: 'Crafting camera angles, lighting, composition for each scene...' });
             sendEvent({ type: 'agent-start', agent: 'scenes', status: 'Crafting scene variations...' });
 
-            const scenesResult = await executeScenesAgent(ideaResult, options.numScenes, options.sceneAgent, options.duration || 8, options.noMusic || false, options.totalLength);
+            const scenesResult = await executeScenesAgent(ideaResult, options.numScenes, options.sceneAgent, options.duration || 8, options.noMusic || false, options.totalLength, refDataUrls.length > 0 ? refDataUrls : undefined);
             await updateGenerationScenes(sessionId, scenesResult);
 
             sendEvent({ type: 'agent-log', agent: 'scenes', status: `Generated ${scenesResult.scenes.length} scenes` });

@@ -56,21 +56,41 @@ const scenesResultSchema = z.object({
  */
 export async function executeIdeaAgent(
   userInput: string,
-  config?: { model?: string; prompt?: string }
+  config?: { model?: string; prompt?: string },
+  referenceImages?: string[],
 ): Promise<VideoIdea> {
   const modelId = config?.model || 'anthropic/claude-sonnet-4.5';
   const systemPrompt = config?.prompt || IDEA_AGENT_PROMPT;
 
   console.log('\n🎨 IDEA AGENT: Starting...');
   console.log(`📝 User Input: "${userInput}"`);
-  console.log(`🤖 Model: ${modelId}\n`);
+  console.log(`🤖 Model: ${modelId}`);
+  if (referenceImages?.length) console.log(`📎 ${referenceImages.length} reference image(s) provided`);
+  console.log('');
 
-  const result = await generateObject({
-    model: getTextModel(modelId),
-    temperature: 1,
-    schema: videoIdeaSchema,
-    prompt: `${systemPrompt}\n\nUser Input: ${userInput}`,
-  });
+  const textPrompt = `${systemPrompt}\n\nUser Input: ${userInput}`;
+
+  const result = referenceImages && referenceImages.length > 0
+    ? await generateObject({
+        model: getTextModel(modelId),
+        temperature: 1,
+        schema: videoIdeaSchema,
+        messages: [
+          {
+            role: 'user' as const,
+            content: [
+              ...referenceImages.map(img => ({ type: 'image' as const, image: img })),
+              { type: 'text' as const, text: textPrompt },
+            ],
+          },
+        ],
+      })
+    : await generateObject({
+        model: getTextModel(modelId),
+        temperature: 1,
+        schema: videoIdeaSchema,
+        prompt: textPrompt,
+      });
 
   console.log('✅ IDEA AGENT: Complete');
   console.log('📋 Generated Idea:', JSON.stringify(result.object, null, 2));
@@ -190,7 +210,8 @@ export async function executeScenesAgent(
   config?: { model?: string; prompt?: string },
   duration: number | 'auto' = 8,
   noMusic: boolean = false,
-  totalLength?: number
+  totalLength?: number,
+  referenceImages?: string[],
 ): Promise<ScenesResult> {
   const modelId = config?.model || 'anthropic/claude-sonnet-4.5';
   const systemPrompt = config?.prompt || SCENES_AGENT_PROMPT;
@@ -199,7 +220,9 @@ export async function executeScenesAgent(
   console.log('\n🎬 SCENES AGENT: Starting...');
   console.log(`📋 Idea: ${idea.title}`);
   console.log(`🎯 Target: ${autoShotCount ? 'auto' : numScenes} shots, ${duration}${typeof duration === 'number' ? 's' : ''} each`);
-  console.log(`🤖 Model: ${modelId}\n`);
+  console.log(`🤖 Model: ${modelId}`);
+  if (referenceImages?.length) console.log(`📎 ${referenceImages.length} reference image(s) provided`);
+  console.log('');
 
   const ideaSummary = `
 Title: ${idea.title}
@@ -309,12 +332,29 @@ Vary pacing — not every scene should be the same intensity. Use quiet moments 
     ? `Choose the best duration (2/4/6/8s) for each shot.${totalLength ? ` Target ~${totalLength}s total.` : ' You decide the total length.'}`
     : `Each shot is ${fixedDuration} seconds long. Everything described must fit within ${fixedDuration} seconds of real time.`;
 
-  const result = await generateObject({
-    model: getTextModel(modelId),
-    temperature: 1,
-    schema: scenesResultSchema,
-    prompt: `${systemPrompt}${SCENE_AGENT_BASE}${durationGuidance}\n\n${sceneNarrative}${musicNote}\n\nVideo Idea:\n${ideaSummary}\n\n${shotCountInstruction} ${durationInstruction} Do not self-censor or water down the creative concept — commit fully to the idea.`,
-  });
+  const scenesTextPrompt = `${systemPrompt}${SCENE_AGENT_BASE}${durationGuidance}\n\n${sceneNarrative}${musicNote}\n\nVideo Idea:\n${ideaSummary}\n\n${shotCountInstruction} ${durationInstruction} Do not self-censor or water down the creative concept — commit fully to the idea.${referenceImages?.length ? '\n\nThe user has provided reference images — use them as visual guidance for the style, environment, characters, and mood of each shot. Match the look and feel closely.' : ''}`;
+
+  const result = referenceImages && referenceImages.length > 0
+    ? await generateObject({
+        model: getTextModel(modelId),
+        temperature: 1,
+        schema: scenesResultSchema,
+        messages: [
+          {
+            role: 'user' as const,
+            content: [
+              ...referenceImages.map(img => ({ type: 'image' as const, image: img })),
+              { type: 'text' as const, text: scenesTextPrompt },
+            ],
+          },
+        ],
+      })
+    : await generateObject({
+        model: getTextModel(modelId),
+        temperature: 1,
+        schema: scenesResultSchema,
+        prompt: scenesTextPrompt,
+      });
 
   console.log('✅ SCENES AGENT: Complete');
   console.log(`📹 Generated ${result.object.scenes.length} scenes:`);
