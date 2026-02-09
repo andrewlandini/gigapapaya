@@ -49,7 +49,7 @@ export default async function RootLayout({
 
   return (
     <html lang="en" className={`${GeistSans.variable} ${GeistMono.variable} ${GeistPixelSquare.variable}`}>
-      <body style={{ fontFamily: 'var(--font-geist-pixel-square), monospace' }}>
+      <body style={{ fontFamily: 'var(--font-geist-sans), sans-serif' }}>
         <Providers initialAvatarUrl={user?.avatarUrl} isAuthenticated={!!user}>
           <Sidebar user={user} />
           <UserMenu user={user} />

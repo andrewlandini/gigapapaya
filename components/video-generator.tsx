@@ -212,7 +212,7 @@ export function VideoGenerator() {
         {/* Hero + Input */}
         <div className="max-w-3xl mx-auto space-y-8 text-center">
           {!wizardActive && (
-            <h1 className={`text-[40px] font-semibold font-[family-name:var(--font-geist-sans)] tracking-tight leading-tight transition-opacity duration-700 ease-in-out ${isActive ? (headlineFade ? 'opacity-100' : 'opacity-0') : 'animate-fade-in'}`}>{isActive && generatingHeadline ? generatingHeadline : headline}</h1>
+            <h1 className={`text-[40px] font-semibold tracking-tight leading-tight transition-opacity duration-700 ease-in-out ${isActive ? (headlineFade ? 'opacity-100' : 'opacity-0') : 'animate-fade-in'}`}>{isActive && generatingHeadline ? generatingHeadline : headline}</h1>
           )}
 
           {/* Input & mode buttons — hidden when generating/reviewing/complete */}
