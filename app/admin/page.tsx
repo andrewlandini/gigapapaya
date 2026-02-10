@@ -126,11 +126,8 @@ export default function AdminPage() {
       el.preload = 'auto';
       el.src = video.blob_url;
 
+      // loadeddata means the first frame is decoded and ready to draw
       el.addEventListener('loadeddata', () => {
-        el.currentTime = 0;
-      });
-
-      el.addEventListener('seeked', () => {
         cleanup();
         try {
           const canvas = document.createElement('canvas');
