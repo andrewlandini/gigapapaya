@@ -389,8 +389,10 @@ export async function generateCharacterPortraits(
   const promises = characters.map(async (char) => {
     try {
       console.log(`🧑 Generating portrait for ${char.name}...`);
+      // Pass only the primary (user-selected) mood board image as reference
+      const primaryMoodRef = moodBoard?.length ? [moodBoard[0]] : undefined;
       const url = await geminiImage(
-        `${moodBoard?.length ? 'The attached mood board images define the visual style, color palette, and tone. Match their look and feel while keeping the portrait on a black background.\n\n' : ''}Cinematic character portrait. ${style} visual style and color grade. Shallow depth of field, motivated lighting.
+        `${primaryMoodRef ? 'The attached image is the selected mood board reference for this production. This character portrait MUST match its visual style exactly — same color palette, same lighting quality, same color grade, same film stock texture, same overall aesthetic. The character should look like they belong in the world of that reference image. Keep the portrait on a black background.\n\n' : ''}Cinematic character portrait. ${style} visual style and color grade. Shallow depth of field, motivated lighting.
 
 Subject: ${char.description}
 
@@ -399,7 +401,7 @@ Framing: Tight medium close-up from chest up. Subject fills the frame. Pure soli
 This is a definitive character reference photograph for a film production. Every detail of their appearance (face, hair, skin, build, clothing) must be precisely rendered as described. This exact person must be recognizable in every subsequent frame.
 
 NO overlay graphics, captions, speech bubbles, subtitles, labels, or watermarks. Clean photographic image only. Output only the image.`,
-        moodBoard?.length ? moodBoard : undefined,
+        primaryMoodRef,
       );
       if (url) {
         portraits[char.name] = url;

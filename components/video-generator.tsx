@@ -655,7 +655,16 @@ export function VideoGenerator() {
         {state.moodBoard.length > 0 && (
           <div className="space-y-4 animate-fade-in">
             <div className="flex items-center justify-between">
-              <h2 className="text-sm font-medium text-[#ededed]">Mood Board</h2>
+              <div>
+                <h2 className="text-sm font-medium text-[#ededed]">Mood Board</h2>
+                {state.status === 'mood-board-review' && (
+                  <p className="text-xs text-[#555] mt-1 font-mono">
+                    {selectedMoodBoardIndex === null
+                      ? 'Tap an image to select it. Refine the style, then continue.'
+                      : 'Tweak the look with the buttons below, or continue to start building shots.'}
+                  </p>
+                )}
+              </div>
               {state.status === 'mood-board-review' && (
                 <div className="flex items-center gap-2">
                   {canUndoMoodBoard && (
