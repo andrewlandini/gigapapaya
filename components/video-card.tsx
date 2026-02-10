@@ -78,7 +78,12 @@ export function VideoCard({
     setHovering(true);
     if (videoRef.current) {
       videoRef.current.muted = muted;
-      videoRef.current.play().catch(() => {});
+      // If the video already has a src loaded, play immediately.
+      // Otherwise the onCanPlay handler (below) will start playback
+      // once the src is set by the re-render.
+      if (videoRef.current.src) {
+        videoRef.current.play().catch(() => {});
+      }
     }
   };
 
@@ -88,6 +93,15 @@ export function VideoCard({
       videoRef.current.muted = true;
       videoRef.current.pause();
       videoRef.current.currentTime = 0;
+    }
+  };
+
+  const handleCanPlay = () => {
+    // Auto-play once the video source finishes loading (for thumbnail videos
+    // whose src is only set on hover).
+    if (hovering && videoRef.current) {
+      videoRef.current.muted = muted;
+      videoRef.current.play().catch(() => {});
     }
   };
 
@@ -123,6 +137,7 @@ export function VideoCard({
         loop
         playsInline
         preload={thumbnailUrl ? 'none' : 'metadata'}
+        onCanPlay={handleCanPlay}
         className="w-full h-full object-contain"
       />
 
