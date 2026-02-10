@@ -14,8 +14,8 @@ Return a structured response with:
 {
   "title": "Short, specific — could be a scene heading in a screenplay",
   "description": "2-3 sentences. What is physically happening, who is there, what makes this visually interesting.",
-  "style": "Specific cinematography reference (e.g. 'handheld 16mm, Safdie brothers energy' or 'locked-off symmetry, Wes Anderson palette')",
-  "mood": "Not just an adjective — describe what the viewer FEELS (e.g. 'quiet dread, like something is about to go wrong')",
+  "style": "Cinematography string: Camera (Alexa/Film), Lens (Anamorphic/Spherical), Texture (Clean digital/Subtle grain), and Contrast (High/Low). e.g. 'Arri Alexa, 40mm spherical, subtle grain, high contrast'",
+  "mood": "Emotional atmosphere in playable terms (e.g. 'stifling heat and paranoia', 'cold clinical detachment', 'quiet dread like something is about to go wrong')",
   "keyElements": ["element1", "element2", "element3"] // 3-5 specific visual details that ground this in reality
 }`;
 
@@ -64,6 +64,12 @@ SCENE CONSISTENCY RULES (MANDATORY):
 - LIGHTING DIRECTION: Key light must come from the same side across all shots in the same location. If the key light is camera-left in shot 1, it stays camera-left for every shot in that location. Changing key light direction between cuts makes it look like the scene was shot on different days.
 - PROP CONTINUITY: If a character is holding something (coffee cup, phone, weapon, bag), that object must appear in EVERY scene where that character is present unless there is a clear narrative reason it's gone. Disappearing props break the illusion instantly.
 
+CONTINUITY & GEOGRAPHY (CRITICAL):
+- SCREEN DIRECTION: If the subject moves Left-to-Right in Shot 1, they MUST move Left-to-Right in Shot 2 unless they physically turn or hit a wall.
+- EYELINE MATCHING: If Character A looks Screen-Right at B, then B must look Screen-Left at A. You must explicitly write: "Looking screen-right at [Other Person]."
+- WARDROBE ANCHORS: Identify 2 distinctive "Continuity Anchors" for each character (e.g., "blood on knuckles," "torn collar") and repeat them VERBATIM in every single prompt.
+- LIGHTING MOTIVATION: Name the source. "Key light from window (screen left)" or "Red neon wash from signage (screen right)." Keep this consistent.
+
 SHOT VARIETY (CRITICAL — NO JUMP CUTS):
 - Every scene MUST use a DIFFERENT shot type and camera angle. If scene 1 is a medium shot, scene 2 must be a close-up or wide shot — NEVER two medium shots in a row.
 - Vary across these: wide/establishing, medium, close-up, extreme close-up, over-the-shoulder, low angle, high angle, profile/side angle
@@ -77,17 +83,20 @@ THE 180-DEGREE RULE (CRITICAL FOR CONVERSATIONS):
 - SCREEN DIRECTION: If a character is moving left-to-right in one shot, they continue left-to-right in the next unless there's a motivated cut (arriving at a destination, a collision, a reversal). Flipping screen direction between cuts creates a jarring mismatch.
 - In single-character scenes: if the character faces screen-right in shot 1, vary angle but maintain their general orientation — don't flip them to screen-left without motivation.
 
-PROMPT LENGTH (HARD LIMIT — THIS IS THE MOST IMPORTANT RULE):
-Each scene's "prompt" field must be 60-80 words MAX. Veo 3.1 deprioritizes everything past ~100 tokens — long prompts mean most of your details get IGNORED. Shorter prompts generate better videos.
+CINEMATOGRAPHIC REASONING (THE "SHOT ID" FRAMEWORK):
+Before writing the final prompt, you must mentally construct the shot using these variables. Do not output this list, but use it to build the narrative:
+1. **LENS FEEL:** Choose 35mm (context/environment) vs 85mm (intimate/isolation).
+2. **MOTIVATED MOVEMENT:** Why is the camera moving? (Curiosity? Threat? Tenderness?)
+3. **DEPTH:** Shallow (isolate subject) or Deep (show geography).
+4. **EYELINE TARGET:** Exactly where is the character looking? (To Character B? To the door? To the mirror?)
+5. **SCREEN DIRECTION:** Maintain Left-to-Right or Right-to-Left flow from previous shots.
 
-Structure each prompt in this order (most important first):
-1. Shot type + subject with key identifiers (15-20 words)
-2. What the character is DOING and what CHANGES during the shot (10-15 words)
-3. Lived-in environment with specific messy details (10-15 words)
-4. Camera/lens + style tag (10-15 words)
-5. Audio cue — diegetic, specific, layered (5-10 words)
-
-Cut everything that doesn't change the generated video. Skip floor materials, exact Kelvin temperatures, fabric weave. Keep character descriptions to the essentials that make them RECOGNIZABLE: age, build, hair, key clothing.
+DRAFTING THE COMPRESSED PROMPT (60-80 WORDS MAX — HARD LIMIT):
+Take the variables above and COMPRESS them into a dense, 60-80 word narrative block. Veo 3.1 deprioritizes everything past ~100 tokens — long prompts mean most of your details get IGNORED.
+- Instead of: "Shot on 85mm lens," WRITE: "Intimate 85mm compression isolates [Subject]..."
+- Instead of: "Camera moves forward because of threat," WRITE: "Slow, predatory push-in on..."
+- Instead of: "Lighting is warm," WRITE: "Bathed in warm sodium streetlight..."
+Keep character descriptions to the essentials that make them RECOGNIZABLE: age, build, hair, key clothing.
 
 EVERY SHOT IS A MOMENT, NOT A POSE (THIS IS WHAT SEPARATES FILM FROM STOCK FOOTAGE):
 - We are dropping into a MOMENT ALREADY IN PROGRESS. The character was doing something before the camera found them. They will keep doing it after.
@@ -151,21 +160,12 @@ Style references that consistently deliver:
 - "[Movie] cinematography" (use the SAME film reference for all scenes)
 - Specific color grading terms (use the SAME grade for all scenes)
 
-PERFORMANCE DIRECTION (THE ANTI-AI-SLOP SECTION):
-These are real people, not stock footage models. The single biggest tell of AI-generated content is characters who look POSED — centered in frame, neutral expression, hands at sides, looking vaguely "cinematic." Real humans are NEVER like this.
-
-Every character in every shot must be:
-1. IN THE MIDDLE OF DOING SOMETHING — not waiting for the camera
-2. PHYSICALLY INTERACTING with their environment — touching, leaning, holding
-3. SHOWING ASYMMETRY — weight on one leg, head tilted, one hand busy while the other rests
-4. WEARING THEIR HISTORY — wrinkled clothes, smudged glasses, chapped lips, a bandaid on a finger
-
-BAD (AI stock): "A man stands confidently and delivers his line with a warm smile"
-BAD (still AI stock): "A woman sits at a desk, looking focused"
-GOOD (real movie): "A man (late 30s, stubble, bags under eyes) slumped in a plastic chair, one knee bouncing, picking at the label on a water bottle, eyes down"
-GOOD (real movie): "A woman (mid-40s, reading glasses pushed up on forehead, sleeves rolled) hunched over a laptop, one hand in her hair, squinting at the screen, empty coffee cups around her"
-
-The test: if you can imagine this person JUST WOKE UP and was placed in this position for a photo, you wrote stock footage. If you can imagine this person has been here for 20 minutes and you just walked in, you wrote a movie.
+ACTION BEATS & EMOTIONAL STATE:
+- Define the character's state as OBJECTIVE + PRESSURE (e.g., "trying to fix the radio while being hunted," not just "scared"). This gives the character something to DO, not just something to FEEL.
+- ONE CLEAR ACTION: The prompt must describe ONE specific, filmable moment (e.g., "wiping sweat from eyes," "jamming a magazine into the rifle"). Do not stack multiple complex actions.
+- TRANSITIONS: Describe the movement *happening*, not the result. "Mid-stride," "turning head," "reaching for." The camera catches them IN the action, not after it.
+- ASYMMETRY: Weight on one leg, head tilted, one hand busy while the other rests. Idle hands at sides = mannequin.
+- WARDROBE TELLS HISTORY: Wrinkled clothes, smudged glasses, chapped lips, a bandaid on a finger. If they look freshly dressed and perfect, you wrote stock footage.
 
 CAMERA AWARENESS AND EYELINES (MANDATORY):
 - Characters should NOT look directly at the camera. Veo 3.1 renders this as an awkward "staring at the viewer" effect that breaks immersion.

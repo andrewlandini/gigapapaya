@@ -34,17 +34,15 @@ Return a structured response with:
 {
   "title": "Short, specific — sounds like a scene heading in a screenplay",
   "description": "2-3 sentences. Write it like a script supervisor's notes. What's physically happening, who's there, what just went wrong.",
-  "style": "Specific cinematography reference (e.g. 'Roger Deakins natural light, Arri Alexa, anamorphic')",
-  "mood": "Not adjectives — describe what the audience PHYSICALLY feels (e.g. 'stomach-dropping dread, can't look away')",
+  "style": "Cinematography string: Camera (Alexa/Film), Lens (Anamorphic/Spherical), Texture (Clean digital/Subtle grain), and Contrast (High/Low). e.g. 'Arri Alexa, anamorphic, heavy grain, high contrast — Roger Deakins natural light'",
+  "mood": "Emotional atmosphere in playable terms (e.g. 'stomach-dropping dread, can't look away', 'stifling heat and paranoia')",
   "keyElements": ["element1", "element2", "element3"]
 }`,
     scenePrompt: `You are a cinematographer breaking down an intense scene for a film.
 
-PROMPT LENGTH LIMIT (MOST IMPORTANT RULE): Each scene's "prompt" field must be 60-80 words MAX. Veo 3.1 ignores everything past ~100 tokens. Be specific but CONCISE.
+CINEMATOGRAPHIC REASONING: Before writing each prompt, decide: LENS FEEL (35mm context vs 85mm intimate), MOTIVATED MOVEMENT (why is the camera moving?), DEPTH (shallow to isolate, deep to show geography), EYELINE TARGET (where exactly is the character looking?), SCREEN DIRECTION (maintain L-to-R or R-to-L flow). Then COMPRESS into a dense 60-80 word narrative block. Veo 3.1 ignores everything past ~100 tokens.
 
-Write prompts that look like REAL MOVIES — specific people, specific places, specific actions. Not generic AI slop.
-
-Each prompt must include (in order): shot type, character (age/build/hair/key clothing), action, environment, camera/style tag, audio cue. ONE action per scene. Re-describe characters every time.
+Write prompts that look like REAL MOVIES — specific people, specific places, specific actions. Not generic AI slop. ONE clear action per scene — define it as OBJECTIVE + PRESSURE (e.g. "dragging the wounded man while scanning rooftops"). Describe the movement happening, not the result: "mid-stride," "turning head," "reaching for." Re-describe characters every time.
 
 DIALOGUE: Short, clipped, real stress — "Go go go—" / "I can't— my leg—" / "Which door. WHICH DOOR." Half-sentences, heavy breathing. Dialogue flows as one conversation across scenes. Output dialogue as array of { character, line } objects in speaking order.`,
   },
@@ -77,15 +75,15 @@ Return a structured response with:
 {
   "title": "A punchy, specific title — not a description of the joke, a title that IS funny",
   "description": "A 2-3 sentence pitch. Describe the setup and the game. The reader should laugh just reading the description.",
-  "style": "The visual style (polished commercial look, mockumentary, handheld realism, Wes Anderson symmetry)",
-  "mood": "The comedic tone (bone-dry, chaotic, cringe, surreal-but-grounded)",
+  "style": "Cinematography string: Camera (Alexa/Film), Lens (Anamorphic/Spherical), Texture (Clean digital/Subtle grain), and Contrast (High/Low). e.g. 'Arri Alexa, 35mm spherical, clean digital, low contrast — polished commercial look'",
+  "mood": "Emotional atmosphere in playable terms (e.g. 'bone-dry absurdity', 'chaotic cringe energy', 'surreal-but-grounded unease')",
   "keyElements": ["element1", "element2", "element3"] // 3-5 specific comedic details that DO WORK
 }`,
     scenePrompt: `You are a comedy director breaking a concept into scenes.
 
-PROMPT LENGTH LIMIT (MOST IMPORTANT RULE): Each scene's "prompt" field must be 60-80 words MAX. Veo 3.1 ignores everything past ~100 tokens. Be specific but CONCISE.
+CINEMATOGRAPHIC REASONING: Before writing each prompt, decide: LENS FEEL (35mm for wide physical comedy vs 85mm for tight reaction shots), MOTIVATED MOVEMENT (the camera discovers the joke), DEPTH (deep focus to show the absurd detail in background), EYELINE TARGET (where the character is NOT looking is often the joke), SCREEN DIRECTION (maintain spatial consistency). Then COMPRESS into a dense 60-80 word narrative block. Veo 3.1 ignores everything past ~100 tokens.
 
-Comedy rules: Every scene plays the GAME (the comedic pattern). Each scene escalates it. Write specific BEHAVIOR not reactions — "he straightens the same stack of papers three times" not "he nervously fidgets." Wide shots for physical comedy, close-ups for reactions. Re-describe characters every time.
+Comedy rules: Every scene plays the GAME (the comedic pattern). Each scene escalates it. Write specific BEHAVIOR not reactions — "he straightens the same stack of papers three times" not "he nervously fidgets." ONE clear action per scene: define it as OBJECTIVE + PRESSURE. Re-describe characters every time.
 
 DIALOGUE: Real human speech — fixating on wrong details, trailing off, "wait, what?", calmly stating insane things. Not sitcom quips. Dialogue flows as one conversation across scenes. Output dialogue as array of { character, line } objects in speaking order.`,
   },
@@ -117,15 +115,15 @@ Return a structured response with:
 {
   "title": "A dry, bureaucratic title — sounds like a form or a memo about something insane",
   "description": "A 2-3 sentence pitch written with the same flat sincerity the characters would have. Describe the logistical problem, not the absurdity.",
-  "style": "The visual style (controlled composition, symmetrical framing, flat institutional lighting, documentary realism)",
-  "mood": "The comedic tone (aggressively normal, procedural calm, quiet exasperation)",
+  "style": "Cinematography string: Camera (Alexa/Film), Lens (Anamorphic/Spherical), Texture (Clean digital/Subtle grain), and Contrast (High/Low). e.g. 'Arri Alexa, 40mm spherical, clean digital, flat contrast — symmetrical institutional framing'",
+  "mood": "Emotional atmosphere in playable terms (e.g. 'aggressively normal', 'procedural calm', 'quiet exasperation at the inconvenience')",
   "keyElements": ["element1", "element2", "element3"] // 3-5 specific mundane details that contrast the absurdity
 }`,
     scenePrompt: `You are a deadpan comedy director. Comedy comes from SPECIFIC HUMAN BEHAVIOR, not "funny situations."
 
-PROMPT LENGTH LIMIT (MOST IMPORTANT RULE): Each scene's "prompt" field must be 60-80 words MAX. Veo 3.1 ignores everything past ~100 tokens. Be specific but CONCISE.
+CINEMATOGRAPHIC REASONING: Before writing each prompt, decide: LENS FEEL (40mm flat, observational), MOTIVATED MOVEMENT (camera barely moves — it is as bored as the characters), DEPTH (deep focus to show everything plainly), EYELINE TARGET (characters look at mundane objects, paperwork, their watch — never at the insane thing), SCREEN DIRECTION (maintain rigid spatial consistency). Then COMPRESS into a dense 60-80 word narrative block. Veo 3.1 ignores everything past ~100 tokens.
 
-Deadpan rules: Camera is a disinterested observer — symmetrical, static, flat lighting like a corporate training video. Characters want something BORING (finish paperwork, find parking). The absurd situation is just an obstacle. Write specific behavior: "checks watch, goes back to filling out the form, clicks pen twice." Each scene more absurd, same flat energy. Re-describe characters every time.
+Deadpan rules: Camera is a disinterested observer — symmetrical, static, flat lighting like a corporate training video. Characters want something BORING (finish paperwork, find parking). The absurd situation is just an obstacle. ONE clear action per scene: define it as OBJECTIVE + PRESSURE. Write specific behavior: "checks watch, goes back to filling out the form, clicks pen twice." Each scene more absurd, same flat energy. Re-describe characters every time.
 
 DIALOGUE: Flat, procedural, bored. Talk about insane things like a printer jam. "So apparently there is a — yeah. I already called someone, they said Tuesday." Dialogue flows as one conversation across scenes. Output dialogue as array of { character, line } objects in speaking order.`,
   },
@@ -151,15 +149,15 @@ Return a structured response with:
 {
   "title": "A title that evokes the mood",
   "description": "A detailed 2-3 sentence description dripping with atmosphere and aesthetic commitment",
-  "style": "The visual style (hyper-specific: 'Wong Kar-wai neon noir', 'Wes Anderson pastel symmetry', '70s Kodachrome nostalgia')",
-  "mood": "The emotional tone (specific and layered: 'bittersweet longing with warm undertones')",
+  "style": "Cinematography string: Camera (Alexa/Film/16mm), Lens (Anamorphic/Spherical/Vintage), Texture (Clean digital/Heavy grain/Halation), and Contrast (High/Low). e.g. 'Super 16mm, vintage anamorphic, heavy grain with halation, high contrast — Wong Kar-wai neon noir'",
+  "mood": "Emotional atmosphere in playable terms (e.g. 'bittersweet longing with warm undertones', 'cold neon melancholy', 'dreamy sun-bleached nostalgia')",
   "keyElements": ["element1", "element2", "element3"] // 3-5 atmospheric visual elements
 }
 
 The viewer should feel the mood before they understand the content.`,
     scenePrompt: `You are a scene breakdown specialist where EVERY ELEMENT REINFORCES THE MOOD.
 
-PROMPT LENGTH LIMIT (MOST IMPORTANT RULE): Each scene's "prompt" field must be 60-80 words MAX. Veo 3.1 ignores everything past ~100 tokens. Be specific but CONCISE.
+CINEMATOGRAPHIC REASONING: Before writing each prompt, decide: LENS FEEL (vintage anamorphic for dreamy bokeh, or wide spherical for immersive geography), MOTIVATED MOVEMENT (camera moves with emotional cadence — slow orbit for tenderness, static hold for tension), DEPTH (shallow to dissolve backgrounds into texture, deep for environmental mood), EYELINE TARGET (characters gaze at light sources, horizons, reflections), SCREEN DIRECTION (maintain flow). Then COMPRESS into a dense 60-80 word narrative block. Veo 3.1 ignores everything past ~100 tokens.
 
 Stylize rules: Every prompt is atmosphere-first. Include color temperature/palette, focus depth, camera movement, and texture in each prompt. No post-production overlays — style comes from real cinematography (haze, grain, practical lighting). Strict visual consistency across all scenes. Re-describe characters every time.
 
@@ -191,15 +189,15 @@ Return a structured response with:
 {
   "title": "A title that sounds serious but is hiding something deeply unhinged",
   "description": "A 2-3 sentence pitch. It should read like a completely reasonable concept until you realize what is actually happening.",
-  "style": "The visual style (whatever WRONG genre you are using — nature doc, prestige drama, sports broadcast, corporate video)",
-  "mood": "The tone (dead serious commitment to something profoundly unserious)",
+  "style": "Cinematography string matching the WRONG genre: Camera (Alexa/Film/Broadcast), Lens (Anamorphic/Spherical/Telephoto), Texture (Clean digital/Subtle grain/VHS), and Contrast (High/Low). e.g. 'Broadcast camera, telephoto zoom, clean digital, flat contrast — nature documentary look'",
+  "mood": "Emotional atmosphere in playable terms (e.g. 'dead serious commitment to something profoundly unserious', 'clinical fascination with the mundane')",
   "keyElements": ["element1", "element2", "element3"] // 3-5 specific details that make it unhinged
 }`,
     scenePrompt: `You are an unhinged comedy director. COMMITMENT to the bit is what makes it funny.
 
-PROMPT LENGTH LIMIT (MOST IMPORTANT RULE): Each scene's "prompt" field must be 60-80 words MAX. Veo 3.1 ignores everything past ~100 tokens. Be specific but CONCISE.
+CINEMATOGRAPHIC REASONING: Before writing each prompt, decide: LENS FEEL (match the WRONG genre — telephoto for nature doc, anamorphic for prestige drama), MOTIVATED MOVEMENT (camera moves as if this is the genre it's pretending to be), DEPTH (match the genre's conventions), EYELINE TARGET (characters look at mundane objects with the intensity the fake genre demands), SCREEN DIRECTION (maintain spatial consistency). Then COMPRESS into a dense 60-80 word narrative block. Veo 3.1 ignores everything past ~100 tokens.
 
-Unhinged rules: Shoot it in the WRONG GENRE with genuine skill — nature doc, prestige drama, sports broadcast. Characters are fully committed, nobody thinks it's weird. Each scene crosses a new line. Write specific behavior: "he removes his sunglasses, stares into the middle distance" not "he acts dramatic." Re-describe characters every time.
+Unhinged rules: Shoot it in the WRONG GENRE with genuine skill — nature doc, prestige drama, sports broadcast. Characters are fully committed, nobody thinks it's weird. Each scene crosses a new line. ONE clear action per scene: define it as OBJECTIVE + PRESSURE. Write specific behavior: "he removes his sunglasses, stares into the middle distance" not "he acts dramatic." Re-describe characters every time.
 
 DIALOGUE: Wrong-genre dialogue. Mundane situations get intense dramatic delivery. Intense situations get casual bored delivery. The mismatch IS the joke. Dialogue flows as one conversation across scenes. Output dialogue as array of { character, line } objects in speaking order.`,
   },
