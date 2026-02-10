@@ -491,3 +491,20 @@ export async function reviewCreditRequest(
     }
   }
 }
+
+// ── Video Thumbnails ────────────────────────────────
+
+export async function getVideosMissingThumbnails() {
+  const sql = getDb();
+  return sql`
+    SELECT id, blob_url, prompt, duration, aspect_ratio
+    FROM videos
+    WHERE thumbnail_url IS NULL
+    ORDER BY created_at DESC
+  `;
+}
+
+export async function updateVideoThumbnail(videoId: string, thumbnailUrl: string) {
+  const sql = getDb();
+  await sql`UPDATE videos SET thumbnail_url = ${thumbnailUrl} WHERE id = ${videoId}`;
+}

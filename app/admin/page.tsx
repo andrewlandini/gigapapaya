@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, Shield, ShieldOff, Check, X, Coins } from 'lucide-react';
+import { ArrowLeft, Shield, ShieldOff, Check, X, Coins, Image, Loader2 } from 'lucide-react';
 
 interface User {
   id: string;
@@ -14,6 +14,14 @@ interface User {
   credits: number;
   created_at: string;
   video_count: string;
+}
+
+interface ThumbnailVideo {
+  id: string;
+  blob_url: string;
+  prompt: string;
+  duration: number;
+  aspect_ratio: string;
 }
 
 interface CreditRequest {
@@ -36,6 +44,10 @@ export default function AdminPage() {
   const [error, setError] = useState<string | null>(null);
   const [editingCredits, setEditingCredits] = useState<string | null>(null);
   const [creditInput, setCreditInput] = useState('');
+  const [thumbVideos, setThumbVideos] = useState<ThumbnailVideo[]>([]);
+  const [thumbProcessing, setThumbProcessing] = useState(false);
+  const [thumbProgress, setThumbProgress] = useState(0);
+  const [thumbDone, setThumbDone] = useState(false);
 
   const loadUsers = async () => {
     const res = await fetch('/api/admin/users');
@@ -53,8 +65,15 @@ export default function AdminPage() {
     }
   };
 
+  const loadThumbVideos = async () => {
+    const res = await fetch('/api/admin/thumbnails');
+    if (res.ok) {
+      setThumbVideos(await res.json());
+    }
+  };
+
   const load = async () => {
-    await Promise.all([loadUsers(), loadRequests()]);
+    await Promise.all([loadUsers(), loadRequests(), loadThumbVideos()]);
     setLoading(false);
   };
 
@@ -89,6 +108,66 @@ export default function AdminPage() {
       body: JSON.stringify({ action, requestId }),
     });
     await Promise.all([loadUsers(), loadRequests()]);
+  };
+
+  const extractFrame = (video: ThumbnailVideo): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const el = document.createElement('video');
+      el.crossOrigin = 'anonymous';
+      el.muted = true;
+      el.preload = 'auto';
+      el.src = video.blob_url;
+
+      el.addEventListener('loadeddata', () => {
+        const seekTo = video.duration > 1 ? 1 : 0;
+        el.currentTime = seekTo;
+      });
+
+      el.addEventListener('seeked', () => {
+        try {
+          const canvas = document.createElement('canvas');
+          canvas.width = el.videoWidth;
+          canvas.height = el.videoHeight;
+          const ctx = canvas.getContext('2d');
+          if (!ctx) { reject(new Error('No canvas context')); return; }
+          ctx.drawImage(el, 0, 0);
+          const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+          el.src = '';
+          resolve(dataUrl);
+        } catch (e) {
+          reject(e);
+        }
+      });
+
+      el.addEventListener('error', () => {
+        reject(new Error(`Failed to load video ${video.id}`));
+      });
+    });
+  };
+
+  const processAllThumbnails = async () => {
+    setThumbProcessing(true);
+    setThumbProgress(0);
+    setThumbDone(false);
+
+    for (let i = 0; i < thumbVideos.length; i++) {
+      const video = thumbVideos[i];
+      try {
+        const dataUrl = await extractFrame(video);
+        await fetch('/api/admin/thumbnails', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ videoId: video.id, thumbnailDataUrl: dataUrl }),
+        });
+      } catch (e) {
+        console.error(`Failed to process thumbnail for video ${video.id}:`, e);
+      }
+      setThumbProgress(i + 1);
+    }
+
+    setThumbProcessing(false);
+    setThumbDone(true);
+    loadThumbVideos();
   };
 
   if (loading) {
@@ -170,6 +249,51 @@ export default function AdminPage() {
             </div>
           </div>
         )}
+
+        {/* Missing Thumbnails */}
+        <div className="space-y-3">
+          <div className="flex items-center gap-2">
+            <Image className="h-4 w-4 text-[#0070f3]" />
+            <h2 className="text-sm font-medium text-[#ededed]">Missing Thumbnails</h2>
+            <span className="text-xs font-mono text-[#555]">{thumbVideos.length} videos</span>
+          </div>
+          {thumbVideos.length > 0 ? (
+            <div className="border border-[#222] rounded-xl p-4 space-y-3">
+              {thumbProcessing ? (
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <Loader2 className="h-3.5 w-3.5 text-[#0070f3] animate-spin" />
+                    <span className="text-sm text-[#ededed] font-mono">
+                      Processing {thumbProgress}/{thumbVideos.length}...
+                    </span>
+                  </div>
+                  <div className="w-full bg-[#222] rounded-full h-1.5">
+                    <div
+                      className="bg-[#0070f3] h-1.5 rounded-full transition-all duration-300"
+                      style={{ width: `${(thumbProgress / thumbVideos.length) * 100}%` }}
+                    />
+                  </div>
+                </div>
+              ) : thumbDone ? (
+                <div className="flex items-center gap-2">
+                  <Check className="h-3.5 w-3.5 text-green-500" />
+                  <span className="text-sm text-green-500 font-mono">Done! All thumbnails generated.</span>
+                </div>
+              ) : (
+                <button
+                  onClick={processAllThumbnails}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-[#0070f3]/10 text-[#0070f3] border border-[#0070f3]/20 hover:bg-[#0070f3]/20 transition-colors"
+                >
+                  Scan &amp; Fix All
+                </button>
+              )}
+            </div>
+          ) : (
+            <div className="border border-[#222] rounded-xl p-4">
+              <span className="text-xs text-[#555] font-mono">All videos have thumbnails.</span>
+            </div>
+          )}
+        </div>
 
         {/* Users table */}
         <div className="border border-[#222] rounded-xl overflow-hidden">
