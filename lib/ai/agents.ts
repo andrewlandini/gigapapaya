@@ -391,8 +391,19 @@ export async function generateCharacterPortraits(
       console.log(`🧑 Generating portrait for ${char.name}...`);
       // Pass only the primary (user-selected) mood board image as reference
       const primaryMoodRef = moodBoard?.length ? [moodBoard[0]] : undefined;
-      const url = await geminiImage(
-        `${primaryMoodRef ? 'The attached image is the selected mood board reference for this production. This character portrait MUST match its visual style exactly — same color palette, same lighting quality, same color grade, same film stock texture, same overall aesthetic. The character should look like they belong in the world of that reference image. Keep the portrait on a black background.\n\n' : ''}Cinematic character portrait. ${style} visual style and color grade. Shallow depth of field, motivated lighting.
+      const portraitPrompt = primaryMoodRef
+        ? `You are lighting a character reference portrait for a film production. The attached image is a frame from this film — study its color grade, the quality of light (hard vs soft, warm vs cool, high-key vs low-key), the contrast ratio, and the film stock texture (grain, halation, color rendition).
+
+Now generate a portrait of this character lit with THAT SAME quality of light. The face should look like it belongs in that film. Same color temperature hitting the skin. Same contrast ratio between key and fill. Same shadow density. Same highlight rolloff. Same grain structure.
+
+Subject: ${char.description}
+
+Framing: Tight medium close-up, chest up. Pure black background (#000000) — the character is isolated against black, like a casting reference photo. But the LIGHT on their face must match the reference frame exactly. If the reference is warm tungsten, the key light is warm tungsten. If it's cool overcast, the key is cool overcast. The grade on the skin, hair, and clothing matches the reference film's grade.
+
+This is a definitive character reference for continuity. Every physical detail (face, hair, skin, build, clothing) must be precisely rendered. This person must be recognizable in every subsequent frame.
+
+NO graphics, captions, text, labels. Output only the image.`
+        : `Cinematic character portrait. ${style} visual style and color grade. Shallow depth of field, motivated lighting.
 
 Subject: ${char.description}
 
@@ -400,9 +411,8 @@ Framing: Tight medium close-up from chest up. Subject fills the frame. Pure soli
 
 This is a definitive character reference photograph for a film production. Every detail of their appearance (face, hair, skin, build, clothing) must be precisely rendered as described. This exact person must be recognizable in every subsequent frame.
 
-NO overlay graphics, captions, speech bubbles, subtitles, labels, or watermarks. Clean photographic image only. Output only the image.`,
-        primaryMoodRef,
-      );
+NO overlay graphics, captions, speech bubbles, subtitles, labels, or watermarks. Clean photographic image only. Output only the image.`;
+      const url = await geminiImage(portraitPrompt, primaryMoodRef);
       if (url) {
         portraits[char.name] = url;
         console.log(`✅ Portrait for ${char.name} generated`);

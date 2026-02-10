@@ -142,6 +142,17 @@ export function ProgressTracker({ events, status, shotCount }: ProgressTrackerPr
         continue;
       }
 
+      if ((event.type as string) === 'characters-ready') {
+        const charGroup = result.find(g => g.key === 'characters');
+        if (charGroup) {
+          charGroup.status = 'done';
+          const count = events.filter(e => e.type === 'character-portrait').length;
+          charGroup.message = `${count} portrait${count !== 1 ? 's' : ''} — review`;
+        }
+        currentGroup = null;
+        continue;
+      }
+
       if (event.type === 'storyboard-start') {
         // Mark characters group as done when storyboard starts (portraits are finished)
         const charGroup = result.find(g => g.key === 'characters');
@@ -295,9 +306,17 @@ export function ProgressTracker({ events, status, shotCount }: ProgressTrackerPr
             result.push({ key: 'mood-board', label: 'Mood Board', status: 'pending', message: '', timestamp: EPOCH, logs: [], type: 'agent' });
           }
         } else {
-          // Phase 2 (after mood board review): Shots → Storyboard → Review
-          if (!hasKey('agent-scenes')) {
-            result.push({ key: 'agent-scenes', label: 'Shot Agent', status: 'pending', message: '', timestamp: EPOCH, logs: [], type: 'agent' });
+          const charactersDone = hasKey('characters') && result.find(g => g.key === 'characters')?.status === 'done';
+          if (!charactersDone) {
+            // Phase 2 (after mood board review): Shots → Characters → pause for review
+            if (!hasKey('agent-scenes')) {
+              result.push({ key: 'agent-scenes', label: 'Shot Agent', status: 'pending', message: '', timestamp: EPOCH, logs: [], type: 'agent' });
+            }
+          } else {
+            // Phase 3 (after character review): Storyboard
+            if (!hasKey('storyboard')) {
+              result.push({ key: 'storyboard', label: 'Storyboard', status: 'pending', message: '', timestamp: EPOCH, logs: [], type: 'agent' });
+            }
           }
         }
       } else if (status === 'generating-videos' && shotCount) {

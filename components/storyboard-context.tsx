@@ -72,6 +72,8 @@ interface StoryboardContextValue {
   closePortraitModal: () => void;
   regeneratePortrait: (name: string, description: string) => Promise<void>;
   isRegeneratingPortrait: boolean;
+  // Character review
+  continuePastCharacters: () => void;
 }
 
 const StoryboardContext = createContext<StoryboardContextValue | null>(null);
@@ -799,6 +801,17 @@ export function StoryboardProvider({ children }: { children: ReactNode }) {
                 }));
               }
               break;
+            case 'characters-ready':
+              sessionIdRef.current = data.sessionId || sessionIdRef.current;
+              setState(prev => ({
+                ...prev,
+                status: 'characters-review',
+                characterPortraits: data.characterPortraits || prev.characterPortraits,
+                scenes: data.result?.scenes?.scenes || prev.scenes,
+                characters: data.result?.scenes?.characters || prev.characters,
+                generatedIdea: data.result?.idea || prev.generatedIdea,
+              }));
+              break;
             case 'storyboard-frame':
               if (data.storyboardImage !== undefined && data.sceneIndex !== undefined) {
                 setState(prev => {
@@ -867,6 +880,118 @@ export function StoryboardProvider({ children }: { children: ReactNode }) {
         }));
       });
   }, [state.generatedIdea, state.moodBoard, state.selectedMoodBoardIndex, options]);
+
+  const continuePastCharacters = useCallback(() => {
+    if (!state.generatedIdea || !state.scenes) return;
+
+    setState(prev => ({ ...prev, status: 'generating' }));
+
+    if (abortRef.current) abortRef.current.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+
+    const currentOptions = { ...options, mode: 'agents' as const, modeId: options.modeId };
+
+    fetch('/api/continue-storyboard', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        idea: state.generatedIdea,
+        moodBoard: state.moodBoard,
+        scenes: state.scenes,
+        characters: state.characters,
+        characterPortraits: state.characterPortraits,
+        options: currentOptions,
+        sessionId: sessionIdRef.current,
+      }),
+      signal: controller.signal,
+    })
+      .then(async (response) => {
+        log('client', { type: 'http-response', endpoint: '/api/continue-storyboard', status: response.status });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+        await readSSEStream(response, (data) => {
+          const progressEvent: ProgressEvent = {
+            type: data.type,
+            timestamp: new Date(),
+            agent: data.agent as any,
+            status: data.status,
+            result: data.result,
+            sceneIndex: data.sceneIndex,
+            moodBoard: data.moodBoard,
+            storyboardImages: data.storyboardImages,
+            characterPortraits: data.characterPortraits,
+            storyboardImage: data.storyboardImage,
+            environmentImage: data.environmentImage,
+          };
+
+          setState(prev => ({ ...prev, progress: [...prev.progress, progressEvent] }));
+
+          switch (data.type) {
+            case 'storyboard-frame':
+              if (data.storyboardImage !== undefined && data.sceneIndex !== undefined) {
+                setState(prev => {
+                  const imgs = [...prev.storyboardImages];
+                  imgs[data.sceneIndex!] = data.storyboardImage!;
+                  return { ...prev, storyboardImages: imgs };
+                });
+              }
+              break;
+            case 'storyboard-complete':
+              setState(prev => ({
+                ...prev,
+                storyboardImages: data.storyboardImages || prev.storyboardImages,
+                characterPortraits: data.characterPortraits || prev.characterPortraits,
+              }));
+              break;
+            case 'scenes-ready':
+              sessionIdRef.current = data.sessionId || sessionIdRef.current;
+              setState(prev => ({
+                ...prev,
+                status: 'reviewing',
+                editableScenes: prev.scenes ? prev.scenes.map(s => {
+                  const characters = s.characters || [];
+                  let dialogue: DialogueLine[];
+                  if (Array.isArray(s.dialogue)) {
+                    dialogue = s.dialogue;
+                  } else if (typeof s.dialogue === 'string' && (s.dialogue as string).trim()) {
+                    dialogue = [{ character: characters[0] || 'Character', line: s.dialogue as string }];
+                  } else {
+                    dialogue = [];
+                  }
+                  let prompt = s.prompt;
+                  if (dialogue.length === 0) {
+                    const match = prompt.match(/"([^"]{3,})"/);
+                    if (match) {
+                      dialogue = [{ character: characters[0] || 'Character', line: match[1] }];
+                      prompt = prompt.replace(`"${match[1]}"`, '').replace(/,\s*saying\s*,/, ',').replace(/\s+/g, ' ').trim();
+                    }
+                  }
+                  return { ...s, dialogue, characters, prompt };
+                }) : null,
+                moodBoard: data.moodBoard || prev.moodBoard,
+                storyboardImages: data.storyboardImages || prev.storyboardImages,
+                characterPortraits: data.characterPortraits || prev.characterPortraits,
+              }));
+              break;
+            case 'error':
+              if (!data.sceneIndex && data.sceneIndex !== 0) {
+                setState(prev => ({ ...prev, status: 'error', error: data.message || 'Unknown error' }));
+              }
+              break;
+          }
+        });
+      })
+      .catch((error) => {
+        if (error instanceof DOMException && error.name === 'AbortError') return;
+        log('client', { type: 'fetch-error', endpoint: '/api/continue-storyboard', error: error instanceof Error ? error.message : String(error) });
+        setState(prev => ({
+          ...prev,
+          status: 'error',
+          error: error instanceof Error ? error.message : 'Unknown error',
+        }));
+      });
+  }, [state.generatedIdea, state.scenes, state.characters, state.characterPortraits, state.moodBoard, options]);
 
   const handleGenerateVideos = useCallback(() => {
     setState(prev => {
@@ -1074,6 +1199,7 @@ export function StoryboardProvider({ children }: { children: ReactNode }) {
       isRefining, canUndoMoodBoard: state.moodBoardHistory.length > 0,
       portraitModalCharacter, openPortraitModal, closePortraitModal,
       regeneratePortrait, isRegeneratingPortrait,
+      continuePastCharacters,
     }}>
       {children}
     </StoryboardContext.Provider>

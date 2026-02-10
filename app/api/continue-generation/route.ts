@@ -2,9 +2,6 @@ import { NextRequest } from 'next/server';
 import {
   executeScenesAgent,
   generateCharacterPortraits,
-  generateGroupReferences,
-  generateEnvironmentImages,
-  generateSceneStoryboards,
 } from '@/lib/ai/agents';
 import { getSession } from '@/lib/auth/session';
 import { initDb, updateGenerationScenes } from '@/lib/db';
@@ -74,12 +71,10 @@ export async function POST(request: NextRequest) {
           sendEvent({ type: 'agent-log', agent: 'scenes', status: `Consistency: ${scenesResult.consistencyNotes.substring(0, 100)}...` });
           sendEvent({ type: 'agent-complete', agent: 'scenes', result: scenesResult });
 
-          // Storyboard: Character portraits → Group refs → Environments → Scene frames
-          let storyboardImages: string[] = [];
+          // Character portraits
           let characterPortraits: Record<string, string> = {};
-          let environmentImages: string[] = [];
 
-          sendEvent({ type: 'storyboard-start' as any, status: 'Generating character-consistent storyboard...' });
+          sendEvent({ type: 'storyboard-start' as any, status: 'Generating character portraits...' });
 
           try {
             const chars = scenesResult.characters || [];
@@ -102,61 +97,14 @@ export async function POST(request: NextRequest) {
               }
             }
 
-            // Step 2: Group references for multi-character scenes
-            let groupRefs: Record<string, string> = {};
-            try {
-              groupRefs = await generateGroupReferences(
-                scenesResult.scenes, chars, characterPortraits,
-                ideaResult.style, ideaResult.mood, options.aspectRatio,
-              );
-              if (Object.keys(groupRefs).length > 0) {
-                sendEvent({ type: 'agent-log', agent: 'mood-board', status: `${Object.keys(groupRefs).length} group reference(s) ready` });
-              }
-            } catch (e) {
-              sendEvent({ type: 'agent-log', agent: 'mood-board', status: `Group refs failed: ${e instanceof Error ? e.message : 'Unknown error'}` });
-            }
-
-            // Step 2.5: Environment images
-            sendEvent({ type: 'agent-log', agent: 'mood-board', status: `Generating ${scenesResult.scenes.length} environment image(s)...` });
-            try {
-              environmentImages = await generateEnvironmentImages(
-                scenesResult.scenes, ideaResult.style, ideaResult.mood, options.modeId,
-                (i, url) => {
-                  sendEvent({ type: 'environment-image', sceneIndex: i, environmentImage: url });
-                },
-                options.aspectRatio, moodBoard,
-              );
-              sendEvent({ type: 'agent-log', agent: 'mood-board', status: `${environmentImages.filter(Boolean).length}/${scenesResult.scenes.length} environment images ready` });
-            } catch (e) {
-              sendEvent({ type: 'agent-log', agent: 'mood-board', status: `Environment images failed: ${e instanceof Error ? e.message : 'Unknown error'}` });
-            }
-
-            // Step 3: Scene storyboard frames
-            sendEvent({ type: 'agent-log', agent: 'mood-board', status: `Generating ${scenesResult.scenes.length} scene frames...` });
-            try {
-              storyboardImages = await generateSceneStoryboards(
-                scenesResult.scenes, chars, characterPortraits, groupRefs,
-                ideaResult.style, ideaResult.mood, options.modeId,
-                (i, url) => {
-                  sendEvent({ type: 'storyboard-frame', sceneIndex: i, storyboardImage: url });
-                },
-                options.aspectRatio, environmentImages, moodBoard,
-              );
-              sendEvent({ type: 'agent-log', agent: 'mood-board', status: `${storyboardImages.filter(Boolean).length}/${scenesResult.scenes.length} storyboard frames ready` });
-            } catch (e) {
-              sendEvent({ type: 'agent-log', agent: 'mood-board', status: `Scene frames failed: ${e instanceof Error ? e.message : 'Unknown error'}` });
-            }
-
-            sendEvent({ type: 'storyboard-complete' as any, storyboardImages, characterPortraits });
           } catch (error) {
-            console.error('❌ Storyboard generation failed:', error);
-            sendEvent({ type: 'agent-log', agent: 'mood-board', status: `Storyboard failed: ${error instanceof Error ? error.message : 'Unknown error'}` });
-            sendEvent({ type: 'storyboard-complete' as any, storyboardImages: [], characterPortraits: {} });
+            console.error('❌ Portrait generation failed:', error);
+            sendEvent({ type: 'agent-log', agent: 'mood-board', status: `Portraits failed: ${error instanceof Error ? error.message : 'Unknown error'}` });
           }
 
-          // Pause for scene review
-          sendEvent({ type: 'agent-log', agent: 'system', status: 'Scenes ready for review. Edit prompts and click Generate Videos to continue.' });
-          sendEvent({ type: 'scenes-ready' as any, sessionId, result: { idea: ideaResult, scenes: scenesResult }, moodBoard, storyboardImages, characterPortraits, environmentImages });
+          // Pause for character review
+          sendEvent({ type: 'agent-log', agent: 'system', status: 'Characters ready for review. Tap to edit, then continue to storyboard.' });
+          sendEvent({ type: 'characters-ready' as any, sessionId, characterPortraits, result: { idea: ideaResult, scenes: scenesResult } });
 
           console.log(`✅ API: Continue-generation complete\n`);
           controller.close();

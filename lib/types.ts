@@ -64,6 +64,7 @@ export type ProgressEventType =
   | 'storyboard-frame'
   | 'storyboard-complete'
   | 'character-portrait'
+  | 'characters-ready'
   | 'environment-image'
   | 'scenes-ready'
   | 'video-start'
@@ -93,7 +94,7 @@ export interface ProgressEvent {
 }
 
 export interface GenerationState {
-  status: 'idle' | 'generating' | 'mood-board-review' | 'reviewing' | 'generating-videos' | 'complete' | 'error';
+  status: 'idle' | 'generating' | 'mood-board-review' | 'characters-review' | 'reviewing' | 'generating-videos' | 'complete' | 'error';
   idea: string;
   generatedIdea: VideoIdea | null;
   scenes: Scene[] | null;

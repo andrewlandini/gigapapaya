@@ -38,6 +38,7 @@ const PHASE_HEADLINES: Record<string, string[]> = {
   scenes: ["Breaking it into shots.", "Blocking the shots.", "Mapping the sequence.", "Setting up each shot."],
   storyboard: ["Drawing the storyboard.", "Framing each shot.", "Sketching the frames.", "Previewing the shots."],
   'mood-board-review': ["Pick your look.", "Choose your style.", "Set the visual tone.", "Which vibe?"],
+  'characters-review': ["Check your cast.", "Meet your characters.", "Look right?", "Your cast is ready."],
   reviewing: ["Your scenes are ready.", "Review and edit.", "Make it yours.", "Check the shots."],
   video: ["Generating videos.", "Rendering scenes.", "Cameras rolling.", "Bringing it to life.", "Processing shots.", "Building the shots.", "Assembling the clips."],
   complete: ["That's a wrap.", "All done.", "Picture's up.", "And... cut."],
@@ -160,6 +161,7 @@ export function VideoGenerator() {
     selectedMoodBoardIndex, selectMoodBoardImage, refineMoodBoard, undoMoodBoardRefinement, continuePastMoodBoard,
     isRefining, canUndoMoodBoard,
     portraitModalCharacter, openPortraitModal, closePortraitModal, regeneratePortrait, isRegeneratingPortrait,
+    continuePastCharacters,
   } = useStoryboard();
 
   const [editingDescription, setEditingDescription] = useState('');
@@ -192,6 +194,8 @@ export function VideoGenerator() {
 
     if (state.status === 'mood-board-review') {
       phase = 'mood-board-review';
+    } else if (state.status === 'characters-review') {
+      phase = 'characters-review';
     } else if (state.status === 'reviewing') {
       phase = 'reviewing';
     } else if (state.status === 'complete') {
@@ -736,26 +740,52 @@ export function VideoGenerator() {
           </div>
         )}
 
-        {/* Character Portraits — clickable to open lightbox */}
+        {/* Character Portraits — clickable to open lightbox, larger during review */}
         {Object.keys(state.characterPortraits).length > 0 && (
-          <div className="space-y-3 animate-fade-in">
-            <h2 className="text-sm font-medium text-[#ededed]">Characters</h2>
-            <div className="flex gap-3 flex-wrap">
-              {Object.entries(state.characterPortraits).map(([name, img], i) => (
-                <button
-                  key={name}
-                  onClick={() => {
-                    const char = state.characters.find(c => c.name === name);
-                    setEditingDescription(char?.description || '');
-                    openPortraitModal(name);
-                  }}
-                  className="text-center space-y-1.5 animate-scale-in group"
-                  style={{ animationDelay: `${i * 200}ms` }}
-                >
-                  <img src={img} alt={name} className="w-20 h-20 object-contain rounded-full border border-[#333] bg-black group-hover:border-[#555] group-hover:ring-2 group-hover:ring-white/10 transition-all" />
-                  <span className="text-xs font-mono text-[#888] group-hover:text-[#ccc] block transition-colors">{name}</span>
-                </button>
-              ))}
+          <div className="space-y-4 animate-fade-in">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-sm font-medium text-[#ededed]">Characters</h2>
+                {state.status === 'characters-review' && (
+                  <p className="text-xs text-[#555] mt-1 font-mono">
+                    Tap a character to edit their look. When you're happy, continue.
+                  </p>
+                )}
+              </div>
+              {state.status === 'characters-review' && (
+                <Button onClick={continuePastCharacters} className="gap-2">
+                  <Play className="h-4 w-4" />
+                  Continue to Storyboard
+                </Button>
+              )}
+            </div>
+            <div className="flex gap-4 flex-wrap">
+              {Object.entries(state.characterPortraits).map(([name, img], i) => {
+                const isReviewMode = state.status === 'characters-review';
+                return (
+                  <button
+                    key={name}
+                    onClick={() => {
+                      const char = state.characters.find(c => c.name === name);
+                      setEditingDescription(char?.description || '');
+                      openPortraitModal(name);
+                    }}
+                    className="text-center space-y-1.5 animate-scale-in group"
+                    style={{ animationDelay: `${i * 200}ms` }}
+                  >
+                    <img
+                      src={img}
+                      alt={name}
+                      className={`object-contain rounded-full border bg-black group-hover:border-[#555] group-hover:ring-2 group-hover:ring-white/10 transition-all ${
+                        isReviewMode ? 'w-28 h-28 border-[#444]' : 'w-20 h-20 border-[#333]'
+                      }`}
+                    />
+                    <span className={`font-mono group-hover:text-[#ccc] block transition-colors ${
+                      isReviewMode ? 'text-sm text-[#999]' : 'text-xs text-[#888]'
+                    }`}>{name}</span>
+                  </button>
+                );
+              })}
             </div>
           </div>
         )}
