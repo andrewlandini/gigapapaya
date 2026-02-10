@@ -74,14 +74,20 @@ export function VideoCard({
     return () => observer.disconnect();
   }, []);
 
+  // For thumbnail videos: React sets the src on hover, but the browser won't
+  // fetch it until we call .load(). Once loaded, onCanPlay triggers playback.
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video || !thumbnailUrl || !visible || !hovering) return;
+    video.load();
+  }, [hovering, visible, thumbnailUrl]);
+
   const handleMouseEnter = () => {
     setHovering(true);
     if (videoRef.current) {
       videoRef.current.muted = muted;
-      // If the video already has a src loaded, play immediately.
-      // Otherwise the onCanPlay handler (below) will start playback
-      // once the src is set by the re-render.
-      if (videoRef.current.src) {
+      // Non-thumbnail videos already have src loaded, play immediately
+      if (!thumbnailUrl) {
         videoRef.current.play().catch(() => {});
       }
     }
@@ -97,8 +103,6 @@ export function VideoCard({
   };
 
   const handleCanPlay = () => {
-    // Auto-play once the video source finishes loading (for thumbnail videos
-    // whose src is only set on hover).
     if (hovering && videoRef.current) {
       videoRef.current.muted = muted;
       videoRef.current.play().catch(() => {});
