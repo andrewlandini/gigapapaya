@@ -50,7 +50,7 @@ This is a definitive character reference photograph for a film production. Every
 
 NO overlay graphics, captions, speech bubbles, subtitles, labels, or watermarks. Clean photographic image only. Output only the image.`;
 
-    const imageUrl = await geminiImage(prompt, primaryMoodRef);
+    const imageUrl = await geminiImage(prompt, primaryMoodRef, undefined, !!primaryMoodRef);
 
     if (!imageUrl) {
       return NextResponse.json({ error: 'Image generation failed' }, { status: 500 });

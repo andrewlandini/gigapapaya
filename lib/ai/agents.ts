@@ -326,7 +326,7 @@ Requirements for realism:
 // ── Storyboard Pipeline: Character Portraits → Group Refs → Scene Frames ──
 // Uses generateText with Gemini multimodal output (same approach as avatar generation)
 
-export async function geminiImage(prompt: string, referenceImages?: string[], aspectRatio?: string): Promise<string> {
+export async function geminiImage(prompt: string, referenceImages?: string[], aspectRatio?: string, rawPrompt?: boolean): Promise<string> {
   // Build Google provider options with aspect ratio if provided
   const googleOptions: Record<string, any> = { responseModalities: ['TEXT', 'IMAGE'] };
   if (aspectRatio) {
@@ -335,10 +335,12 @@ export async function geminiImage(prompt: string, referenceImages?: string[], as
 
   let result;
   if (referenceImages && referenceImages.length > 0) {
-    console.log(`  📎 geminiImage: passing ${referenceImages.length} reference image(s) (sizes: ${referenceImages.map(r => `${Math.round(r.length / 1024)}KB`).join(', ')})`);
+    console.log(`  📎 geminiImage: passing ${referenceImages.length} reference image(s) (sizes: ${referenceImages.map(r => `${Math.round(r.length / 1024)}KB`).join(', ')})${rawPrompt ? ' [raw prompt mode]' : ''}`);
     // Multimodal: pass reference images + text prompt
-    // Wrap prompt to strongly instruct the model to use reference images as the visual basis
-    const refPrompt = `You are given ${referenceImages.length} reference image(s). These are the user's visual references — you MUST use them as the primary basis for the generated image. Match their visual style, color palette, lighting, composition, subject matter, and overall aesthetic as closely as possible. The output should look like it belongs in the same film or photo series as the reference images.\n\n${prompt}`;
+    // When rawPrompt is true, skip the generic wrapper — the caller's prompt already handles the reference context
+    const refPrompt = rawPrompt
+      ? prompt
+      : `You are given ${referenceImages.length} reference image(s). These are the user's visual references — you MUST use them as the primary basis for the generated image. Match their visual style, color palette, lighting, composition, subject matter, and overall aesthetic as closely as possible. The output should look like it belongs in the same film or photo series as the reference images.\n\n${prompt}`;
     const content: any[] = referenceImages.map(img => ({ type: 'image' as const, image: img }));
     content.push({ type: 'text' as const, text: refPrompt });
     result = await generateText({
@@ -412,7 +414,7 @@ Framing: Tight medium close-up from chest up. Subject fills the frame. Pure soli
 This is a definitive character reference photograph for a film production. Every detail of their appearance (face, hair, skin, build, clothing) must be precisely rendered as described. This exact person must be recognizable in every subsequent frame.
 
 NO overlay graphics, captions, speech bubbles, subtitles, labels, or watermarks. Clean photographic image only. Output only the image.`;
-      const url = await geminiImage(portraitPrompt, primaryMoodRef);
+      const url = await geminiImage(portraitPrompt, primaryMoodRef, undefined, !!primaryMoodRef);
       if (url) {
         portraits[char.name] = url;
         console.log(`✅ Portrait for ${char.name} generated`);

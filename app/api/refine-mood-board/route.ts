@@ -64,7 +64,7 @@ The production is: ${idea.title} — ${idea.description}
 
 Regenerate this exact frame with the adjustment applied. Output only the image.`;
 
-    const newImageUrl = await geminiImage(prompt, [imageUrl], aspectRatio);
+    const newImageUrl = await geminiImage(prompt, [imageUrl], aspectRatio, true);
 
     if (!newImageUrl) {
       return NextResponse.json({ error: 'Image generation failed' }, { status: 500 });
