@@ -790,7 +790,7 @@ export async function executeVideoAgent(
     const videoDuration = typeof options.duration === 'number' ? options.duration : 8;
     const selectedModel = options.videoModel || 'google/veo-3.1-generate-001';
     const isI2V = selectedModel.includes('i2v');
-    const isKling = selectedModel.includes('kling');
+    const isKling = selectedModel.includes('klingai');
 
     console.log(`🎬 Using video model: ${selectedModel}${isI2V ? ' (image-to-video)' : ''}${referenceImage ? ' with reference image' : ''}`);
 
@@ -807,7 +807,7 @@ export async function executeVideoAgent(
         duration: videoDuration,
       };
       if (isKling) {
-        generateOptions.providerOptions = { alibaba: { mode: 'std' } };
+        generateOptions.providerOptions = { klingai: { mode: 'std' } };
       }
       const { videos } = await generateVideo(generateOptions);
       const elapsedTime = ((Date.now() - startTime) / 1000).toFixed(1);
@@ -828,7 +828,7 @@ export async function executeVideoAgent(
       duration: videoDuration,
     };
     if (isKling) {
-      generateOptions.providerOptions = { alibaba: { mode: 'std' } };
+      generateOptions.providerOptions = { klingai: { mode: 'std' } };
     }
 
     const { videos } = await generateVideo(generateOptions);
