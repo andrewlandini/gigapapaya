@@ -1,5 +1,5 @@
 import { getSession } from '@/lib/auth/session';
-import { initDb, isUserAdmin, getVideosMissingThumbnails, updateVideoThumbnail } from '@/lib/db';
+import { initDb, isUserAdmin, getVideosMissingThumbnails, updateVideoThumbnail, clearAllVideoThumbnails } from '@/lib/db';
 import { put } from '@vercel/blob';
 import sharp from 'sharp';
 import crypto from 'crypto';
@@ -48,4 +48,15 @@ export async function POST(request: Request) {
   await updateVideoThumbnail(videoId, blob.url);
 
   return Response.json({ success: true, thumbnailUrl: blob.url });
+}
+
+export async function DELETE() {
+  await initDb();
+  const user = await getSession();
+  if (!user || !(await isUserAdmin(user.id))) {
+    return Response.json({ error: 'Forbidden' }, { status: 403 });
+  }
+
+  await clearAllVideoThumbnails();
+  return Response.json({ success: true });
 }

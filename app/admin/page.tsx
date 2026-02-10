@@ -160,15 +160,15 @@ export default function AdminPage() {
     });
   };
 
-  const processAllThumbnails = async () => {
+  const processVideos = async (videos: ThumbnailVideo[]) => {
     setThumbProcessing(true);
     setThumbProgress(0);
     setThumbFailed(0);
     setThumbDone(false);
 
     let failed = 0;
-    for (let i = 0; i < thumbVideos.length; i++) {
-      const video = thumbVideos[i];
+    for (let i = 0; i < videos.length; i++) {
+      const video = videos[i];
       try {
         const dataUrl = await extractFrame(video);
         await fetch('/api/admin/thumbnails', {
@@ -187,6 +187,17 @@ export default function AdminPage() {
     setThumbProcessing(false);
     setThumbDone(true);
     loadThumbVideos();
+  };
+
+  const processAllThumbnails = () => processVideos(thumbVideos);
+
+  const regenerateAllThumbnails = async () => {
+    await fetch('/api/admin/thumbnails', { method: 'DELETE' });
+    const res = await fetch('/api/admin/thumbnails');
+    if (!res.ok) return;
+    const allVideos: ThumbnailVideo[] = await res.json();
+    setThumbVideos(allVideos);
+    processVideos(allVideos);
   };
 
   if (loading) {
@@ -302,17 +313,32 @@ export default function AdminPage() {
                   </span>
                 </div>
               ) : (
-                <button
-                  onClick={processAllThumbnails}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-[#0070f3]/10 text-[#0070f3] border border-[#0070f3]/20 hover:bg-[#0070f3]/20 transition-colors"
-                >
-                  Scan &amp; Fix All
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={processAllThumbnails}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-[#0070f3]/10 text-[#0070f3] border border-[#0070f3]/20 hover:bg-[#0070f3]/20 transition-colors"
+                  >
+                    Scan &amp; Fix All
+                  </button>
+                  <button
+                    onClick={regenerateAllThumbnails}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-[#222] text-[#888] border border-[#333] hover:bg-[#333] transition-colors"
+                  >
+                    Regenerate All
+                  </button>
+                </div>
               )}
             </div>
           ) : (
-            <div className="border border-[#222] rounded-xl p-4">
+            <div className="border border-[#222] rounded-xl p-4 flex items-center justify-between">
               <span className="text-xs text-[#555] font-mono">All videos have thumbnails.</span>
+              <button
+                onClick={regenerateAllThumbnails}
+                disabled={thumbProcessing}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-[#222] text-[#888] border border-[#333] hover:bg-[#333] transition-colors"
+              >
+                Regenerate All
+              </button>
             </div>
           )}
         </div>

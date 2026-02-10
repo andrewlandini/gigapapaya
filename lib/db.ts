@@ -508,3 +508,8 @@ export async function updateVideoThumbnail(videoId: string, thumbnailUrl: string
   const sql = getDb();
   await sql`UPDATE videos SET thumbnail_url = ${thumbnailUrl} WHERE id = ${videoId}`;
 }
+
+export async function clearAllVideoThumbnails() {
+  const sql = getDb();
+  await sql`UPDATE videos SET thumbnail_url = NULL`;
+}
