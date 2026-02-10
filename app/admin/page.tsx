@@ -47,6 +47,7 @@ export default function AdminPage() {
   const [thumbVideos, setThumbVideos] = useState<ThumbnailVideo[]>([]);
   const [thumbProcessing, setThumbProcessing] = useState(false);
   const [thumbProgress, setThumbProgress] = useState(0);
+  const [thumbFailed, setThumbFailed] = useState(0);
   const [thumbDone, setThumbDone] = useState(false);
 
   const loadUsers = async () => {
@@ -112,6 +113,13 @@ export default function AdminPage() {
 
   const extractFrame = (video: ThumbnailVideo): Promise<string> => {
     return new Promise((resolve, reject) => {
+      const timeout = setTimeout(() => {
+        el.src = '';
+        reject(new Error(`Timeout loading video ${video.id}`));
+      }, 30_000);
+
+      const cleanup = () => clearTimeout(timeout);
+
       const el = document.createElement('video');
       el.crossOrigin = 'anonymous';
       el.muted = true;
@@ -124,6 +132,7 @@ export default function AdminPage() {
       });
 
       el.addEventListener('seeked', () => {
+        cleanup();
         try {
           const canvas = document.createElement('canvas');
           canvas.width = el.videoWidth;
@@ -140,7 +149,14 @@ export default function AdminPage() {
       });
 
       el.addEventListener('error', () => {
+        cleanup();
         reject(new Error(`Failed to load video ${video.id}`));
+      });
+
+      el.addEventListener('stalled', () => {
+        cleanup();
+        el.src = '';
+        reject(new Error(`Stalled loading video ${video.id}`));
       });
     });
   };
@@ -148,8 +164,10 @@ export default function AdminPage() {
   const processAllThumbnails = async () => {
     setThumbProcessing(true);
     setThumbProgress(0);
+    setThumbFailed(0);
     setThumbDone(false);
 
+    let failed = 0;
     for (let i = 0; i < thumbVideos.length; i++) {
       const video = thumbVideos[i];
       try {
@@ -160,6 +178,8 @@ export default function AdminPage() {
           body: JSON.stringify({ videoId: video.id, thumbnailDataUrl: dataUrl }),
         });
       } catch (e) {
+        failed++;
+        setThumbFailed(failed);
         console.error(`Failed to process thumbnail for video ${video.id}:`, e);
       }
       setThumbProgress(i + 1);
@@ -277,7 +297,10 @@ export default function AdminPage() {
               ) : thumbDone ? (
                 <div className="flex items-center gap-2">
                   <Check className="h-3.5 w-3.5 text-green-500" />
-                  <span className="text-sm text-green-500 font-mono">Done! All thumbnails generated.</span>
+                  <span className="text-sm text-green-500 font-mono">
+                    Done! {thumbVideos.length === 0 ? 'All thumbnails generated.' : `Processed ${thumbProgress} videos.`}
+                    {thumbFailed > 0 && <span className="text-[#ff8800]"> ({thumbFailed} skipped — couldn&apos;t load video)</span>}
+                  </span>
                 </div>
               ) : (
                 <button
