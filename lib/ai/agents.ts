@@ -561,16 +561,18 @@ export async function generateEnvironmentImages(
     try {
       console.log(`🏞️  Generating PRIMARY environment for group ${groupId} (scene ${sceneIdx + 1})...`);
       const refImages = moodBoard?.length ? moodBoard : undefined;
+      const hasMoodRef = !!refImages;
       const url = await geminiImage(
-        `${moodBoard?.length ? 'The attached mood board images define the visual style, color palette, and tone. Match their look and feel for this environment.\n\n' : ''}Cinematic empty set / environment. ${toneOverride}. Generate ONLY the physical environment described in this shot — the location, lighting, set dressing, props, atmosphere. ABSOLUTELY NO PEOPLE or characters. The set is empty, waiting for actors.
+        `${hasMoodRef ? 'The attached image is the visual style reference for this production. Study its color grade, lighting quality, and film stock texture. The environment you generate must look like it was shot in the same film — same color temperature, same contrast, same grain, same production value.\n\n' : ''}Cinematic empty set / location scout photograph. ${toneOverride}. Generate ONLY the physical environment described below — the location, lighting, set dressing, props, atmosphere. ABSOLUTELY NO PEOPLE or characters. The set is empty, waiting for actors.
 
 Shot description: ${scene.prompt}
 
-This must look like an empty film set photographed before the actors arrived. Practical light sources, lived-in details, depth in the frame. Match the camera angle, lens, and framing implied by the shot description.
+This is a LOCATION SCOUT photograph — an empty set photographed before the actors arrive. Practical light sources, lived-in details, depth in the frame. Every physical detail matters because this exact location will appear in multiple shots from different angles.
 
 NO overlay graphics, captions, labels, or watermarks. Clean photographic image only. Output only the image.`,
         refImages,
         aspectRatio,
+        hasMoodRef,
       );
       if (url) {
         results[sceneIdx] = url;
@@ -603,15 +605,16 @@ NO overlay graphics, captions, labels, or watermarks. Clean photographic image o
 
         console.log(`🏞️  Generating SECONDARY environment for scene ${i + 1} (group ${groupId}, ref from scene ${primaryIdx + 1}, ${refImages.length} ref(s))...`);
         const url = await geminiImage(
-          `${primaryUrl ? 'The attached image is a reference environment from the same physical location. This new image must depict the SAME space — same walls, same furniture, same fixtures, same lighting quality, same color grade. But show a DIFFERENT angle or framing as described in the shot.\n\n' : ''}Cinematic empty set / environment. ${toneOverride}. Generate ONLY the physical environment described in this shot — the location, lighting, set dressing, props, atmosphere. ABSOLUTELY NO PEOPLE or characters. The set is empty, waiting for actors.
+          `${primaryUrl ? 'The attached image is the HERO SHOT of this location. You are generating a DIFFERENT CAMERA ANGLE of the EXACT SAME physical space.\n\nThis is NOT a similar location. This is the SAME room / vehicle / space. Every physical detail must be consistent:\n- Same make/model of vehicle or same room dimensions\n- Same color of walls, upholstery, surfaces\n- Same furniture, fixtures, objects in their same positions\n- Same practical light sources (lamps, windows, dashboard lights)\n- Same time of day, same ambient lighting quality\n- Same level of wear, clutter, and lived-in detail\n\nThe ONLY thing that changes is where the camera is positioned and what lens is used.\n\n' : ''}Cinematic empty set — a different camera angle of the same location. ${toneOverride}. Generate ONLY the physical environment. ABSOLUTELY NO PEOPLE or characters.
 
-Shot description: ${scene.prompt}
+Shot description (this tells you the new camera position): ${scene.prompt}
 
-This must look like an empty film set photographed before the actors arrived. Practical light sources, lived-in details, depth in the frame. Match the camera angle, lens, and framing implied by the shot description. The physical space (walls, furniture, fixtures, lighting) must be consistent with the reference environment.
+Move the camera to the position described above, but keep everything else physically identical to the reference. If the reference shows a car interior, this is the SAME car — same steering wheel, same dashboard, same seats, same everything. Only the camera moved.
 
-NO overlay graphics, captions, labels, or watermarks. Clean photographic image only. Output only the image.`,
+NO overlay graphics, captions, labels, or watermarks. Output only the image.`,
           refImages.length > 0 ? refImages : undefined,
           aspectRatio,
+          !!primaryUrl,
         );
         if (url) {
           results[i] = url;
@@ -715,24 +718,24 @@ export async function generateSceneStoryboards(
 
       console.log(`🎬 Generating frame ${i + 1}/${scenes.length} (with ${refImages.length} ref image(s): ${hasEnvironment ? 1 : 0} env, ${portraitNames.length} portrait(s), ${hasGroupRef ? 1 : 0} group)...`);
       const url = await geminiImage(
-        `${refDescription}${hasEnvironment ? 'You are compositing characters into an existing environment. The FIRST reference image is the background — use it as the actual physical space. Do not invent a new location. The characters are being placed INTO that set.\n\n' : ''}Cinematic production still. ${modeId && STORYBOARD_TONE_OVERRIDES[modeId] ? STORYBOARD_TONE_OVERRIDES[modeId] + '.' : `${style} visual style, ${mood} mood.`}
+        `${refDescription}${hasEnvironment ? 'CRITICAL: The FIRST reference image is the LOCKED BACKGROUND for this shot. You are placing characters into this exact physical space. The environment is NOT a suggestion — it is the actual set. Every surface, every object, every light source in the background must match the reference exactly. You are a compositor layering actors onto a plate shot.\n\n' : ''}Cinematic production still — frame grab from a film. ${modeId && STORYBOARD_TONE_OVERRIDES[modeId] ? STORYBOARD_TONE_OVERRIDES[modeId] + '.' : `${style} visual style, ${mood} mood.`}
 
 Shot description: ${scene.prompt}
 
-${charContext ? `Characters in this frame: ${charContext}\n` : ''}This must look like a FRAME GRAB from a real film — a single frame pulled from a moving shot. NOT a photograph. NOT a posed portrait. NOT stock footage.
+${charContext ? `Characters in this frame: ${charContext}\n` : ''}Place these characters INTO the environment from the reference image. This is compositing — the background is locked, you are adding the actors.
 
-Key requirements:
-- The background/environment must be IDENTICAL to the environment reference image. Same walls, same furniture, same lighting, same color grade. The characters are placed INTO that space — not a new space.
-- Characters must be MID-ACTION, not posing. Caught in the middle of a gesture, a turn, a reach. Asymmetric body positions — weight shifted, head tilted, one hand busy.
-- Characters must NEVER look at the camera. They look at other people, objects, tasks, or into the middle distance.
-- Characters must be TOUCHING or interacting with their environment — leaning on surfaces, holding objects, gripping things.
-- The lighting on the characters must match the environment's lighting — same color temperature, same direction, same quality.
+Requirements:
+- BACKGROUND IS LOCKED. Same walls, seats, dashboard, furniture, lighting, color grade as the environment reference. Do not change, reimagine, or replace any part of the physical space.
+- Characters must be lit to match the environment — same color temperature, same direction, same quality of light hitting their faces and bodies.
+- Characters are MID-ACTION, not posing. Asymmetric body positions, weight shifted, interacting with surfaces and objects in the environment.
+- Characters NEVER look at the camera.
 
-Match the camera, lens, and framing from the shot description exactly.
+Match the camera position, lens, and framing from the shot description.
 
-NO overlay graphics, captions, speech bubbles, dialogue text, subtitles, labels, or watermarks. Clean photographic frame only. Output only the image.`,
+NO overlay graphics, captions, speech bubbles, dialogue text, subtitles, labels, or watermarks. Output only the image.`,
         refImages.length > 0 ? refImages : undefined,
-        aspectRatio
+        aspectRatio,
+        hasEnvironment,
       );
       if (url) {
         results[i] = url;
