@@ -600,7 +600,7 @@ export function VideoGenerator() {
                     <div className="relative bg-[#0a0a0a]">
                       {state.storyboardImages[i] ? (
                         <>
-                          <img src={state.storyboardImages[i]} alt={`Shot ${i + 1}`} className="w-full object-contain animate-scale-in bg-black" style={{ aspectRatio: options.aspectRatio.replace(':', '/') }} />
+                          <img src={state.storyboardImages[i]} alt={`Shot ${i + 1}`} loading="eager" fetchPriority="high" decoding="async" className="w-full object-contain animate-scale-in bg-black" style={{ aspectRatio: options.aspectRatio.replace(':', '/') }} />
                           {isReviewing && (
                             <button
                               onClick={() => {

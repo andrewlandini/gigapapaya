@@ -11,6 +11,7 @@ import { put } from '@vercel/blob';
 import crypto from 'crypto';
 import type { VideoIdea, ScenesResult, Video, GenerationOptions, Character } from '../types';
 import { inspectError, formatErrorReport } from './error-inspector';
+import sharp from 'sharp';
 
 // Mode-specific visual tone overrides for storyboard image generation
 const STORYBOARD_TONE_OVERRIDES: Record<string, string> = {
@@ -524,12 +525,13 @@ async function geminiImage(prompt: string, referenceImages?: string[], aspectRat
   const imageFile = result.files?.find(f => f.mediaType.startsWith('image/'));
   if (!imageFile) return '';
 
-  // Upload to Blob Storage instead of returning huge base64 data URLs
-  const buffer = Buffer.from(imageFile.uint8Array);
-  const ext = imageFile.mediaType === 'image/jpeg' ? 'jpg' : 'png';
-  const blob = await put(`storyboard/${crypto.randomUUID()}.${ext}`, buffer, {
+  // Compress to JPEG before uploading — Gemini PNGs can be 2-5MB, JPEG ~100-300KB
+  const rawBuffer = Buffer.from(imageFile.uint8Array);
+  const jpegBuffer = await sharp(rawBuffer).jpeg({ quality: 80 }).toBuffer();
+  const blob = await put(`storyboard/${crypto.randomUUID()}.jpg`, jpegBuffer, {
     access: 'public',
-    contentType: imageFile.mediaType,
+    contentType: 'image/jpeg',
+    cacheControlMaxAge: 31536000,
   });
   return blob.url;
 }
@@ -787,10 +789,16 @@ export async function executeVideoAgent(
 
   try {
     // Generate video via AI Gateway
-    const videoDuration = typeof options.duration === 'number' ? options.duration : 8;
     const selectedModel = options.videoModel || 'google/veo-3.1-generate-001';
     const isI2V = selectedModel.includes('i2v');
     const isKling = selectedModel.includes('klingai');
+
+    // Kling supports 5s and 10s durations — snap to nearest valid value
+    const rawDuration = typeof options.duration === 'number' ? options.duration : 8;
+    const videoDuration = isKling ? (rawDuration <= 7 ? 5 : 10) : rawDuration;
+    if (isKling && rawDuration !== videoDuration) {
+      console.log(`⚠️  Kling duration adjusted: ${rawDuration}s → ${videoDuration}s`);
+    }
 
     console.log(`🎬 Using video model: ${selectedModel}${isI2V ? ' (image-to-video)' : ''}${referenceImage ? ' with reference image' : ''}`);
 
