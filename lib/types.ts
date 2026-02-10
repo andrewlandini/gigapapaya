@@ -59,6 +59,7 @@ export type ProgressEventType =
   | 'mood-board-start'
   | 'mood-board-image'
   | 'mood-board-complete'
+  | 'mood-board-ready'
   | 'storyboard-start'
   | 'storyboard-frame'
   | 'storyboard-complete'
@@ -92,7 +93,7 @@ export interface ProgressEvent {
 }
 
 export interface GenerationState {
-  status: 'idle' | 'generating' | 'reviewing' | 'generating-videos' | 'complete' | 'error';
+  status: 'idle' | 'generating' | 'mood-board-review' | 'reviewing' | 'generating-videos' | 'complete' | 'error';
   idea: string;
   generatedIdea: VideoIdea | null;
   scenes: Scene[] | null;
@@ -104,6 +105,8 @@ export interface GenerationState {
   moodBoard: string[]; // generated mood board image data URLs
   storyboardImages: string[]; // per-scene preview images
   characterPortraits: Record<string, string>; // name → data URL
+  selectedMoodBoardIndex: number | null;
+  moodBoardHistory: string[][]; // undo stack — each entry is a snapshot of the moodBoard URLs
 }
 
 export interface AgentConfig {

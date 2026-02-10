@@ -112,6 +112,16 @@ export function ProgressTracker({ events, status, shotCount }: ProgressTrackerPr
         continue;
       }
 
+      if ((event.type as string) === 'mood-board-ready') {
+        const group = result.find(g => g.key === 'mood-board');
+        if (group) {
+          group.status = 'done';
+          group.message = `${event.moodBoard?.length || 0} images — review`;
+        }
+        currentGroup = null;
+        continue;
+      }
+
       if (event.type === 'character-portrait') {
         let group = result.find(g => g.key === 'characters');
         if (!group) {
@@ -275,12 +285,20 @@ export function ProgressTracker({ events, status, shotCount }: ProgressTrackerPr
 
     if (!isComplete && !hasError) {
       if (status === 'generating') {
-        // Phase 1: Concept → (Mood Board if beta) → Shots → Review
-        if (!hasKey('agent-idea')) {
-          result.push({ key: 'agent-idea', label: 'Concept Agent', status: 'pending', message: '', timestamp: EPOCH, logs: [], type: 'agent' });
-        }
-        if (!hasKey('agent-scenes')) {
-          result.push({ key: 'agent-scenes', label: 'Shot Agent', status: 'pending', message: '', timestamp: EPOCH, logs: [], type: 'agent' });
+        const moodBoardDone = hasKey('mood-board') && result.find(g => g.key === 'mood-board')?.status === 'done';
+        if (!moodBoardDone) {
+          // Phase 1: Concept → Mood Board → pause for review
+          if (!hasKey('agent-idea')) {
+            result.push({ key: 'agent-idea', label: 'Concept Agent', status: 'pending', message: '', timestamp: EPOCH, logs: [], type: 'agent' });
+          }
+          if (!hasKey('mood-board')) {
+            result.push({ key: 'mood-board', label: 'Mood Board', status: 'pending', message: '', timestamp: EPOCH, logs: [], type: 'agent' });
+          }
+        } else {
+          // Phase 2 (after mood board review): Shots → Storyboard → Review
+          if (!hasKey('agent-scenes')) {
+            result.push({ key: 'agent-scenes', label: 'Shot Agent', status: 'pending', message: '', timestamp: EPOCH, logs: [], type: 'agent' });
+          }
         }
       } else if (status === 'generating-videos' && shotCount) {
         // Phase 2: Single group for all parallel video generations

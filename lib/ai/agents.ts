@@ -326,7 +326,7 @@ Requirements for realism:
 // ── Storyboard Pipeline: Character Portraits → Group Refs → Scene Frames ──
 // Uses generateText with Gemini multimodal output (same approach as avatar generation)
 
-async function geminiImage(prompt: string, referenceImages?: string[], aspectRatio?: string): Promise<string> {
+export async function geminiImage(prompt: string, referenceImages?: string[], aspectRatio?: string): Promise<string> {
   // Build Google provider options with aspect ratio if provided
   const googleOptions: Record<string, any> = { responseModalities: ['TEXT', 'IMAGE'] };
   if (aspectRatio) {

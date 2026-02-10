@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { RotateCcw, Play, X, Clock, ChevronDown, ChevronUp, Settings2, RotateCw, AlertCircle, Loader2, ImagePlus, MessageSquare, Copy, Check } from 'lucide-react';
+import { RotateCcw, Play, X, Clock, ChevronDown, ChevronUp, Settings2, RotateCw, AlertCircle, Loader2, ImagePlus, MessageSquare, Copy, Check, Undo2 } from 'lucide-react';
 import { ReferenceImages } from './reference-images';
 import { formatCostWithCredits, estimateGenerateVideosCost, estimateVideoCost, estimateStoryboardTotalCost } from '@/lib/costs';
 
@@ -37,6 +37,7 @@ const PHASE_HEADLINES: Record<string, string[]> = {
   'mood-board': ["Setting the vibe.", "Finding the look.", "Building the mood board.", "Locking the aesthetic."],
   scenes: ["Breaking it into shots.", "Blocking the shots.", "Mapping the sequence.", "Setting up each shot."],
   storyboard: ["Drawing the storyboard.", "Framing each shot.", "Sketching the frames.", "Previewing the shots."],
+  'mood-board-review': ["Pick your look.", "Choose your style.", "Set the visual tone.", "Which vibe?"],
   reviewing: ["Your scenes are ready.", "Review and edit.", "Make it yours.", "Check the shots."],
   video: ["Generating videos.", "Rendering scenes.", "Cameras rolling.", "Bringing it to life.", "Processing shots.", "Building the shots.", "Assembling the clips."],
   complete: ["That's a wrap.", "All done.", "Picture's up.", "And... cut."],
@@ -156,6 +157,8 @@ export function VideoGenerator() {
     setReferenceImageSlot, clearReferenceImageSlot, removeReferenceImageSlot, addEmptySlot, resetReferenceImages,
     customPrompts, updateModeCustomization, restoreModeDefault,
     history, deleteHistoryEntry, loadFromHistory,
+    selectedMoodBoardIndex, selectMoodBoardImage, refineMoodBoard, undoMoodBoardRefinement, continuePastMoodBoard,
+    isRefining, canUndoMoodBoard,
   } = useStoryboard();
 
   const [showAgentSettings, setShowAgentSettings] = useState(false);
@@ -184,7 +187,9 @@ export function VideoGenerator() {
     // Determine current phase from progress events and status
     let phase = 'idea';
 
-    if (state.status === 'reviewing') {
+    if (state.status === 'mood-board-review') {
+      phase = 'mood-board-review';
+    } else if (state.status === 'reviewing') {
       phase = 'reviewing';
     } else if (state.status === 'complete') {
       phase = 'complete';
@@ -646,15 +651,76 @@ export function VideoGenerator() {
 
         </div>
 
-        {/* Mood Board — shown as soon as images arrive */}
+        {/* Mood Board — interactive when in mood-board-review, read-only otherwise */}
         {state.moodBoard.length > 0 && (
-          <div className="space-y-3 animate-fade-in">
-            <h2 className="text-sm font-medium text-[#ededed]">Mood Board</h2>
+          <div className="space-y-4 animate-fade-in">
+            <div className="flex items-center justify-between">
+              <h2 className="text-sm font-medium text-[#ededed]">Mood Board</h2>
+              {state.status === 'mood-board-review' && (
+                <div className="flex items-center gap-2">
+                  {canUndoMoodBoard && (
+                    <button
+                      onClick={undoMoodBoardRefinement}
+                      disabled={isRefining}
+                      className="flex items-center gap-1.5 h-8 px-3 text-xs font-mono text-[#888] hover:text-[#ededed] border border-[#333] rounded-lg hover:border-[#555] transition-all disabled:opacity-40"
+                    >
+                      <Undo2 className="h-3.5 w-3.5" />
+                      Undo
+                    </button>
+                  )}
+                  <Button onClick={continuePastMoodBoard} disabled={isRefining} className="gap-2">
+                    <Play className="h-4 w-4" />
+                    Continue
+                  </Button>
+                </div>
+              )}
+            </div>
+
             <div className="grid grid-cols-3 gap-3">
               {state.moodBoard.map((img, i) => (
-                <img key={i} src={img} alt={`Mood board ${i + 1}`} className="w-full object-contain rounded-xl border border-[#222] animate-scale-in bg-black" style={{ animationDelay: `${i * 200}ms`, aspectRatio: options.aspectRatio.replace(':', '/') }} />
+                <div key={i} className="relative">
+                  <img
+                    src={img}
+                    alt={`Mood board ${i + 1}`}
+                    onClick={() => state.status === 'mood-board-review' && selectMoodBoardImage(i)}
+                    className={`w-full object-contain rounded-xl border-2 animate-scale-in bg-black transition-all ${
+                      state.status === 'mood-board-review' ? 'cursor-pointer hover:border-[#555]' : ''
+                    } ${
+                      selectedMoodBoardIndex === i ? 'border-white ring-2 ring-white/20' : 'border-[#222]'
+                    }`}
+                    style={{ animationDelay: `${i * 200}ms`, aspectRatio: options.aspectRatio.replace(':', '/') }}
+                  />
+                  {isRefining && selectedMoodBoardIndex === i && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-xl">
+                      <Loader2 className="h-6 w-6 text-white animate-spin" />
+                    </div>
+                  )}
+                  {state.status === 'mood-board-review' && selectedMoodBoardIndex === i && (
+                    <div className="absolute top-2 left-2 px-2 py-0.5 rounded-md bg-white text-black text-[10px] font-mono font-medium">
+                      Selected
+                    </div>
+                  )}
+                </div>
               ))}
             </div>
+
+            {state.status === 'mood-board-review' && selectedMoodBoardIndex !== null && (
+              <div className="space-y-2 animate-fade-in">
+                <span className="text-xs font-mono text-[#555]">Refine style</span>
+                <div className="flex flex-wrap gap-2">
+                  {['More Cinematic', 'Home Video', 'Darker', 'Brighter', 'Warmer', 'Cooler', 'More Gritty', 'More Polished'].map((modifier) => (
+                    <button
+                      key={modifier}
+                      onClick={() => refineMoodBoard(modifier)}
+                      disabled={isRefining}
+                      className="h-8 px-3 text-xs font-mono text-[#888] border border-[#333] rounded-lg hover:text-[#ededed] hover:border-[#555] hover:bg-[#111] transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                    >
+                      {modifier}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
 
