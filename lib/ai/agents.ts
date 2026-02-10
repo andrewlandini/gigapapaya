@@ -380,15 +380,17 @@ export async function generateCharacterPortraits(
   mood: string,
   modeId?: string,
   onPortrait?: (name: string, url: string) => void,
+  moodBoard?: string[],
 ): Promise<Record<string, string>> {
   console.log(`\n🧑 PORTRAITS: Generating ${characters.length} character portraits...`);
+  if (moodBoard?.length) console.log(`🧑 Mood board: ${moodBoard.length} image(s) will be used as style references`);
   const portraits: Record<string, string> = {};
 
   const promises = characters.map(async (char) => {
     try {
       console.log(`🧑 Generating portrait for ${char.name}...`);
       const url = await geminiImage(
-        `Cinematic character portrait. ${style} visual style and color grade. Shallow depth of field, motivated lighting.
+        `${moodBoard?.length ? 'The attached mood board images define the visual style, color palette, and tone. Match their look and feel while keeping the portrait on a black background.\n\n' : ''}Cinematic character portrait. ${style} visual style and color grade. Shallow depth of field, motivated lighting.
 
 Subject: ${char.description}
 
@@ -396,7 +398,8 @@ Framing: Tight medium close-up from chest up. Subject fills the frame. Pure soli
 
 This is a definitive character reference photograph for a film production. Every detail of their appearance (face, hair, skin, build, clothing) must be precisely rendered as described. This exact person must be recognizable in every subsequent frame.
 
-NO overlay graphics, captions, speech bubbles, subtitles, labels, or watermarks. Clean photographic image only. Output only the image.`
+NO overlay graphics, captions, speech bubbles, subtitles, labels, or watermarks. Clean photographic image only. Output only the image.`,
+        moodBoard?.length ? moodBoard : undefined,
       );
       if (url) {
         portraits[char.name] = url;
@@ -495,40 +498,123 @@ export async function generateEnvironmentImages(
   modeId?: string,
   onFrame?: (index: number, url: string) => void,
   aspectRatio?: string,
+  moodBoard?: string[],
 ): Promise<string[]> {
   console.log(`\n🏞️  ENVIRONMENTS: Generating ${scenes.length} environment image(s)...`);
+  if (moodBoard?.length) console.log(`🏞️  Mood board: ${moodBoard.length} image(s) will be used as style references`);
   const results = new Array<string>(scenes.length).fill('');
 
-  const promises = scenes.map(async (scene, i) => {
+  // Step 1: LLM location clustering — scenes in the same physical space get the same group ID
+  let locationGroups: number[];
+  try {
+    const { object } = await generateObject({
+      model: getTextModel('google/gemini-3-flash'),
+      schema: z.object({
+        groups: z.array(z.number()).describe('Location group ID (0-indexed) per scene. Same physical location = same ID.')
+      }),
+      prompt: `Analyze these scene descriptions and assign location group IDs. Scenes that take place in the SAME physical location (e.g. both in "a locker room" or both in "a kitchen") should share the same group ID. Different locations get different IDs. Return exactly ${scenes.length} IDs (one per scene).\n\n${scenes.map((s, i) => `Scene ${i + 1}: ${s.prompt}`).join('\n')}`
+    });
+    locationGroups = object.groups;
+    // Validate length
+    if (locationGroups.length !== scenes.length) {
+      console.warn(`⚠️  Location grouping returned ${locationGroups.length} IDs for ${scenes.length} scenes — falling back to one-per-scene`);
+      locationGroups = scenes.map((_, i) => i);
+    }
+  } catch (error) {
+    console.warn('⚠️  Location grouping failed — falling back to one-per-scene:', error instanceof Error ? error.message : error);
+    locationGroups = scenes.map((_, i) => i);
+  }
+
+  const uniqueGroups = new Set(locationGroups);
+  console.log(`🏞️  Location grouping: ${uniqueGroups.size} unique location(s) across ${scenes.length} scenes`);
+  console.log(`🏞️  Groups: [${locationGroups.join(', ')}]`);
+
+  // Find the first (primary) scene index for each location group
+  const primaryIndexByGroup = new Map<number, number>();
+  locationGroups.forEach((groupId, sceneIdx) => {
+    if (!primaryIndexByGroup.has(groupId)) {
+      primaryIndexByGroup.set(groupId, sceneIdx);
+    }
+  });
+
+  const toneOverride = modeId && STORYBOARD_TONE_OVERRIDES[modeId]
+    ? STORYBOARD_TONE_OVERRIDES[modeId]
+    : `${style} visual style, ${mood} mood`;
+
+  // Step 2: Generate primary environments (one per unique location) in parallel
+  const primaryPromises = Array.from(primaryIndexByGroup.entries()).map(async ([groupId, sceneIdx]) => {
+    const scene = scenes[sceneIdx];
     try {
-      console.log(`🏞️  Generating environment ${i + 1}/${scenes.length}...`);
-      const toneOverride = modeId && STORYBOARD_TONE_OVERRIDES[modeId]
-        ? STORYBOARD_TONE_OVERRIDES[modeId]
-        : `${style} visual style, ${mood} mood`;
+      console.log(`🏞️  Generating PRIMARY environment for group ${groupId} (scene ${sceneIdx + 1})...`);
+      const refImages = moodBoard?.length ? moodBoard : undefined;
       const url = await geminiImage(
-        `Cinematic empty set / environment. ${toneOverride}. Generate ONLY the physical environment described in this shot — the location, lighting, set dressing, props, atmosphere. ABSOLUTELY NO PEOPLE or characters. The set is empty, waiting for actors.
+        `${moodBoard?.length ? 'The attached mood board images define the visual style, color palette, and tone. Match their look and feel for this environment.\n\n' : ''}Cinematic empty set / environment. ${toneOverride}. Generate ONLY the physical environment described in this shot — the location, lighting, set dressing, props, atmosphere. ABSOLUTELY NO PEOPLE or characters. The set is empty, waiting for actors.
 
 Shot description: ${scene.prompt}
 
 This must look like an empty film set photographed before the actors arrived. Practical light sources, lived-in details, depth in the frame. Match the camera angle, lens, and framing implied by the shot description.
 
 NO overlay graphics, captions, labels, or watermarks. Clean photographic image only. Output only the image.`,
-        undefined,
+        refImages,
         aspectRatio,
       );
       if (url) {
-        results[i] = url;
-        console.log(`✅ Environment ${i + 1} generated`);
-        onFrame?.(i, url);
+        results[sceneIdx] = url;
+        console.log(`✅ Primary environment for group ${groupId} (scene ${sceneIdx + 1}) generated`);
+        onFrame?.(sceneIdx, url);
       } else {
-        console.error(`❌ No image returned for environment ${i + 1}`);
+        console.error(`❌ No image returned for primary environment group ${groupId}`);
       }
     } catch (error) {
-      console.error(`❌ Failed to generate environment ${i + 1}:`, error instanceof Error ? error.message : error);
+      console.error(`❌ Failed to generate primary environment for group ${groupId}:`, error instanceof Error ? error.message : error);
     }
   });
 
-  await Promise.allSettled(promises);
+  await Promise.allSettled(primaryPromises);
+
+  // Step 3: Generate secondary environments (other scenes at same location) using primary as reference
+  const secondaryScenes = scenes
+    .map((scene, i) => ({ scene, i, groupId: locationGroups[i] }))
+    .filter(({ i, groupId }) => primaryIndexByGroup.get(groupId) !== i);
+
+  if (secondaryScenes.length > 0) {
+    console.log(`🏞️  Generating ${secondaryScenes.length} secondary environment(s) using primary references...`);
+    const secondaryPromises = secondaryScenes.map(async ({ scene, i, groupId }) => {
+      try {
+        const primaryIdx = primaryIndexByGroup.get(groupId)!;
+        const primaryUrl = results[primaryIdx];
+        // Build reference images: primary environment first, then mood board
+        const refImages: string[] = [];
+        if (primaryUrl) refImages.push(primaryUrl);
+        if (moodBoard?.length) refImages.push(...moodBoard);
+
+        console.log(`🏞️  Generating SECONDARY environment for scene ${i + 1} (group ${groupId}, ref from scene ${primaryIdx + 1}, ${refImages.length} ref(s))...`);
+        const url = await geminiImage(
+          `${primaryUrl ? 'The FIRST attached image is a reference environment from the same physical location — this new image must depict the SAME space but may show a different angle/framing.\n\n' : ''}${moodBoard?.length ? 'The mood board images define the visual style, color palette, and tone. Match their look and feel.\n\n' : ''}Cinematic empty set / environment. ${toneOverride}. Generate ONLY the physical environment described in this shot — the location, lighting, set dressing, props, atmosphere. ABSOLUTELY NO PEOPLE or characters. The set is empty, waiting for actors.
+
+Shot description: ${scene.prompt}
+
+This must look like an empty film set photographed before the actors arrived. Practical light sources, lived-in details, depth in the frame. Match the camera angle, lens, and framing implied by the shot description. The physical space (walls, furniture, fixtures, lighting) must be consistent with the reference environment.
+
+NO overlay graphics, captions, labels, or watermarks. Clean photographic image only. Output only the image.`,
+          refImages.length > 0 ? refImages : undefined,
+          aspectRatio,
+        );
+        if (url) {
+          results[i] = url;
+          console.log(`✅ Secondary environment for scene ${i + 1} generated`);
+          onFrame?.(i, url);
+        } else {
+          console.error(`❌ No image returned for secondary environment scene ${i + 1}`);
+        }
+      } catch (error) {
+        console.error(`❌ Failed to generate secondary environment for scene ${i + 1}:`, error instanceof Error ? error.message : error);
+      }
+    });
+
+    await Promise.allSettled(secondaryPromises);
+  }
+
   console.log(`✅ ENVIRONMENTS: ${results.filter(Boolean).length}/${scenes.length} generated\n`);
   return results;
 }
@@ -547,8 +633,10 @@ export async function generateSceneStoryboards(
   onFrame?: (index: number, url: string) => void,
   aspectRatio?: string,
   environmentImages?: string[],
+  moodBoard?: string[],
 ): Promise<string[]> {
   console.log(`\n🎬 STORYBOARD: Generating ${scenes.length} scene frames...`);
+  if (moodBoard?.length) console.log(`🎬 Mood board: ${moodBoard.length} image(s) will be used as style references`);
   const results = new Array<string>(scenes.length).fill('');
 
   const promises = scenes.map(async (scene, i) => {
@@ -562,23 +650,65 @@ export async function generateSceneStoryboards(
         charContext = sceneChars.map(c => `${c!.name}: ${c!.description}`).join('. ') + '. ';
       }
 
-      // Use group ref if available, otherwise individual portraits
+      // Always include individual character portraits
+      const portraitNames: string[] = [];
+      scene.characters.forEach(n => {
+        if (portraits[n]) {
+          refImages.push(portraits[n]);
+          portraitNames.push(n);
+        }
+      });
+
+      // Also include group ref if available for multi-character scenes
+      let hasGroupRef = false;
       if (scene.characters.length >= 2) {
         const key = [...scene.characters].sort().join('+');
-        if (groupRefs[key]) refImages.push(groupRefs[key]);
-        else scene.characters.forEach(n => { if (portraits[n]) refImages.push(portraits[n]); });
-      } else if (scene.characters.length === 1 && portraits[scene.characters[0]]) {
-        refImages.push(portraits[scene.characters[0]]);
+        if (groupRefs[key]) {
+          refImages.push(groupRefs[key]);
+          hasGroupRef = true;
+        }
       }
 
       // Add environment image for this scene's setting/location
-      if (environmentImages?.[i]) {
-        refImages.push(environmentImages[i]);
+      const hasEnvironment = !!environmentImages?.[i];
+      if (hasEnvironment) {
+        refImages.push(environmentImages![i]);
       }
 
-      console.log(`🎬 Generating frame ${i + 1}/${scenes.length} (with ${refImages.length} ref image(s))...`);
+      // Add mood board images
+      const hasMoodBoard = !!moodBoard?.length;
+      if (hasMoodBoard) {
+        refImages.push(...moodBoard!);
+      }
+
+      // Build a prompt prefix that describes what each reference image is
+      let refDescription = '';
+      if (refImages.length > 0) {
+        let idx = 1;
+        const parts: string[] = [];
+        if (portraitNames.length > 0) {
+          const endIdx = idx + portraitNames.length - 1;
+          parts.push(`Image${portraitNames.length > 1 ? `s ${idx}-${endIdx}` : ` ${idx}`}: Individual character portrait(s) (${portraitNames.join(', ')}). Each character must look IDENTICAL to their portrait — same face, hair, skin tone, build, clothing.`);
+          idx = endIdx + 1;
+        }
+        if (hasGroupRef) {
+          parts.push(`Image ${idx}: Group reference showing these characters together. Use for spatial relationship and interaction style.`);
+          idx++;
+        }
+        if (hasEnvironment) {
+          parts.push(`Image ${idx}: Environment/set reference. Use this SAME physical location — matching walls, furniture, fixtures, lighting.`);
+          idx++;
+        }
+        if (hasMoodBoard) {
+          const endIdx = idx + moodBoard!.length - 1;
+          parts.push(`Image${moodBoard!.length > 1 ? `s ${idx}-${endIdx}` : ` ${idx}`}: Mood board / visual style references. Match the color palette, lighting style, and overall tone.`);
+        }
+        refDescription = parts.join('\n') + '\n\n';
+      }
+
+      console.log(`🎬 Generating frame ${i + 1}/${scenes.length} (with ${refImages.length} ref image(s): ${portraitNames.length} portrait(s), ${hasGroupRef ? 1 : 0} group, ${hasEnvironment ? 1 : 0} env, ${hasMoodBoard ? moodBoard!.length : 0} mood board)...`);
       const url = await geminiImage(
-        `${refImages.length > 0 ? 'The attached images are character reference portraits. The characters in the generated image must look IDENTICAL to these references — same face, hair, skin tone, build, clothing. Only lighting, angle, pose, and expression change. Clothing stays the same unless the scene is at a clearly different time or location.\n\n' : ''}Cinematic production still. ${modeId && STORYBOARD_TONE_OVERRIDES[modeId] ? STORYBOARD_TONE_OVERRIDES[modeId] + '.' : `${style} visual style, ${mood} mood.`}
+        `${refDescription}Cinematic production still. ${modeId && STORYBOARD_TONE_OVERRIDES[modeId] ? STORYBOARD_TONE_OVERRIDES[modeId] + '.' : `${style} visual style, ${mood} mood.`}
 
 Shot description: ${scene.prompt}
 

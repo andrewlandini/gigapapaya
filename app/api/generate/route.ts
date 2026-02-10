@@ -209,7 +209,7 @@ export async function POST(request: NextRequest) {
                 try {
                   characterPortraits = await generateCharacterPortraits(chars, ideaResult.style, ideaResult.mood, options.modeId, (name, url) => {
                     sendEvent({ type: 'character-portrait', characterName: name, characterPortrait: url });
-                  });
+                  }, moodBoard);
                   sendEvent({ type: 'agent-log', agent: 'mood-board', status: `${Object.keys(characterPortraits).length} portrait(s) ready` });
                 } catch (e) {
                   sendEvent({ type: 'agent-log', agent: 'mood-board', status: `Portrait generation failed: ${e instanceof Error ? e.message : 'Unknown error'}` });
@@ -235,7 +235,7 @@ export async function POST(request: NextRequest) {
                 environmentImages = await generateEnvironmentImages(
                   scenesResult.scenes, ideaResult.style, ideaResult.mood, options.modeId, (i, url) => {
                     sendEvent({ type: 'environment-image', sceneIndex: i, environmentImage: url });
-                  }, options.aspectRatio,
+                  }, options.aspectRatio, moodBoard,
                 );
                 sendEvent({ type: 'agent-log', agent: 'mood-board', status: `${environmentImages.filter(Boolean).length}/${scenesResult.scenes.length} environment images ready` });
               } catch (e) {
@@ -248,7 +248,7 @@ export async function POST(request: NextRequest) {
                 storyboardImages = await generateSceneStoryboards(
                   scenesResult.scenes, chars, characterPortraits, groupRefs, ideaResult.style, ideaResult.mood, options.modeId, (i, url) => {
                     sendEvent({ type: 'storyboard-frame', sceneIndex: i, storyboardImage: url });
-                  }, options.aspectRatio, environmentImages,
+                  }, options.aspectRatio, environmentImages, moodBoard,
                 );
                 sendEvent({ type: 'agent-log', agent: 'mood-board', status: `${storyboardImages.filter(Boolean).length}/${scenesResult.scenes.length} storyboard frames ready` });
               } catch (e) {
