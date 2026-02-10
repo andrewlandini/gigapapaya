@@ -597,14 +597,13 @@ NO overlay graphics, captions, labels, or watermarks. Clean photographic image o
       try {
         const primaryIdx = primaryIndexByGroup.get(groupId)!;
         const primaryUrl = results[primaryIdx];
-        // Build reference images: primary environment first, then mood board
+        // Only use the primary environment as reference — it already carries the mood board's style DNA
         const refImages: string[] = [];
         if (primaryUrl) refImages.push(primaryUrl);
-        if (moodBoard?.length) refImages.push(...moodBoard);
 
         console.log(`🏞️  Generating SECONDARY environment for scene ${i + 1} (group ${groupId}, ref from scene ${primaryIdx + 1}, ${refImages.length} ref(s))...`);
         const url = await geminiImage(
-          `${primaryUrl ? 'The FIRST attached image is a reference environment from the same physical location — this new image must depict the SAME space but may show a different angle/framing.\n\n' : ''}${moodBoard?.length ? 'The mood board images define the visual style, color palette, and tone. Match their look and feel.\n\n' : ''}Cinematic empty set / environment. ${toneOverride}. Generate ONLY the physical environment described in this shot — the location, lighting, set dressing, props, atmosphere. ABSOLUTELY NO PEOPLE or characters. The set is empty, waiting for actors.
+          `${primaryUrl ? 'The attached image is a reference environment from the same physical location. This new image must depict the SAME space — same walls, same furniture, same fixtures, same lighting quality, same color grade. But show a DIFFERENT angle or framing as described in the shot.\n\n' : ''}Cinematic empty set / environment. ${toneOverride}. Generate ONLY the physical environment described in this shot — the location, lighting, set dressing, props, atmosphere. ABSOLUTELY NO PEOPLE or characters. The set is empty, waiting for actors.
 
 Shot description: ${scene.prompt}
 
@@ -683,61 +682,55 @@ export async function generateSceneStoryboards(
         }
       }
 
-      // Add environment image for this scene's setting/location
+      // Add environment image FIRST — this is the background the characters are placed into
       const hasEnvironment = !!environmentImages?.[i];
       if (hasEnvironment) {
-        refImages.push(environmentImages![i]);
+        // Environment goes at the start of refImages so it has the strongest influence
+        refImages.unshift(environmentImages![i]);
       }
 
-      // Add mood board images
-      const hasMoodBoard = !!moodBoard?.length;
-      if (hasMoodBoard) {
-        refImages.push(...moodBoard!);
-      }
+      // No mood board here — the environment already carries the mood board's style DNA.
+      // Passing it again would make every shot look identical.
 
       // Build a prompt prefix that describes what each reference image is
       let refDescription = '';
       if (refImages.length > 0) {
         let idx = 1;
         const parts: string[] = [];
+        if (hasEnvironment) {
+          parts.push(`Image ${idx}: THE BACKGROUND. This is the environment/set for this shot. Place the characters INTO this exact location. The walls, floor, furniture, lighting, and atmosphere must match this image precisely. Do not invent a new location.`);
+          idx++;
+        }
         if (portraitNames.length > 0) {
           const endIdx = idx + portraitNames.length - 1;
-          parts.push(`Image${portraitNames.length > 1 ? `s ${idx}-${endIdx}` : ` ${idx}`}: Individual character portrait(s) (${portraitNames.join(', ')}). Each character must look IDENTICAL to their portrait — same face, hair, skin tone, build, clothing.`);
+          parts.push(`Image${portraitNames.length > 1 ? `s ${idx}-${endIdx}` : ` ${idx}`}: Character reference portrait(s) (${portraitNames.join(', ')}). Each character must look IDENTICAL to their portrait — same face, hair, skin tone, build, clothing.`);
           idx = endIdx + 1;
         }
         if (hasGroupRef) {
           parts.push(`Image ${idx}: Group reference showing these characters together. Use for spatial relationship and interaction style.`);
           idx++;
         }
-        if (hasEnvironment) {
-          parts.push(`Image ${idx}: Environment/set reference. Use this SAME physical location — matching walls, furniture, fixtures, lighting.`);
-          idx++;
-        }
-        if (hasMoodBoard) {
-          const endIdx = idx + moodBoard!.length - 1;
-          parts.push(`Image${moodBoard!.length > 1 ? `s ${idx}-${endIdx}` : ` ${idx}`}: Mood board / visual style references. Match the color palette, lighting style, and overall tone.`);
-        }
         refDescription = parts.join('\n') + '\n\n';
       }
 
-      console.log(`🎬 Generating frame ${i + 1}/${scenes.length} (with ${refImages.length} ref image(s): ${portraitNames.length} portrait(s), ${hasGroupRef ? 1 : 0} group, ${hasEnvironment ? 1 : 0} env, ${hasMoodBoard ? moodBoard!.length : 0} mood board)...`);
+      console.log(`🎬 Generating frame ${i + 1}/${scenes.length} (with ${refImages.length} ref image(s): ${hasEnvironment ? 1 : 0} env, ${portraitNames.length} portrait(s), ${hasGroupRef ? 1 : 0} group)...`);
       const url = await geminiImage(
-        `${refDescription}Cinematic production still. ${modeId && STORYBOARD_TONE_OVERRIDES[modeId] ? STORYBOARD_TONE_OVERRIDES[modeId] + '.' : `${style} visual style, ${mood} mood.`}
+        `${refDescription}${hasEnvironment ? 'You are compositing characters into an existing environment. The FIRST reference image is the background — use it as the actual physical space. Do not invent a new location. The characters are being placed INTO that set.\n\n' : ''}Cinematic production still. ${modeId && STORYBOARD_TONE_OVERRIDES[modeId] ? STORYBOARD_TONE_OVERRIDES[modeId] + '.' : `${style} visual style, ${mood} mood.`}
 
 Shot description: ${scene.prompt}
 
 ${charContext ? `Characters in this frame: ${charContext}\n` : ''}This must look like a FRAME GRAB from a real film — a single frame pulled from a moving shot. NOT a photograph. NOT a posed portrait. NOT stock footage.
 
-Key requirements for realism:
+Key requirements:
+- The background/environment must be IDENTICAL to the environment reference image. Same walls, same furniture, same lighting, same color grade. The characters are placed INTO that space — not a new space.
 - Characters must be MID-ACTION, not posing. Caught in the middle of a gesture, a turn, a reach. Asymmetric body positions — weight shifted, head tilted, one hand busy.
 - Characters must NEVER look at the camera. They look at other people, objects, tasks, or into the middle distance.
-- The environment must look LIVED IN — clutter, wear, practical light sources (lamps, screens, windows), objects that suggest someone has been here a while.
 - Characters must be TOUCHING or interacting with their environment — leaning on surfaces, holding objects, gripping things.
-- Include subtle motion cues — slight blur on a moving hand, hair catching light mid-swing, fabric mid-settle.
+- The lighting on the characters must match the environment's lighting — same color temperature, same direction, same quality.
 
-Match the camera, lens, and framing from the shot description exactly. Do not override the camera specs.
+Match the camera, lens, and framing from the shot description exactly.
 
-NO overlay graphics, captions, speech bubbles, dialogue text, subtitles, labels, or watermarks. Diegetic screens (phones, laptops, TVs) can show content. Clean photographic frame only. Output only the image.`,
+NO overlay graphics, captions, speech bubbles, dialogue text, subtitles, labels, or watermarks. Clean photographic frame only. Output only the image.`,
         refImages.length > 0 ? refImages : undefined,
         aspectRatio
       );
