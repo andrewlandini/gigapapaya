@@ -53,6 +53,7 @@ export function VideoCard({
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLAnchorElement>(null);
   const [hovering, setHovering] = useState(false);
+  const [playing, setPlaying] = useState(false);
   const muted = useSyncExternalStore(subscribeGlobalMuted, getGlobalMuted, getServerMuted);
   const [visible, setVisible] = useState(false);
 
@@ -95,6 +96,7 @@ export function VideoCard({
 
   const handleMouseLeave = () => {
     setHovering(false);
+    setPlaying(false);
     if (videoRef.current) {
       videoRef.current.muted = true;
       videoRef.current.pause();
@@ -126,8 +128,8 @@ export function VideoCard({
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
-      {/* Poster image — shown when not hovering (only for videos with thumbnails) */}
-      {thumbnailUrl && !hovering && (
+      {/* Poster image — shown until video is actually playing */}
+      {thumbnailUrl && !playing && (
         <img
           src={thumbnailUrl}
           alt=""
@@ -142,6 +144,7 @@ export function VideoCard({
         playsInline
         preload={thumbnailUrl ? 'none' : 'metadata'}
         onCanPlay={handleCanPlay}
+        onPlaying={() => setPlaying(true)}
         className="w-full h-full object-contain"
       />
 
