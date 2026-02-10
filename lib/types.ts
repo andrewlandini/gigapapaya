@@ -120,7 +120,16 @@ export interface GenerationOptions {
   modeId?: string; // generation mode (action, comedy, deadpan, stylize, unhinged)
   referenceImages?: (ReferenceImage | null)[]; // slot-based reference images (null = empty slot)
   useMoodBoard?: boolean; // beta: enable mood board generation + reference images
+  videoModel?: string; // video model to use for direct generation
 }
+
+export const VIDEO_MODELS = [
+  { id: 'google/veo-3.1-generate-001', label: 'Veo 3.1' },
+  { id: 'google/veo-3.1-generate-preview', label: 'Veo 3.1 Preview' },
+  { id: 'google/veo-3.1-fast-generate-001', label: 'Veo 3.1 Fast' },
+  { id: 'klingai/kling-v2.6-t2v', label: 'Kling 2.6' },
+  { id: 'klingai/kling-v2.6-i2v', label: 'Kling 2.6 I2V' },
+] as const;
 
 export const TEXT_MODELS = [
   { id: 'anthropic/claude-opus-4.6', label: 'Claude Opus 4.6' },

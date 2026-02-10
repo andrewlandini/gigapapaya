@@ -52,7 +52,7 @@ import { ScenePreview } from './scene-preview';
 import { VideoGallery } from './video-gallery';
 import { useStoryboard } from './storyboard-context';
 import { IdeaWizard } from './idea-wizard';
-import { TEXT_MODELS, type DialogueLine } from '@/lib/types';
+import { TEXT_MODELS, VIDEO_MODELS, type DialogueLine } from '@/lib/types';
 import { GENERATION_MODES, getModeById } from '@/lib/generation-modes';
 
 export function VideoGenerator() {
@@ -302,6 +302,19 @@ export function VideoGenerator() {
                       <option value={4}>4</option>
                       <option value={5}>5</option>
                       <option value="auto">auto</option>
+                    </select>
+                  </div>
+                  <div className="flex items-center gap-1.5" title="Video model — select the model used for video generation">
+                    <label className="text-[11px] font-mono text-[#444]">model</label>
+                    <select
+                      name="videoModel"
+                      value={options.videoModel || 'google/veo-3.1-generate-001'}
+                      onChange={(e) => setOptions(prev => ({ ...prev, videoModel: e.target.value }))}
+                      className="h-7 px-1.5 rounded-md bg-transparent text-xs text-[#888] font-mono focus:outline-none cursor-pointer hover:text-[#ededed] transition-colors"
+                    >
+                      {VIDEO_MODELS.map(m => (
+                        <option key={m.id} value={m.id}>{m.label}</option>
+                      ))}
                     </select>
                   </div>
                   <div className="flex items-center gap-1.5 ml-auto" title="AI-generated background music — turn off if you'll add your own in post">

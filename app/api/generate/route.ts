@@ -92,9 +92,11 @@ export async function POST(request: NextRequest) {
 
           if (mode === 'direct') {
             // ── Direct mode: skip agents, generate video from raw prompt ──
-            sendEvent({ type: 'agent-log', agent: 'system', status: `Direct mode — skipping agents, sending prompt straight to Veo 3.1` });
+            const videoModelId = options.videoModel || 'google/veo-3.1-generate-001';
+            const videoModelLabel = videoModelId.split('/').pop() || videoModelId;
+            sendEvent({ type: 'agent-log', agent: 'system', status: `Direct mode — skipping agents, sending prompt straight to ${videoModelLabel}` });
             sendEvent({ type: 'agent-log', agent: 'system', status: `Prompt: "${idea.substring(0, 120)}${idea.length > 120 ? '...' : ''}"` });
-            sendEvent({ type: 'agent-log', agent: 'system', status: `Config: ${options.aspectRatio} / ${options.duration}s / model: veo-3.1-generate-001` });
+            sendEvent({ type: 'agent-log', agent: 'system', status: `Config: ${options.aspectRatio} / ${options.duration}s / model: ${videoModelLabel}` });
 
             sendEvent({
               type: 'video-start',
@@ -103,12 +105,18 @@ export async function POST(request: NextRequest) {
               status: 'Generating video from your prompt...',
             });
 
-            const video = await executeVideoAgent(idea, '', '', options, 0);
+            const firstRefImage = (options.referenceImages || []).find((r: any) => r && r.dataUrl);
+            const video = await executeVideoAgent(idea, '', '', options, 0, firstRefImage?.dataUrl);
+
+            // Use reference image as thumbnail if available (direct mode has no storyboard)
+            const thumbnailUrl = firstRefImage?.dataUrl || undefined;
+            if (thumbnailUrl) video.thumbnailUrl = thumbnailUrl;
 
             await saveVideoRecord({
               id: video.id, generationId: sessionId, userId,
               blobUrl: video.url, prompt: video.prompt, duration: video.duration,
               aspectRatio: video.aspectRatio, size: video.size, sceneIndex: 0,
+              thumbnailUrl,
             });
 
             // Deduct credits for direct mode video
@@ -119,7 +127,7 @@ export async function POST(request: NextRequest) {
             }
 
             sendEvent({ type: 'agent-log', agent: 'system', status: `Video uploaded to Blob Storage (${(video.size / (1024 * 1024)).toFixed(1)} MB)` });
-            sendEvent({ type: 'video-complete', sceneIndex: 0, videoId: video.id });
+            sendEvent({ type: 'video-complete', sceneIndex: 0, videoId: video.id, video });
 
             await updateGenerationStatus(sessionId, 'complete');
             sendEvent({ type: 'complete', sessionId, videos: [video] });

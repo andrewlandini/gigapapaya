@@ -41,6 +41,8 @@ export const AVAILABLE_VIDEO_MODELS = [
   'google/veo-3.1-generate-001',
   'google/veo-3.1-generate-preview',
   'google/veo-3.1-fast-generate-001',
+  'klingai/kling-v2.6-t2v',
+  'klingai/kling-v2.6-i2v',
 ] as const;
 
 export type VideoModelName = typeof AVAILABLE_VIDEO_MODELS[number];

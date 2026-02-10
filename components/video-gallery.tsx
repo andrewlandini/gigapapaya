@@ -52,14 +52,14 @@ function HoverVideo({ video, isRerunning }: { video: Video; isRerunning: boolean
           className="absolute inset-0 w-full h-full object-contain bg-black"
         />
       )}
-      {/* Video — only loads src on hover */}
+      {/* Video — with thumbnail: only loads on hover; without: preload metadata for first frame */}
       <video
         ref={videoRef}
-        src={playing ? video.url : undefined}
+        src={video.thumbnailUrl ? (playing ? video.url : undefined) : video.url}
         muted
         loop
         playsInline
-        preload="none"
+        preload={video.thumbnailUrl ? 'none' : 'metadata'}
         className="w-full h-full object-contain"
       />
       {/* Play icon overlay */}

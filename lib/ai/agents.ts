@@ -786,17 +786,52 @@ export async function executeVideoAgent(
   const startTime = Date.now();
 
   try {
-    // Generate video via AI Gateway using Veo 3.1
+    // Generate video via AI Gateway
     const videoDuration = typeof options.duration === 'number' ? options.duration : 8;
+    const selectedModel = options.videoModel || 'google/veo-3.1-generate-001';
+    const isI2V = selectedModel.includes('i2v');
+    const isKling = selectedModel.includes('klingai');
 
-    // Text-to-video only — image-to-video via the AI Gateway returns empty errors
-    const model = getVideoModel('google/veo-3.1-generate-001');
-    const { videos } = await generateVideo({
+    console.log(`🎬 Using video model: ${selectedModel}${isI2V ? ' (image-to-video)' : ''}${referenceImage ? ' with reference image' : ''}`);
+
+    // For i2v models, we need a reference image
+    if (isI2V && !referenceImage) {
+      // Fall back to the t2v variant
+      const t2vModel = selectedModel.replace('-i2v', '-t2v');
+      console.log(`⚠️  I2V model selected but no reference image — falling back to ${t2vModel}`);
+      const model = getVideoModel(t2vModel);
+      const generateOptions: any = {
+        model,
+        prompt: enhancedPrompt,
+        aspectRatio: options.aspectRatio,
+        duration: videoDuration,
+      };
+      if (isKling) {
+        generateOptions.providerOptions = { klingai: { mode: 'std' } };
+      }
+      const { videos } = await generateVideo(generateOptions);
+      const elapsedTime = ((Date.now() - startTime) / 1000).toFixed(1);
+      console.log(`✅ VIDEO AGENT: Video generated in ${elapsedTime}s (fallback t2v)`);
+      if (videos.length === 0) throw new Error('No video was generated');
+      const videoFile = videos[0];
+      const video = await saveVideo(videoFile, { prompt: enhancedPrompt, duration: videoDuration, aspectRatio: options.aspectRatio });
+      return video;
+    }
+
+    const model = getVideoModel(selectedModel);
+    const generateOptions: any = {
       model,
-      prompt: enhancedPrompt,
+      prompt: isI2V && referenceImage
+        ? { image: referenceImage, text: enhancedPrompt }
+        : enhancedPrompt,
       aspectRatio: options.aspectRatio,
       duration: videoDuration,
-    });
+    };
+    if (isKling) {
+      generateOptions.providerOptions = { klingai: { mode: 'std' } };
+    }
+
+    const { videos } = await generateVideo(generateOptions);
 
     const elapsedTime = ((Date.now() - startTime) / 1000).toFixed(1);
     console.log(`✅ VIDEO AGENT: Video generated in ${elapsedTime}s`);
