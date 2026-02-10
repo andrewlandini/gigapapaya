@@ -724,7 +724,7 @@ export function VideoGenerator() {
               <div className="space-y-2 animate-fade-in">
                 <span className="text-xs font-mono text-[#555]">Refine style</span>
                 <div className="flex flex-wrap gap-2">
-                  {['More Cinematic', 'Home Video', 'Darker', 'Brighter', 'Warmer', 'Cooler', 'More Gritty', 'More Polished'].map((modifier) => (
+                  {['More Cinematic', 'Home Video', 'Darker', 'Brighter', 'Warmer', 'Cooler', 'More Gritty', 'More Polished', 'Remove Text'].map((modifier) => (
                     <button
                       key={modifier}
                       onClick={() => refineMoodBoard(modifier)}
