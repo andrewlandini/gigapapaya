@@ -66,6 +66,12 @@ interface StoryboardContextValue {
   continuePastMoodBoard: () => void;
   isRefining: boolean;
   canUndoMoodBoard: boolean;
+  // Portrait lightbox
+  portraitModalCharacter: string | null;
+  openPortraitModal: (name: string) => void;
+  closePortraitModal: () => void;
+  regeneratePortrait: (name: string, description: string) => Promise<void>;
+  isRegeneratingPortrait: boolean;
 }
 
 const StoryboardContext = createContext<StoryboardContextValue | null>(null);
@@ -99,11 +105,14 @@ export function StoryboardProvider({ children }: { children: ReactNode }) {
     moodBoard: [],
     storyboardImages: [],
     characterPortraits: {},
+    characters: [],
     selectedMoodBoardIndex: null,
     moodBoardHistory: [],
   });
 
   const [isRefining, setIsRefining] = useState(false);
+  const [portraitModalCharacter, setPortraitModalCharacter] = useState<string | null>(null);
+  const [isRegeneratingPortrait, setIsRegeneratingPortrait] = useState(false);
 
   const [options, setOptionsState] = useState<GenerationOptions>({
     aspectRatio: '16:9',
@@ -345,6 +354,50 @@ export function StoryboardProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
+  // Portrait lightbox callbacks
+  const openPortraitModal = useCallback((name: string) => {
+    setPortraitModalCharacter(name);
+  }, []);
+
+  const closePortraitModal = useCallback(() => {
+    setPortraitModalCharacter(null);
+  }, []);
+
+  const regeneratePortrait = useCallback(async (name: string, description: string) => {
+    if (!state.generatedIdea) return;
+    setIsRegeneratingPortrait(true);
+
+    try {
+      const response = await fetch('/api/regenerate-portrait', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name,
+          description,
+          style: state.generatedIdea.style,
+          mood: state.generatedIdea.mood,
+          moodBoard: state.moodBoard,
+        }),
+      });
+
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const data = await response.json();
+
+      setState(prev => ({
+        ...prev,
+        characterPortraits: { ...prev.characterPortraits, [name]: data.imageUrl },
+        // Also update the character description in the characters array
+        characters: prev.characters.map(c =>
+          c.name === name ? { ...c, description } : c
+        ),
+      }));
+    } catch (error) {
+      console.error(`Failed to regenerate portrait for ${name}:`, error);
+    } finally {
+      setIsRegeneratingPortrait(false);
+    }
+  }, [state.generatedIdea, state.moodBoard]);
+
   // SSE stream reader — also pushes to debug log when debug mode is on
   const readSSEStream = async (response: Response, onEvent: (data: SSEMessage) => void, source: 'generate' | 'generate-videos' | 'rerun' = 'generate') => {
     const reader = response.body?.getReader();
@@ -391,6 +444,7 @@ export function StoryboardProvider({ children }: { children: ReactNode }) {
       moodBoard: [],
       storyboardImages: [],
       characterPortraits: {},
+      characters: [],
     }));
 
     const agentConfig = getAgentConfigForMode(modeId);
@@ -456,7 +510,7 @@ export function StoryboardProvider({ children }: { children: ReactNode }) {
               if (data.agent === 'idea') {
                 setState(prev => ({ ...prev, generatedIdea: data.result }));
               } else if (data.agent === 'scenes') {
-                setState(prev => ({ ...prev, scenes: data.result.scenes }));
+                setState(prev => ({ ...prev, scenes: data.result.scenes, characters: data.result.characters || prev.characters }));
               }
               break;
             case 'mood-board-image':
@@ -587,6 +641,7 @@ export function StoryboardProvider({ children }: { children: ReactNode }) {
       moodBoard: [],
       storyboardImages: [],
       characterPortraits: {},
+      characters: [],
     }));
 
     const currentOptions = {
@@ -733,7 +788,7 @@ export function StoryboardProvider({ children }: { children: ReactNode }) {
           switch (data.type) {
             case 'agent-complete':
               if (data.agent === 'scenes') {
-                setState(prev => ({ ...prev, scenes: data.result.scenes }));
+                setState(prev => ({ ...prev, scenes: data.result.scenes, characters: data.result.characters || prev.characters }));
               }
               break;
             case 'character-portrait':
@@ -981,6 +1036,7 @@ export function StoryboardProvider({ children }: { children: ReactNode }) {
       moodBoard: [],
       storyboardImages: [],
       characterPortraits: {},
+      characters: [],
       selectedMoodBoardIndex: null,
       moodBoardHistory: [],
       status: 'idle',
@@ -997,7 +1053,7 @@ export function StoryboardProvider({ children }: { children: ReactNode }) {
       status: 'idle', idea: '', generatedIdea: null,
       scenes: null, editableScenes: null, videos: [], progress: [], error: null,
       failedShots: new Set(), moodBoard: [], storyboardImages: [], characterPortraits: {},
-      selectedMoodBoardIndex: null, moodBoardHistory: [],
+      characters: [], selectedMoodBoardIndex: null, moodBoardHistory: [],
     });
   }, []);
 
@@ -1016,6 +1072,8 @@ export function StoryboardProvider({ children }: { children: ReactNode }) {
       selectedMoodBoardIndex: state.selectedMoodBoardIndex,
       selectMoodBoardImage, refineMoodBoard, undoMoodBoardRefinement, continuePastMoodBoard,
       isRefining, canUndoMoodBoard: state.moodBoardHistory.length > 0,
+      portraitModalCharacter, openPortraitModal, closePortraitModal,
+      regeneratePortrait, isRegeneratingPortrait,
     }}>
       {children}
     </StoryboardContext.Provider>

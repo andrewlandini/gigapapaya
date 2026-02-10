@@ -105,6 +105,7 @@ export interface GenerationState {
   moodBoard: string[]; // generated mood board image data URLs
   storyboardImages: string[]; // per-scene preview images
   characterPortraits: Record<string, string>; // name → data URL
+  characters: Character[]; // character descriptions from scenes agent
   selectedMoodBoardIndex: number | null;
   moodBoardHistory: string[][]; // undo stack — each entry is a snapshot of the moodBoard URLs
 }

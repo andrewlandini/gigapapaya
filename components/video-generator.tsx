@@ -159,7 +159,10 @@ export function VideoGenerator() {
     history, deleteHistoryEntry, loadFromHistory,
     selectedMoodBoardIndex, selectMoodBoardImage, refineMoodBoard, undoMoodBoardRefinement, continuePastMoodBoard,
     isRefining, canUndoMoodBoard,
+    portraitModalCharacter, openPortraitModal, closePortraitModal, regeneratePortrait, isRegeneratingPortrait,
   } = useStoryboard();
+
+  const [editingDescription, setEditingDescription] = useState('');
 
   const [showAgentSettings, setShowAgentSettings] = useState(false);
   const [wizardActive, setWizardActive] = useState(false);
@@ -733,17 +736,81 @@ export function VideoGenerator() {
           </div>
         )}
 
-        {/* Character Portraits — shown as soon as portraits arrive */}
+        {/* Character Portraits — clickable to open lightbox */}
         {Object.keys(state.characterPortraits).length > 0 && (
           <div className="space-y-3 animate-fade-in">
             <h2 className="text-sm font-medium text-[#ededed]">Characters</h2>
             <div className="flex gap-3 flex-wrap">
               {Object.entries(state.characterPortraits).map(([name, img], i) => (
-                <div key={name} className="text-center space-y-1.5 animate-scale-in" style={{ animationDelay: `${i * 200}ms` }}>
-                  <img src={img} alt={name} className="w-20 h-20 object-contain rounded-full border border-[#333] bg-black" />
-                  <span className="text-xs font-mono text-[#888] block">{name}</span>
-                </div>
+                <button
+                  key={name}
+                  onClick={() => {
+                    const char = state.characters.find(c => c.name === name);
+                    setEditingDescription(char?.description || '');
+                    openPortraitModal(name);
+                  }}
+                  className="text-center space-y-1.5 animate-scale-in group"
+                  style={{ animationDelay: `${i * 200}ms` }}
+                >
+                  <img src={img} alt={name} className="w-20 h-20 object-contain rounded-full border border-[#333] bg-black group-hover:border-[#555] group-hover:ring-2 group-hover:ring-white/10 transition-all" />
+                  <span className="text-xs font-mono text-[#888] group-hover:text-[#ccc] block transition-colors">{name}</span>
+                </button>
               ))}
+            </div>
+          </div>
+        )}
+
+        {/* Portrait Lightbox Modal */}
+        {portraitModalCharacter && state.characterPortraits[portraitModalCharacter] && (
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm animate-fade-in"
+            onClick={(e) => { if (e.target === e.currentTarget) closePortraitModal(); }}
+          >
+            <div className="relative w-full max-w-md mx-4 bg-[#111] border border-[#333] rounded-2xl overflow-hidden animate-scale-in">
+              <button
+                onClick={closePortraitModal}
+                className="absolute top-3 right-3 z-10 w-8 h-8 flex items-center justify-center rounded-full bg-black/60 text-[#888] hover:text-white transition-colors backdrop-blur-sm"
+              >
+                <X className="h-4 w-4" />
+              </button>
+
+              <div className="relative">
+                <img
+                  src={state.characterPortraits[portraitModalCharacter]}
+                  alt={portraitModalCharacter}
+                  className="w-full object-contain bg-black"
+                  style={{ maxHeight: '400px' }}
+                />
+                {isRegeneratingPortrait && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/50">
+                    <Loader2 className="h-8 w-8 text-white animate-spin" />
+                  </div>
+                )}
+              </div>
+
+              <div className="p-4 space-y-3">
+                <h3 className="text-sm font-medium text-[#ededed]">{portraitModalCharacter}</h3>
+                <textarea
+                  value={editingDescription}
+                  onChange={(e) => setEditingDescription(e.target.value)}
+                  className="w-full bg-[#0a0a0a] border border-[#333] rounded-lg px-3 py-2 text-sm text-[#ccc] placeholder:text-[#555] focus:outline-none focus:border-[#555] focus:ring-1 focus:ring-white/10 resize-y leading-relaxed"
+                  style={{ fieldSizing: 'content' as any, minHeight: '4rem' }}
+                  placeholder="Edit character description..."
+                />
+                <div className="flex justify-end">
+                  <Button
+                    onClick={() => regeneratePortrait(portraitModalCharacter, editingDescription)}
+                    disabled={isRegeneratingPortrait || !editingDescription.trim()}
+                    className="gap-2"
+                  >
+                    {isRegeneratingPortrait ? (
+                      <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Regenerating...</>
+                    ) : (
+                      <><RotateCw className="h-3.5 w-3.5" /> Regenerate</>
+                    )}
+                  </Button>
+                </div>
+              </div>
             </div>
           </div>
         )}
