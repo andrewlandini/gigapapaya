@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { RotateCcw, Play, X, Clock, ChevronDown, ChevronUp, Settings2, RotateCw, AlertCircle, Loader2, ImagePlus, MessageSquare } from 'lucide-react';
+import { RotateCcw, Play, X, Clock, ChevronDown, ChevronUp, Settings2, RotateCw, AlertCircle, Loader2, ImagePlus, MessageSquare, Copy, Check } from 'lucide-react';
 import { ReferenceImages } from './reference-images';
 import { formatCostWithCredits, estimateGenerateVideosCost, estimateVideoCost, estimateStoryboardTotalCost } from '@/lib/costs';
 
@@ -54,6 +54,98 @@ import { useStoryboard } from './storyboard-context';
 import { IdeaWizard } from './idea-wizard';
 import { TEXT_MODELS, VIDEO_MODELS, type DialogueLine } from '@/lib/types';
 import { GENERATION_MODES, getModeById } from '@/lib/generation-modes';
+import { IDEA_AGENT_PROMPT, SCENES_AGENT_PROMPT, SCENE_AGENT_BASE, STORYBOARD_TONE_OVERRIDES, CHARACTER_PORTRAIT_PROMPT, GROUP_REFERENCE_PROMPT, ENVIRONMENT_IMAGE_PROMPT, STORYBOARD_FRAME_PROMPT, MOOD_BOARD_PROMPT } from '@/lib/prompts';
+
+function CopyButton({ text }: { text: string }) {
+  const [copied, setCopied] = useState(false);
+  return (
+    <button
+      onClick={() => {
+        navigator.clipboard.writeText(text);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 1500);
+      }}
+      className="flex items-center gap-1 text-[10px] text-[#555] hover:text-[#888] transition-colors"
+      title="Copy to clipboard"
+    >
+      {copied ? <Check className="h-3 w-3 text-green-500" /> : <Copy className="h-3 w-3" />}
+      {copied ? 'Copied' : 'Copy'}
+    </button>
+  );
+}
+
+function ReadOnlyPrompt({ label, text }: { label: string; text: string }) {
+  const [expanded, setExpanded] = useState(false);
+  return (
+    <div className="space-y-1.5">
+      <div className="flex items-center justify-between">
+        <button
+          onClick={() => setExpanded(!expanded)}
+          className="flex items-center gap-1.5 text-[11px] font-mono text-[#666] hover:text-[#999] transition-colors"
+        >
+          <ChevronDown className={`h-3 w-3 transition-transform ${expanded ? '' : '-rotate-90'}`} />
+          {label}
+        </button>
+        <CopyButton text={text} />
+      </div>
+      {expanded && (
+        <pre className="w-full bg-[#0a0a0a] border border-[#222] rounded-lg px-3 py-2 text-[10px] text-[#555] font-mono whitespace-pre-wrap leading-relaxed max-h-60 overflow-y-auto">
+          {text}
+        </pre>
+      )}
+    </div>
+  );
+}
+
+function CopyAllPromptsButton({ ideaPrompt, scenePrompt, modeId, modeLabel }: { ideaPrompt: string; scenePrompt: string; modeId: string; modeLabel: string }) {
+  const [copied, setCopied] = useState(false);
+  const handleCopyAll = () => {
+    const toneOverride = STORYBOARD_TONE_OVERRIDES[modeId] || '(no mode-specific override)';
+    const allPrompts = [
+      `═══ ALL PROMPTS — ${modeLabel} Mode ═══`,
+      '',
+      '── Concept Agent ──',
+      ideaPrompt,
+      '',
+      '── Scene Agent ──',
+      scenePrompt,
+      '',
+      '── Scene Agent Base (appended to all scene prompts) ──',
+      SCENE_AGENT_BASE,
+      '',
+      `── Storyboard Tone (${modeLabel}) ──`,
+      toneOverride,
+      '',
+      '── Character Portrait ──',
+      CHARACTER_PORTRAIT_PROMPT,
+      '',
+      '── Group Reference ──',
+      GROUP_REFERENCE_PROMPT,
+      '',
+      '── Environment Image ──',
+      ENVIRONMENT_IMAGE_PROMPT,
+      '',
+      '── Storyboard Frame ──',
+      STORYBOARD_FRAME_PROMPT,
+      '',
+      '── Mood Board ──',
+      MOOD_BOARD_PROMPT,
+    ].join('\n');
+    navigator.clipboard.writeText(allPrompts);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+  return (
+    <button
+      onClick={handleCopyAll}
+      className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-mono text-[#555] hover:text-[#888] hover:bg-[#1a1a1a] border border-[#333] transition-colors"
+      title="Copy all prompts to clipboard"
+    >
+      {copied ? <Check className="h-3 w-3 text-green-500" /> : <Copy className="h-3 w-3" />}
+      {copied ? 'Copied all' : 'Copy all prompts'}
+    </button>
+  );
+}
 
 export function VideoGenerator() {
   const {
@@ -425,12 +517,20 @@ export function VideoGenerator() {
                     <Settings2 className="h-4 w-4 text-[#888]" />
                     <span className="text-sm font-medium text-[#ededed]">Agent Settings</span>
                   </div>
-                  <button
-                    onClick={() => setShowAgentSettings(false)}
-                    className="p-1 rounded-lg text-[#555] hover:text-white hover:bg-[#222] transition-colors"
-                  >
-                    <X className="h-4 w-4" />
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <CopyAllPromptsButton
+                      ideaPrompt={ideaPrompt}
+                      scenePrompt={scenePrompt}
+                      modeId={settingsTab}
+                      modeLabel={settingsMode.label}
+                    />
+                    <button
+                      onClick={() => setShowAgentSettings(false)}
+                      className="p-1 rounded-lg text-[#555] hover:text-white hover:bg-[#222] transition-colors"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  </div>
                 </div>
 
                 {/* Mode tabs */}
@@ -465,6 +565,7 @@ export function VideoGenerator() {
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-mono text-[#888]">Concept Agent</span>
                       <div className="flex items-center gap-2">
+                        <CopyButton text={ideaPrompt} />
                         <button
                           onClick={() => restoreModeDefault(settingsTab, 'idea')}
                           className="flex items-center gap-1 text-[10px] text-[#555] hover:text-[#888] transition-colors"
@@ -498,6 +599,7 @@ export function VideoGenerator() {
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-mono text-[#888]">Scene Agent</span>
                       <div className="flex items-center gap-2">
+                        <CopyButton text={scenePrompt} />
                         <button
                           onClick={() => restoreModeDefault(settingsTab, 'scene')}
                           className="flex items-center gap-1 text-[10px] text-[#555] hover:text-[#888] transition-colors"
@@ -524,6 +626,18 @@ export function VideoGenerator() {
                       rows={8}
                       className="w-full bg-[#0a0a0a] border border-[#333] rounded-lg px-3 py-2 text-xs text-[#888] font-mono placeholder:text-[#444] focus:outline-none focus:border-[#555] resize-y leading-relaxed"
                     />
+                  </div>
+
+                  {/* Pipeline Prompts (read-only) */}
+                  <div className="p-5 space-y-3">
+                    <span className="text-xs font-mono text-[#555]">Pipeline Prompts (read-only)</span>
+                    <ReadOnlyPrompt label="Scene Agent Base" text={SCENE_AGENT_BASE} />
+                    <ReadOnlyPrompt label={`Storyboard Tone (${settingsMode.label})`} text={STORYBOARD_TONE_OVERRIDES[settingsTab] || 'No mode-specific override — uses style/mood from concept.'} />
+                    <ReadOnlyPrompt label="Character Portrait" text={CHARACTER_PORTRAIT_PROMPT} />
+                    <ReadOnlyPrompt label="Group Reference" text={GROUP_REFERENCE_PROMPT} />
+                    <ReadOnlyPrompt label="Environment Image" text={ENVIRONMENT_IMAGE_PROMPT} />
+                    <ReadOnlyPrompt label="Storyboard Frame" text={STORYBOARD_FRAME_PROMPT} />
+                    <ReadOnlyPrompt label="Mood Board" text={MOOD_BOARD_PROMPT} />
                   </div>
                 </div>
               </div>

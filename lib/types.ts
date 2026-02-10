@@ -63,6 +63,7 @@ export type ProgressEventType =
   | 'storyboard-frame'
   | 'storyboard-complete'
   | 'character-portrait'
+  | 'environment-image'
   | 'scenes-ready'
   | 'video-start'
   | 'video-complete'
@@ -86,6 +87,8 @@ export interface ProgressEvent {
   storyboardImage?: string;
   characterName?: string;
   characterPortrait?: string;
+  environmentImage?: string;
+  environmentImages?: string[];
 }
 
 export interface GenerationState {
@@ -108,6 +111,15 @@ export interface AgentConfig {
   prompt: string;
 }
 
+export interface VeoOptions {
+  negativePrompt?: string;
+  referenceImages?: string[];    // URLs of up to 3 reference images
+  lastFrame?: string;            // URL of ending frame for interpolation
+  resolution?: '720p' | '1080p' | '4k';
+  personGeneration?: 'allow_all' | 'allow_adult' | 'dont_allow';
+  extendVideo?: string;          // Video object from previous generation
+}
+
 export interface GenerationOptions {
   aspectRatio: '16:9' | '9:16' | '4:3' | '1:1';
   duration: number | 'auto';
@@ -121,6 +133,7 @@ export interface GenerationOptions {
   referenceImages?: (ReferenceImage | null)[]; // slot-based reference images (null = empty slot)
   useMoodBoard?: boolean; // beta: enable mood board generation + reference images
   videoModel?: string; // video model to use for direct generation
+  veoOptions?: VeoOptions;
 }
 
 export const VIDEO_MODELS = [
@@ -163,4 +176,6 @@ export interface SSEMessage {
   storyboardImage?: string;
   characterName?: string;
   characterPortrait?: string;
+  environmentImage?: string;
+  environmentImages?: string[];
 }

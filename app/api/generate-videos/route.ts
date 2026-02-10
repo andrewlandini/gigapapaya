@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server';
-import { executeVideoAgent, describeStoryboardFrame } from '@/lib/ai/agents';
+import { executeVideoAgent } from '@/lib/ai/agents';
 import { inspectError, formatErrorReport } from '@/lib/ai/error-inspector';
 import { getSession } from '@/lib/auth/session';
 import {
@@ -87,30 +87,15 @@ export async function POST(request: NextRequest) {
           debug(`Mood board images provided: ${moodBoard?.length || 0}`);
           debug(`Character portraits provided: ${Object.keys(characterPortraits || {}).length}`);
 
+          // Extract portrait URLs for Veo reference images
+          const portraitUrls = Object.values(characterPortraits || {});
+          debug(`Portrait URLs for Veo refs: ${portraitUrls.length}`);
+
           for (let i = 0; i < scenes.length; i++) {
             const scene = scenes[i] as { prompt: string; dialogue?: Array<{ character: string; line: string }>; duration: number };
 
-            // ── Storyboard frame vision analysis ──
-            // Analyze the storyboard frame with Gemini vision to inject a detailed
-            // visual description, compensating for broken image-to-video mode.
-            let visualDescription = '';
-            const storyboardFrame = storyboardImages?.[i] && storyboardImages[i] !== '' ? storyboardImages[i] : undefined;
-            if (storyboardFrame) {
-              try {
-                sendEvent({ type: 'agent-log', agent: 'videos', status: `Analyzing storyboard frame ${i + 1}...` });
-                visualDescription = await describeStoryboardFrame(storyboardFrame, style, mood);
-                debug(`Vision analysis for shot ${i + 1} (${visualDescription.length} chars): ${visualDescription}`);
-              } catch (error) {
-                const errMsg = error instanceof Error ? error.message : 'Unknown error';
-                debug(`Vision analysis failed for shot ${i + 1}: ${errMsg} — continuing with original prompt`);
-              }
-            }
-
             // Build final Veo prompt — dialogue FIRST (token position 0 = highest weight)
             let finalPrompt = scene.prompt;
-            if (visualDescription) {
-              finalPrompt = `[VISUAL REFERENCE: ${visualDescription}] ${finalPrompt}`;
-            }
             if (scene.dialogue && scene.dialogue.length > 0) {
               const flatDialogue = scene.dialogue.map(dl => `${dl.character}: "${dl.line}"`).join(' ');
               finalPrompt = `${flatDialogue}. ${finalPrompt}`;
@@ -142,7 +127,7 @@ export async function POST(request: NextRequest) {
             const shotStartTime = Date.now();
             try {
               const video = await executeVideoAgent(
-                finalPrompt, style, mood, shotOptions, i, refImage
+                finalPrompt, style, mood, shotOptions, i, refImage, portraitUrls
               );
               const shotElapsed = ((Date.now() - shotStartTime) / 1000).toFixed(1);
               debug(`Shot ${i + 1} succeeded in ${shotElapsed}s — ${(video.size / (1024 * 1024)).toFixed(2)} MB — ${video.url}`);
