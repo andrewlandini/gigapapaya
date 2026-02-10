@@ -53,6 +53,9 @@ export async function POST(request: NextRequest) {
           let storyboardImages: string[] = [];
           let environmentImages: string[] = [];
 
+          // Only use the primary (user-selected) mood board image for style consistency
+          const primaryMoodBoard = moodBoard.length > 0 ? [moodBoard[0]] : [];
+
           sendEvent({ type: 'storyboard-start' as any, status: 'Generating storyboard...' });
 
           try {
@@ -78,7 +81,7 @@ export async function POST(request: NextRequest) {
                 (i, url) => {
                   sendEvent({ type: 'environment-image', sceneIndex: i, environmentImage: url });
                 },
-                options.aspectRatio, moodBoard,
+                options.aspectRatio, primaryMoodBoard,
               );
               sendEvent({ type: 'agent-log', agent: 'mood-board', status: `${environmentImages.filter(Boolean).length}/${scenes.length} environment images ready` });
             } catch (e) {
@@ -94,7 +97,7 @@ export async function POST(request: NextRequest) {
                 (i, url) => {
                   sendEvent({ type: 'storyboard-frame', sceneIndex: i, storyboardImage: url });
                 },
-                options.aspectRatio, environmentImages, moodBoard,
+                options.aspectRatio, environmentImages, primaryMoodBoard,
               );
               sendEvent({ type: 'agent-log', agent: 'mood-board', status: `${storyboardImages.filter(Boolean).length}/${scenes.length} storyboard frames ready` });
             } catch (e) {

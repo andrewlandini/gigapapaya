@@ -981,6 +981,23 @@ export function StoryboardProvider({ children }: { children: ReactNode }) {
               break;
           }
         });
+
+        // Safety: if stream ended but we're still generating, force transition
+        setState(prev => {
+          if (prev.status === 'generating') {
+            console.warn('⚠️ continue-storyboard stream ended without scenes-ready — forcing review');
+            return {
+              ...prev,
+              status: 'reviewing',
+              editableScenes: prev.scenes ? prev.scenes.map(s => ({
+                ...s,
+                dialogue: Array.isArray(s.dialogue) ? s.dialogue : [],
+                characters: s.characters || [],
+              })) : null,
+            };
+          }
+          return prev;
+        });
       })
       .catch((error) => {
         if (error instanceof DOMException && error.name === 'AbortError') return;
