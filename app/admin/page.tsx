@@ -127,8 +127,7 @@ export default function AdminPage() {
       el.src = video.blob_url;
 
       el.addEventListener('loadeddata', () => {
-        const seekTo = video.duration > 1 ? 1 : 0;
-        el.currentTime = seekTo;
+        el.currentTime = 0;
       });
 
       el.addEventListener('seeked', () => {
