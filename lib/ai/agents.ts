@@ -594,14 +594,21 @@ NO overlay graphics, captions, labels, or watermarks. Clean photographic image o
     .filter(({ i, groupId }) => primaryIndexByGroup.get(groupId) !== i);
 
   if (secondaryScenes.length > 0) {
-    console.log(`🏞️  Generating ${secondaryScenes.length} secondary environment(s) using primary references...`);
-    const secondaryPromises = secondaryScenes.map(async ({ scene, i, groupId }) => {
+    console.log(`🏞️  Generating ${secondaryScenes.length} secondary environment(s) SEQUENTIALLY using accumulated references...`);
+    for (const { scene, i, groupId } of secondaryScenes) {
       try {
         const primaryIdx = primaryIndexByGroup.get(groupId)!;
         const primaryUrl = results[primaryIdx];
-        // Only use the primary environment as reference — it already carries the mood board's style DNA
+        // Use the primary environment as reference — it carries the mood board's style DNA
+        // Also include any previously generated environments for this same location group
         const refImages: string[] = [];
         if (primaryUrl) refImages.push(primaryUrl);
+        // Add other already-generated angles for this location (not the hero, not the current scene)
+        for (let idx = 0; idx < results.length; idx++) {
+          if (results[idx] && locationGroups[idx] === groupId && idx !== primaryIdx && idx !== i) {
+            refImages.push(results[idx]);
+          }
+        }
 
         console.log(`🏞️  Generating SECONDARY environment for scene ${i + 1} (group ${groupId}, ref from scene ${primaryIdx + 1}, ${refImages.length} ref(s))...`);
         const url = await geminiImage(
@@ -626,13 +633,57 @@ NO overlay graphics, captions, labels, or watermarks. Output only the image.`,
       } catch (error) {
         console.error(`❌ Failed to generate secondary environment for scene ${i + 1}:`, error instanceof Error ? error.message : error);
       }
-    });
-
-    await Promise.allSettled(secondaryPromises);
+    }
   }
 
   console.log(`✅ ENVIRONMENTS: ${results.filter(Boolean).length}/${scenes.length} generated\n`);
   return results;
+}
+
+/**
+ * Continuity check: compare two consecutive frames and flag breaks
+ */
+async function continuityCheck(
+  prevFrameUrl: string,
+  newFrameUrl: string,
+  shotDescription: string,
+): Promise<{ needsRegen: boolean; feedback: string; scores: Record<string, number> }> {
+  try {
+    const { object } = await generateObject({
+      model: getTextModel('google/gemini-3-flash'),
+      schema: z.object({
+        colorGrade: z.number().min(1).max(10).describe('Color grade consistency between frames'),
+        lighting: z.number().min(1).max(10).describe('Lighting quality and direction match'),
+        characterMatch: z.number().min(1).max(10).describe('Character appearance consistency'),
+        environmentMatch: z.number().min(1).max(10).describe('Physical environment continuity'),
+        issue: z.string().describe('If any score is below 6, describe the specific continuity break. Empty string if all good.'),
+      }),
+      messages: [{
+        role: 'user',
+        content: [
+          { type: 'image', image: prevFrameUrl },
+          { type: 'image', image: newFrameUrl },
+          { type: 'text', text: `These are two consecutive shots from the same film scene. The second shot is: "${shotDescription}".\n\nRate continuity 1-10 for each category. These should look like they were shot on the same set, with the same camera department, in the same lighting setup, minutes apart. A 10 means perfect match. Below 6 means a visible break that would be caught by a script supervisor.\n\nIf any score is below 6, describe the specific break (e.g. "color grade shifted from warm amber to cool blue" or "the car interior changed from leather to fabric seats").` },
+        ],
+      }],
+    });
+
+    const scores = {
+      colorGrade: object.colorGrade,
+      lighting: object.lighting,
+      characterMatch: object.characterMatch,
+      environmentMatch: object.environmentMatch,
+    };
+    const minScore = Math.min(...Object.values(scores));
+    return {
+      needsRegen: minScore < 6,
+      feedback: object.issue || '',
+      scores,
+    };
+  } catch (error) {
+    console.warn('⚠️ Continuity check failed:', error instanceof Error ? error.message : error);
+    return { needsRegen: false, feedback: '', scores: {} };
+  }
 }
 
 /**
@@ -651,11 +702,12 @@ export async function generateSceneStoryboards(
   environmentImages?: string[],
   moodBoard?: string[],
 ): Promise<string[]> {
-  console.log(`\n🎬 STORYBOARD: Generating ${scenes.length} scene frames...`);
-  if (moodBoard?.length) console.log(`🎬 Mood board: ${moodBoard.length} image(s) will be used as style references`);
+  console.log(`\n🎬 STORYBOARD: Generating ${scenes.length} scene frames SEQUENTIALLY...`);
   const results = new Array<string>(scenes.length).fill('');
 
-  const promises = scenes.map(async (scene, i) => {
+  // Sequential generation — each frame sees the previous frame for continuity
+  for (let i = 0; i < scenes.length; i++) {
+    const scene = scenes[i];
     try {
       // Build character context and collect reference images
       let charContext = '';
@@ -688,68 +740,98 @@ export async function generateSceneStoryboards(
       // Add environment image FIRST — this is the background the characters are placed into
       const hasEnvironment = !!environmentImages?.[i];
       if (hasEnvironment) {
-        // Environment goes at the start of refImages so it has the strongest influence
         refImages.unshift(environmentImages![i]);
       }
 
-      // No mood board here — the environment already carries the mood board's style DNA.
-      // Passing it again would make every shot look identical.
+      // Add previous frame for continuity threading
+      const prevFrame = i > 0 ? results[i - 1] : null;
+      const hasPrevFrame = !!prevFrame;
+      if (hasPrevFrame) {
+        refImages.push(prevFrame);
+      }
 
-      // Build a prompt prefix that describes what each reference image is
+      // Build prompt prefix describing each reference image
       let refDescription = '';
       if (refImages.length > 0) {
         let idx = 1;
         const parts: string[] = [];
         if (hasEnvironment) {
-          parts.push(`Image ${idx}: THE BACKGROUND. This is the environment/set for this shot. Place the characters INTO this exact location. The walls, floor, furniture, lighting, and atmosphere must match this image precisely. Do not invent a new location.`);
+          parts.push(`Image ${idx}: THE BACKGROUND. This is the environment/set for this shot. Place the characters INTO this exact location. Do not invent a new location.`);
           idx++;
         }
         if (portraitNames.length > 0) {
           const endIdx = idx + portraitNames.length - 1;
-          parts.push(`Image${portraitNames.length > 1 ? `s ${idx}-${endIdx}` : ` ${idx}`}: Character reference portrait(s) (${portraitNames.join(', ')}). Each character must look IDENTICAL to their portrait — same face, hair, skin tone, build, clothing.`);
+          parts.push(`Image${portraitNames.length > 1 ? `s ${idx}-${endIdx}` : ` ${idx}`}: Character reference portrait(s) (${portraitNames.join(', ')}). Each character must look IDENTICAL to their portrait.`);
           idx = endIdx + 1;
         }
         if (hasGroupRef) {
-          parts.push(`Image ${idx}: Group reference showing these characters together. Use for spatial relationship and interaction style.`);
+          parts.push(`Image ${idx}: Group reference showing these characters together.`);
+          idx++;
+        }
+        if (hasPrevFrame) {
+          parts.push(`Image ${idx}: THE PREVIOUS SHOT. This frame comes IMMEDIATELY AFTER this image in the film. Maintain visual continuity — same color grade, same lighting quality, same production value, same physical space. Characters who appear in both frames must look identical. This is the same scene, moments later.`);
           idx++;
         }
         refDescription = parts.join('\n') + '\n\n';
       }
 
-      console.log(`🎬 Generating frame ${i + 1}/${scenes.length} (with ${refImages.length} ref image(s): ${hasEnvironment ? 1 : 0} env, ${portraitNames.length} portrait(s), ${hasGroupRef ? 1 : 0} group)...`);
-      const url = await geminiImage(
-        `${refDescription}${hasEnvironment ? 'CRITICAL: The FIRST reference image is the LOCKED BACKGROUND for this shot. You are placing characters into this exact physical space. The environment is NOT a suggestion — it is the actual set. Every surface, every object, every light source in the background must match the reference exactly. You are a compositor layering actors onto a plate shot.\n\n' : ''}Cinematic production still — frame grab from a film. ${modeId && STORYBOARD_TONE_OVERRIDES[modeId] ? STORYBOARD_TONE_OVERRIDES[modeId] + '.' : `${style} visual style, ${mood} mood.`}
+      const buildPrompt = (continuityNote?: string) =>
+        `${refDescription}${hasEnvironment ? 'CRITICAL: The FIRST reference image is the LOCKED BACKGROUND. You are compositing characters into this exact physical space. Every surface, object, and light source must match the reference.\n\n' : ''}${hasPrevFrame ? 'CONTINUITY: The LAST reference image is the previous shot in the sequence. Your frame must look like it comes from the same film, shot on the same day, with the same camera department. Match the color grade, contrast, grain, and overall feel.\n\n' : ''}${continuityNote ? `CONTINUITY FIX: ${continuityNote}\n\n` : ''}Cinematic production still — frame grab from a film. ${modeId && STORYBOARD_TONE_OVERRIDES[modeId] ? STORYBOARD_TONE_OVERRIDES[modeId] + '.' : `${style} visual style, ${mood} mood.`}
 
 Shot description: ${scene.prompt}
 
-${charContext ? `Characters in this frame: ${charContext}\n` : ''}Place these characters INTO the environment from the reference image. This is compositing — the background is locked, you are adding the actors.
-
-Requirements:
-- BACKGROUND IS LOCKED. Same walls, seats, dashboard, furniture, lighting, color grade as the environment reference. Do not change, reimagine, or replace any part of the physical space.
-- Characters must be lit to match the environment — same color temperature, same direction, same quality of light hitting their faces and bodies.
-- Characters are MID-ACTION, not posing. Asymmetric body positions, weight shifted, interacting with surfaces and objects in the environment.
+${charContext ? `Characters in this frame: ${charContext}\n` : ''}${hasEnvironment ? 'Place these characters INTO the environment from the reference image. The background is locked.\n\n' : ''}Requirements:
+- ${hasEnvironment ? 'BACKGROUND IS LOCKED — same physical space as environment reference.\n- ' : ''}Characters must be lit to match the environment — same color temperature, same direction.
+- Characters are MID-ACTION, not posing. Asymmetric positions, weight shifted.
 - Characters NEVER look at the camera.
-
+${hasPrevFrame ? '- MATCH the color grade and overall look of the previous shot exactly.\n' : ''}
 Match the camera position, lens, and framing from the shot description.
 
-NO overlay graphics, captions, speech bubbles, dialogue text, subtitles, labels, or watermarks. Output only the image.`,
+NO overlay graphics, captions, speech bubbles, dialogue text, subtitles, labels, or watermarks. Output only the image.`;
+
+      console.log(`🎬 Generating frame ${i + 1}/${scenes.length} (${refImages.length} refs: ${hasEnvironment ? 1 : 0} env, ${portraitNames.length} portrait(s), ${hasGroupRef ? 1 : 0} group, ${hasPrevFrame ? 1 : 0} prev)...`);
+
+      let url = await geminiImage(
+        buildPrompt(),
         refImages.length > 0 ? refImages : undefined,
         aspectRatio,
-        hasEnvironment,
+        hasEnvironment || hasPrevFrame,
       );
+
       if (url) {
         results[i] = url;
         console.log(`✅ Frame ${i + 1} generated`);
         onFrame?.(i, url);
+
+        // Continuity check against previous frame (skip for first frame)
+        if (hasPrevFrame) {
+          console.log(`🔍 Continuity check: frame ${i} → frame ${i + 1}...`);
+          const check = await continuityCheck(prevFrame, url, scene.prompt);
+          console.log(`🔍 Scores: color=${check.scores.colorGrade} light=${check.scores.lighting} char=${check.scores.characterMatch} env=${check.scores.environmentMatch}${check.feedback ? ` | Issue: ${check.feedback}` : ''}`);
+
+          if (check.needsRegen && check.feedback) {
+            console.log(`⚠️ Continuity break on frame ${i + 1} — regenerating with feedback...`);
+            const regenUrl = await geminiImage(
+              buildPrompt(check.feedback),
+              refImages.length > 0 ? refImages : undefined,
+              aspectRatio,
+              hasEnvironment || hasPrevFrame,
+            );
+            if (regenUrl) {
+              results[i] = regenUrl;
+              console.log(`✅ Frame ${i + 1} regenerated with continuity fix`);
+              onFrame?.(i, regenUrl);
+            }
+          }
+        }
       } else {
         console.error(`❌ No image returned for frame ${i + 1}`);
       }
     } catch (error) {
       console.error(`❌ Failed to generate frame ${i + 1}:`, error instanceof Error ? error.message : error);
     }
-  });
+  }
 
-  await Promise.allSettled(promises);
   console.log(`✅ STORYBOARD: ${results.filter(Boolean).length}/${scenes.length} frames generated\n`);
   return results;
 }
